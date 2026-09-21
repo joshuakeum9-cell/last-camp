@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0b1030" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>Last Camp</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #05070f;
+        touch-action: none;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-user-select: none;
+        user-select: none;
+        overscroll-behavior: none;
+      }
+      #game {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #game canvas {
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        display: block;
+      }
+      /* Shown only on touch devices held in portrait. */
+      #rotate {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: #0b1030;
+        color: #8ff7ff;
+        font-family: ui-monospace, "Courier New", monospace;
+        font-size: 15px;
+        letter-spacing: 2px;
+        text-align: center;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 22px;
+        padding: 24px;
+      }
+      #rotate .glyph {
+        width: 54px;
+        height: 84px;
+        border: 3px solid #4fd3ff;
+        border-radius: 8px;
+        animation: tilt 2s ease-in-out infinite;
+      }
+      @keyframes tilt {
+        0%,
+        40% {
+          transform: rotate(0deg);
+        }
+        60%,
+        100% {
+          transform: rotate(-90deg);
+        }
+      }
+      @media (orientation: portrait) and (pointer: coarse) {
+        #rotate {
+          display: flex;
+        }
+      }
+      #boot-error {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        background: #0b1030;
+        color: #ff8c1a;
+        font-family: ui-monospace, "Courier New", monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        padding: 28px;
+        overflow: auto;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <div id="rotate">
+      <div class="glyph"></div>
+      <div>ROTATE YOUR PHONE</div>
+    </div>
+    <pre id="boot-error"></pre>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

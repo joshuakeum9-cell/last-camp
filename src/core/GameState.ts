@@ -1,0 +1,229 @@
+import { BAL } from '../data/balance';
+import {
+  emptyConsumables,
+  emptyResources,
+  type ConsumableId,
+  type ResourceId,
+} from '../data/resources';
+import { emptyPerks, type PerkId } from '../data/perks';
+import { type UpgradeId } from '../data/upgrades';
+import type { AreaId, GateId } from '../data/areas';
+import type { Rarity } from '../art/palette';
+import type { PhaseId } from '../data/balance';
+
+export const SAVE_VERSION = 1;
+
+/** A weapon the player owns. Definitions live in data/weapons.ts; this is the save data. */
+export interface WeaponInstance {
+  uid: string;
+  /** Base weapon id: axe, knife, spear, bow, hammer. */
+  base: string;
+  rarity: Rarity;
+  /** Modifier ids rolled at drop time. */
+  mods: string[];
+  /** 0 = base, 1 = reinforced, 2 = branched. */
+  tier: number;
+  /** Chosen branch id once tier reaches 2. */
+  branch: string | null;
+}
+
+/** Live state of the current expedition. Null while at camp. */
+export interface RunState {
+  seed: number;
+  timeSec: number;
+  phase: PhaseId;
+  storm: boolean;
+  hp: number;
+  cold: number;
+  collected: Record<ResourceId, number>;
+  /** Subset of `collected` gathered after nightfall, for the night bounty line. */
+  nightCollected: Record<ResourceId, number>;
+  kills: number;
+  damageTaken: number;
+  rareFinds: number;
+  newAreas: AreaId[];
+  notesFound: string[];
+  weaponsFound: string[];
+  breakables: number;
+  /** Set once the player is still outside at night. */
+  wentOutAtNight: boolean;
+}
+
+export interface GameState {
+  version: number;
+  createdAt: number;
+  lastSeenAt: number;
+  day: number;
+
+  camp: {
+    upgrades: Partial<Record<UpgradeId, number>>;
+    storage: Record<ResourceId, number>;
+    level: 1 | 2 | 3 | 4 | 5;
+    shortcutBuilt: boolean;
+  };
+
+  player: {
+    perks: Record<PerkId, number>;
+    weapons: WeaponInstance[];
+    /** Two slots. The second is null until the Weapon Rack is built. */
+    equipped: [string | null, string | null];
+    consumables: Record<ConsumableId, number>;
+    cosmetics: { outfit: string; weaponSkin: string; fireColor: string; trail: string };
+  };
+
+  run: RunState | null;
+
+  map: {
+    discoveredAreas: AreaId[];
+    openedGates: GateId[];
+    secretFound: boolean;
+    cachesOpened: string[];
+  };
+
+  story: {
+    notesFound: string[];
+    miraRescued: boolean;
+    miraAssignment: 'wood' | 'food' | 'scrap' | null;
+    miraAssignedAt: number | null;
+    /** Morning report shown for this day already. */
+    reportSeenDay: number;
+  };
+
+  bosses: {
+    alphaDefeated: boolean;
+    mawDefeated: boolean;
+    mawAttempts: number;
+  };
+
+  challenge: {
+    id: string;
+    dayIssued: number;
+    progress: number;
+    claimed: boolean;
+    source: 'local' | 'remote';
+  };
+
+  achievements: Record<string, number | null>;
+
+  stats: {
+    enemiesKilled: Record<string, number>;
+    resourcesCollected: number;
+    deaths: number;
+    daysSurvived: number;
+    campUpgradesBought: number;
+    bestDay: number;
+  };
+
+  store: {
+    owned: string[];
+    simulatedSpend: number;
+    /** Reward id -> the day (or real day number) it was last used. */
+    adsUsed: Record<string, number>;
+  };
+
+  settings: {
+    music: number;
+    sfx: number;
+    shake: number;
+    flashReduction: boolean;
+    largeText: boolean;
+    longTelegraphs: boolean;
+    touchOpacity: number;
+    showTouch: 'auto' | 'on' | 'off';
+  };
+}
+
+export function newGameState(): GameState {
+  const now = Date.now();
+  return {
+    version: SAVE_VERSION,
+    createdAt: now,
+    lastSeenAt: now,
+    day: 1,
+    camp: {
+      upgrades: {},
+      storage: emptyResources(),
+      level: 1,
+      shortcutBuilt: false,
+    },
+    player: {
+      perks: emptyPerks(),
+      weapons: [{ uid: 'w-axe-0', base: 'axe', rarity: 'common', mods: [], tier: 0, branch: null }],
+      equipped: ['w-axe-0', null],
+      consumables: emptyConsumables(),
+      cosmetics: { outfit: 'default', weaponSkin: 'default', fireColor: 'default', trail: 'none' },
+    },
+    run: null,
+    map: {
+      discoveredAreas: ['gate'],
+      openedGates: [],
+      secretFound: false,
+      cachesOpened: [],
+    },
+    story: {
+      notesFound: [],
+      miraRescued: false,
+      miraAssignment: null,
+      miraAssignedAt: null,
+      reportSeenDay: 0,
+    },
+    bosses: { alphaDefeated: false, mawDefeated: false, mawAttempts: 0 },
+    challenge: { id: '', dayIssued: 0, progress: 0, claimed: false, source: 'local' },
+    achievements: {},
+    stats: {
+      enemiesKilled: {},
+      resourcesCollected: 0,
+      deaths: 0,
+      daysSurvived: 0,
+      campUpgradesBought: 0,
+      bestDay: 0,
+    },
+    store: { owned: [], simulatedSpend: 0, adsUsed: {} },
+    settings: {
+      music: BAL.audio.music,
+      sfx: BAL.audio.sfx,
+      shake: 1,
+      flashReduction: false,
+      largeText: false,
+      longTelegraphs: false,
+      touchOpacity: 0.55,
+      showTouch: 'auto',
+    },
+  };
+}
+
+export function newRunState(seed: number, maxHp: number, storm: boolean): RunState {
+  return {
+    seed,
+    timeSec: 0,
+    phase: 'morning',
+    storm,
+    hp: maxHp,
+    cold: 0,
+    collected: emptyResources(),
+    nightCollected: emptyResources(),
+    kills: 0,
+    damageTaken: 0,
+    rareFinds: 0,
+    newAreas: [],
+    notesFound: [],
+    weaponsFound: [],
+    breakables: 0,
+    wentOutAtNight: false,
+  };
+}
+
+/**
+ * The single live state object. Systems read and write this directly; it is replaced
+ * wholesale only by SaveSystem on load or by starting a new camp.
+ */
+export let state: GameState = newGameState();
+
+export function setState(next: GameState): void {
+  state = next;
+}
+
+/** Deep-ish clone used when writing a save, so later mutation cannot corrupt the blob. */
+export function snapshot(s: GameState): GameState {
+  return JSON.parse(JSON.stringify(s)) as GameState;
+}
