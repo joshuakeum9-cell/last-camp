@@ -11,6 +11,12 @@ import { MenuScene } from './scenes/MenuScene';
 import { DevScene } from './scenes/DevScene';
 import { SaveSystem } from './core/SaveSystem';
 import { state } from './core/GameState';
+// Importing these starts them listening. They are singletons on purpose: one analytics
+// log, one audio context, one achievement watcher for the whole session.
+import { analytics } from './systems/AnalyticsSystem';
+import { audio } from './systems/AudioManager';
+import { achievements } from './systems/AchievementSystem';
+import { dailyChallenge } from './systems/DailyChallengeSystem';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -82,6 +88,10 @@ try {
       return state.camp.storage;
     },
     state: () => state,
+    analytics: () => analytics,
+    audio: () => audio,
+    achievements: () => achievements,
+    challenge: () => dailyChallenge,
   };
 
   // Keep the camp safe if the tab is closed mid-session.

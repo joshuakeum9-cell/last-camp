@@ -15,14 +15,20 @@ import { RowList, type RowSpec } from '../ui/Panel';
 import { Button } from '../ui/Button';
 import { FONT } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
+import { StorePrototype } from '../systems/StorePrototype';
+import { OfflineSystem } from '../systems/OfflineSystem';
+import { dailyChallenge } from '../systems/DailyChallengeSystem';
+import { ACHIEVEMENT_LIST } from '../data/achievements';
 
-type Tab = 'camp' | 'survivor' | 'weapons' | 'inventory';
+type Tab = 'camp' | 'survivor' | 'weapons' | 'inventory' | 'goals' | 'store';
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'camp', label: 'CAMP' },
   { id: 'survivor', label: 'SURVIVOR' },
   { id: 'weapons', label: 'WEAPONS' },
   { id: 'inventory', label: 'SUPPLIES' },
+  { id: 'goals', label: 'GOALS' },
+  { id: 'store', label: 'SUPPLY DROP' },
 ];
 
 /**
@@ -100,7 +106,7 @@ export class MenuScene extends Phaser.Scene {
         x,
         40,
         {
-          width: 56,
+          width: 68,
           height: 14,
           text: t.label,
           fill: this.tab === t.id ? PAL.blueDark : PAL.deep,
@@ -113,7 +119,7 @@ export class MenuScene extends Phaser.Scene {
         },
       );
       this.tabButtons.push(btn);
-      x += 60;
+      x += 72;
     }
   }
 
@@ -142,6 +148,13 @@ export class MenuScene extends Phaser.Scene {
         break;
       case 'inventory':
         this.list.setRows(this.inventoryRows());
+        break;
+      case 'goals':
+        this.list.setRows(this.goalRows());
+        break;
+      case 'store':
+        StorePrototype.open();
+        this.list.setRows(this.storeRows());
         break;
     }
   }
@@ -343,6 +356,113 @@ export class MenuScene extends Phaser.Scene {
         state: 'owned',
       });
     }
+
+    return rows;
+  }
+
+  /** Today's challenge, Mira's work, and the achievement list. */
+  private goalRows(): RowSpec[] {
+    const rows: RowSpec[] = [];
+
+    rows.push({
+      title: 'Today',
+      effect: dailyChallenge.describe(),
+      cost: '',
+      state: dailyChallenge.done ? 'owned' : 'blocked',
+    });
+
+    if (state.story.miraRescued) {
+      rows.push({
+        title: "Mira's work",
+        effect: OfflineSystem.describe(),
+        cost: '',
+        blockedBy: 'Capped at an hour. It is a bonus, not a substitute.',
+        state: 'blocked',
+      });
+
+      const pending = OfflineSystem.pending();
+      if (pending) {
+        rows.push({
+          title: `Collect ${pending.amount} ${pending.job}`,
+          effect: 'Take what she has brought in while you were away.',
+          cost: '',
+          state: 'affordable',
+          onClick: () => {
+            OfflineSystem.collect();
+            SaveSystem.save();
+            this.refresh();
+          },
+        });
+      }
+
+      for (const job of ['wood', 'food', 'scrap'] as const) {
+        if (OfflineSystem.job === job) continue;
+        rows.push({
+          title: `  Put Mira on ${job}`,
+          effect: `She will gather ${job} while the game is closed.`,
+          cost: '',
+          state: 'affordable',
+          onClick: () => {
+            OfflineSystem.assign(job);
+            SaveSystem.save();
+            this.refresh();
+          },
+        });
+      }
+    }
+
+    for (const a of ACHIEVEMENT_LIST) {
+      const got = state.achievements[a.id] != null;
+      rows.push({
+        title: a.name,
+        effect: got ? a.reward.label : a.desc,
+        cost: '',
+        state: got ? 'owned' : 'blocked',
+      });
+    }
+
+    return rows;
+  }
+
+  /**
+   * The simulated store. Nothing here charges anything: the only button grants the
+   * item outright so the flow can be tested.
+   */
+  private storeRows(): RowSpec[] {
+    const rows: RowSpec[] = [
+      {
+        title: 'This store is a prototype',
+        effect: 'No payment code exists in this project. Nothing here is needed to finish the game.',
+        cost: '',
+        state: 'blocked',
+      },
+    ];
+
+    for (const item of StorePrototype.items()) {
+      const owned = StorePrototype.owns(item);
+      const unlockedFree =
+        !!item.value && state.store.owned.includes(item.value) && !owned;
+      rows.push({
+        title: item.name,
+        effect: item.desc,
+        cost: owned ? '' : unlockedFree ? 'earned' : item.price,
+        blockedBy: unlockedFree ? 'Unlocked by an achievement. Free to wear.' : null,
+        state: owned ? 'owned' : 'affordable',
+        onClick: () => {
+          if (unlockedFree) StorePrototype.equipOwnedCosmetic(item);
+          else StorePrototype.simulatePurchase(item);
+          SaveSystem.save();
+          this.refresh();
+        },
+      });
+    }
+
+    rows.push({
+      title: `Simulated spend so far: $${StorePrototype.simulatedSpend.toFixed(2)}`,
+      effect: 'Recorded for playtesting only.',
+      cost: '',
+      state: 'blocked',
+    });
 
     return rows;
   }

@@ -29,6 +29,7 @@ import { GATE_IDS } from '../data/areas';
 import { RARITY_COLOR } from '../art/palette';
 import { ResourceSystem } from '../systems/ResourceSystem';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
+import { audio } from '../systems/AudioManager';
 import { generateWorld, SOLID_PROPS, type PropKind, type WorldMapData } from '../systems/MapGen';
 import { SOLID_TILES, TILESET_KEY, TILE_SIZE } from '../art/sprites/tiles';
 import { SCENERY_KEYS } from '../art/sprites/scenery';
@@ -88,6 +89,7 @@ export class WorldScene extends Phaser.Scene {
   private currentArea: AreaDef | null = null;
   private prompt!: Phaser.GameObjects.BitmapText;
   private pickups: Pickup[] = [];
+  private bossMusicOn = false;
   private ambientTarget: string = PAL.blue;
   private ambientCurrent: string = PAL.blue;
   private ending = false;
@@ -165,6 +167,9 @@ export class WorldScene extends Phaser.Scene {
     this.subs.add(bus.on('player:died', () => this.endDay('death')));
     this.subs.add(bus.on('enemy:killed', (e) => this.onEnemyKilled(e.type, e.x, e.y)));
     this.subs.add(bus.on('boss:defeated', () => this.onBossDefeated()));
+    this.subs.add(bus.on('player:hit', ({ damage }) => {
+      if (state.run) state.run.damageTaken += damage;
+    }));
     this.events.once('shutdown', () => this.cleanup());
     this.cameras.main.fadeIn(280, 0, 0, 0);
   }
@@ -409,6 +414,7 @@ export class WorldScene extends Phaser.Scene {
       );
       this.combat.boss = this.boss;
       this.physics.add.collider(this.boss.sprite, this.layer);
+      this.bossMusicOn = false;
     }
   }
 
@@ -477,6 +483,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.enemyManager.update(dt, this.player.cx, this.player.cy);
     this.boss?.update(dt);
+    this.updateBossMusic();
     this.combat.update();
     this.enemyManager.sweep();
     this.enemyManager.setNight(this.clock.isNight, this.player.cx, this.player.cy);
@@ -490,6 +497,7 @@ export class WorldScene extends Phaser.Scene {
     this.weather.update(dt, this.currentArea?.id === 'lake' ? 0.5 : 0.18);
     this.weather.setNight(this.clock.darkness);
     this.lighting.update(_time, this.clock.darkness, this.collectLights());
+    audio.setWindIntensity(this.clock.darkness + (state.run?.storm ? 0.4 : 0));
 
     // Ease the ambient tint between areas, so crossing a border changes the temperature
     // of the screen rather than snapping it.
@@ -577,6 +585,28 @@ export class WorldScene extends Phaser.Scene {
         'The Den',
       );
     });
+  }
+
+  /** The music changes when the den does, and counts the attempt. */
+  private updateBossMusic(): void {
+    if (!this.boss?.alive) {
+      if (this.bossMusicOn) {
+        this.bossMusicOn = false;
+        bus.emit('audio:music', { cue: null });
+      }
+      return;
+    }
+    const near =
+      Math.hypot(this.boss.cx - this.player.cx, this.boss.cy - this.player.cy) < 260;
+    if (near && !this.bossMusicOn) {
+      this.bossMusicOn = true;
+      state.bosses.mawAttempts++;
+      bus.emit('boss:attempted', { id: 'maw' });
+      bus.emit('audio:music', { cue: 'boss' });
+    } else if (!near && this.bossMusicOn) {
+      this.bossMusicOn = false;
+      bus.emit('audio:music', { cue: null });
+    }
   }
 
   private updatePickups(dt: number): void {

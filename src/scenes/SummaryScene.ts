@@ -12,6 +12,8 @@ import { FONT, textWidth } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
 import { Button } from '../ui/Button';
 import { FX } from '../art/sprites/fx';
+import { StorePrototype } from '../systems/StorePrototype';
+import { dailyChallenge } from '../systems/DailyChallengeSystem';
 
 export interface SummaryData {
   reason: 'return' | 'death';
@@ -105,6 +107,34 @@ export class SummaryScene extends Phaser.Scene {
       this.add
         .bitmapText(Math.round(width / 2 - 154), height - 33, FONT, 'prototype: watch an ad')
         .setTint(hex(PAL.greyDark));
+    }
+
+    if (died && StorePrototype.adAvailable('revive', this.summary.day)) {
+      new Button(
+        this,
+        Math.round(width / 2 - 154),
+        height - 24,
+        {
+          width: 100,
+          height: 18,
+          text: 'GET UP',
+          fill: PAL.violetDark,
+          fillHover: PAL.violet,
+          border: PAL.magenta,
+          textColor: PAL.white,
+        },
+        () => this.watchRevive(),
+      ).setDepth(50);
+      this.add
+        .bitmapText(Math.round(width / 2 - 154), height - 33, FONT, 'prototype: watch an ad')
+        .setTint(hex(PAL.greyDark));
+    }
+
+    // The challenge reward lands with the rest of the haul.
+    if (dailyChallenge.done) {
+      this.add
+        .bitmapText(30, height - 40, FONT, `Challenge done: ${dailyChallenge.describe()}`)
+        .setTint(hex(PAL.green));
     }
 
     this.input.keyboard?.once('keydown-ENTER', () => this.leave());
@@ -322,7 +352,39 @@ export class SummaryScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * Stand back up instead of losing the day. The player has to choose it, it is once
+   * per day, and nothing ever plays on its own.
+   */
+  private watchRevive(): void {
+    const { width, height } = BAL.view;
+    const overlay = this.add.rectangle(0, 0, width, height, hex(PAL.black)).setOrigin(0).setDepth(100);
+    const label = this.add
+      .bitmapText(width / 2, height / 2 - 8, FONT, 'AD PLAYING (PROTOTYPE)')
+      .setOrigin(0.5)
+      .setScale(1.5)
+      .setTint(hex(PAL.white))
+      .setDepth(101);
+
+    StorePrototype.markAdUsed('revive', this.summary.day);
+
+    this.time.delayedCall(2200, () => {
+      overlay.destroy();
+      label.destroy();
+      // Put the haul back and send the player out again on the same day.
+      for (const id of RESOURCE_IDS) {
+        const lost = this.summary.lost[id] ?? 0;
+        if (lost > 0) state.camp.storage[id] += lost;
+      }
+      state.run = null;
+      SaveSystem.save();
+      bus.emit('juice:toast', { text: 'You get up. The day is not over.', color: '#c56bff' });
+      this.scene.start('Camp');
+    });
+  }
+
   private leave(): void {
+    dailyChallenge.claimIfDone();
     state.day += 1;
     state.stats.daysSurvived += 1;
     state.stats.bestDay = Math.max(state.stats.bestDay, state.day);
