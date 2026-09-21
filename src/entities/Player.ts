@@ -223,7 +223,7 @@ export class Player {
       return;
     }
     this.stepTimer += dt;
-    if (this.stepTimer < 240) return;
+    if (this.stepTimer < 210) return;
     this.stepTimer = 0;
 
     const puff = this.scene.add
@@ -238,7 +238,8 @@ export class Player {
       duration: 340,
       onComplete: () => puff.destroy(),
     });
-    bus.emit('audio:play', { cue: 'step', volume: 0.35 });
+    // A touch of pitch variation, so a long walk does not turn into a metronome.
+    bus.emit('audio:play', { cue: 'step', volume: 0.85, rate: 0.9 + Math.random() * 0.25 });
   }
 
   private updateFacing(input: InputState): void {

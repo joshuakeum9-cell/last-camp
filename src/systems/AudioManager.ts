@@ -100,7 +100,7 @@ export class AudioManager {
     filter.type = 'lowpass';
     filter.frequency.value = 420;
     const gain = ctx.createGain();
-    gain.gain.value = 0.05;
+    gain.gain.value = 0.03;
 
     const lfo = ctx.createOscillator();
     lfo.frequency.value = 0.09;
@@ -116,7 +116,7 @@ export class AudioManager {
 
   setWindIntensity(t: number): void {
     if (!this.windGain || !this.ctx) return;
-    this.windGain.gain.setTargetAtTime(0.04 + t * 0.09, this.ctx.currentTime, 0.6);
+    this.windGain.gain.setTargetAtTime(0.025 + t * 0.06, this.ctx.currentTime, 0.6);
   }
 
   // --- music -------------------------------------------------------------
@@ -215,11 +215,39 @@ function thump(
   src.stop(now + opts.dur + 0.05);
 }
 
+/** A short bright noise burst that sweeps downward. Snow, impacts, breaking things. */
+function crunch(
+  ctx: AudioContext,
+  out: GainNode,
+  now: number,
+  opts: { dur: number; gain: number; cutoff: number; sweep: number },
+): void {
+  const src = makeNoise(ctx, 1);
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.Q.value = 0.9;
+  filter.frequency.setValueAtTime(opts.cutoff, now);
+  filter.frequency.exponentialRampToValueAtTime(
+    Math.max(120, opts.cutoff * opts.sweep),
+    now + opts.dur,
+  );
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(opts.gain, now);
+  g.gain.exponentialRampToValueAtTime(0.0001, now + opts.dur);
+  src.connect(filter).connect(g).connect(out);
+  src.start(now);
+  src.stop(now + opts.dur + 0.05);
+}
+
 const NIGHT_PATTERN = [110, 0, 98, 0, 87, 0, 98, 0];
 const BOSS_PATTERN = [73, 73, 87, 73, 98, 73, 87, 65];
 
 const CUES: Record<string, CueFn> = {
-  step: (c, o, n, p) => thump(c, o, n, { dur: 0.06, gain: 0.05 * p.volume, cutoff: 900 }),
+  /** Snow underfoot: a short bright crunch over a soft body thump. */
+  step: (c, o, n, p) => {
+    crunch(c, o, n, { dur: 0.07, gain: 0.3 * p.volume, cutoff: 5200, sweep: 0.35 });
+    thump(c, o, n, { dur: 0.09, gain: 0.16 * p.volume, cutoff: 700 });
+  },
   dash: (c, o, n, p) => {
     thump(c, o, n, { dur: 0.16, gain: 0.12 * p.volume, cutoff: 2400 });
     blip(c, o, n, { freq: 620, to: 1500, dur: 0.12, type: 'sine', gain: 0.05 * p.volume });
@@ -228,27 +256,36 @@ const CUES: Record<string, CueFn> = {
     blip(c, o, n, { freq: 880, dur: 0.1, type: 'sine', gain: 0.1 * p.volume });
     blip(c, o, n, { freq: 1320, dur: 0.22, type: 'sine', gain: 0.1 * p.volume, delay: 0.07 });
   },
-  swing: (c, o, n, p) => thump(c, o, n, { dur: 0.1, gain: 0.07 * p.volume, cutoff: 3200 }),
+  swing: (c, o, n, p) => crunch(c, o, n, { dur: 0.11, gain: 0.16 * p.volume, cutoff: 3600, sweep: 0.4 }),
   swingHeavy: (c, o, n, p) => {
     thump(c, o, n, { dur: 0.18, gain: 0.13 * p.volume, cutoff: 2000 });
     blip(c, o, n, { freq: 180, to: 70, dur: 0.18, type: 'sine', gain: 0.1 * p.volume });
   },
-  whiff: (c, o, n, p) => thump(c, o, n, { dur: 0.08, gain: 0.04 * p.volume, cutoff: 4200 }),
+  whiff: (c, o, n, p) => crunch(c, o, n, { dur: 0.09, gain: 0.1 * p.volume, cutoff: 4200, sweep: 0.5 }),
+  /**
+   * A landed hit is three layers: a bright transient so it reads instantly, a body
+   * thump so it has weight, and a falling tone so it sounds like something took it.
+   */
   hit: (c, o, n, p) => {
-    thump(c, o, n, { dur: 0.09, gain: 0.16 * p.volume, cutoff: 1400 });
-    blip(c, o, n, { freq: 220, to: 90, dur: 0.1, type: 'square', gain: 0.09 * p.volume });
+    crunch(c, o, n, { dur: 0.05, gain: 0.34 * p.volume, cutoff: 6000, sweep: 0.25 });
+    thump(c, o, n, { dur: 0.13, gain: 0.34 * p.volume, cutoff: 1100 });
+    blip(c, o, n, { freq: 240, to: 80, dur: 0.13, type: 'square', gain: 0.2 * p.volume });
   },
   critHit: (c, o, n, p) => {
-    thump(c, o, n, { dur: 0.12, gain: 0.2 * p.volume, cutoff: 1800 });
-    blip(c, o, n, { freq: 660, dur: 0.07, type: 'square', gain: 0.1 * p.volume });
-    blip(c, o, n, { freq: 990, dur: 0.14, type: 'square', gain: 0.1 * p.volume, delay: 0.05 });
+    crunch(c, o, n, { dur: 0.06, gain: 0.4 * p.volume, cutoff: 7000, sweep: 0.2 });
+    thump(c, o, n, { dur: 0.17, gain: 0.4 * p.volume, cutoff: 1500 });
+    blip(c, o, n, { freq: 300, to: 70, dur: 0.16, type: 'square', gain: 0.22 * p.volume });
+    blip(c, o, n, { freq: 880, dur: 0.07, type: 'square', gain: 0.2 * p.volume });
+    blip(c, o, n, { freq: 1320, dur: 0.16, type: 'square', gain: 0.18 * p.volume, delay: 0.05 });
   },
   enemyDie: (c, o, n, p) => {
-    blip(c, o, n, { freq: 420, to: 60, dur: 0.3, type: 'sawtooth', gain: 0.1 * p.volume });
-    thump(c, o, n, { dur: 0.22, gain: 0.12 * p.volume, cutoff: 1100 });
+    blip(c, o, n, { freq: 420, to: 60, dur: 0.32, type: 'sawtooth', gain: 0.22 * p.volume });
+    thump(c, o, n, { dur: 0.26, gain: 0.26 * p.volume, cutoff: 1100 });
+    crunch(c, o, n, { dur: 0.1, gain: 0.2 * p.volume, cutoff: 3000, sweep: 0.3 });
   },
   playerHurt: (c, o, n, p) => {
-    blip(c, o, n, { freq: 300, to: 110, dur: 0.24, type: 'sawtooth', gain: 0.13 * p.volume });
+    blip(c, o, n, { freq: 300, to: 110, dur: 0.26, type: 'sawtooth', gain: 0.3 * p.volume });
+    thump(c, o, n, { dur: 0.18, gain: 0.22 * p.volume, cutoff: 800 });
   },
   pickup: (c, o, n, p) => blip(c, o, n, { freq: 660 * p.rate, to: 990 * p.rate, dur: 0.1, type: 'sine', gain: 0.08 * p.volume }),
   pickupRare: (c, o, n, p) => {
@@ -257,8 +294,9 @@ const CUES: Record<string, CueFn> = {
     }
   },
   chop: (c, o, n, p) => {
-    thump(c, o, n, { dur: 0.1, gain: 0.13 * p.volume, cutoff: 1000 });
-    blip(c, o, n, { freq: 150, to: 80, dur: 0.1, type: 'sine', gain: 0.07 * p.volume });
+    crunch(c, o, n, { dur: 0.05, gain: 0.26 * p.volume, cutoff: 4500, sweep: 0.3 });
+    thump(c, o, n, { dur: 0.13, gain: 0.26 * p.volume, cutoff: 900 });
+    blip(c, o, n, { freq: 170, to: 70, dur: 0.12, type: 'sine', gain: 0.16 * p.volume });
   },
   nodeBreak: (c, o, n, p) => {
     thump(c, o, n, { dur: 0.35, gain: 0.16 * p.volume, cutoff: 1500 });

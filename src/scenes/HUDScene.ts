@@ -30,6 +30,8 @@ export class HUDScene extends Phaser.Scene {
   private compass!: Phaser.GameObjects.Image;
   private resourceRows = new Map<ResourceId, { icon: Phaser.GameObjects.Image; label: Label }>();
   private toasts: Label[] = [];
+  private resourcePanel!: Phaser.GameObjects.Rectangle;
+  private statusPanel!: Phaser.GameObjects.Rectangle;
 
   constructor() {
     super('HUD');
@@ -39,6 +41,14 @@ export class HUDScene extends Phaser.Scene {
     const { width } = BAL.view;
 
     // --- health and cold, top left ---------------------------------------
+    // The same treatment for the health and cold meters on the left.
+    this.statusPanel = this.add
+      .rectangle(2, 2, 84, 22, hex(PAL.black))
+      .setOrigin(0)
+      .setAlpha(0.42)
+      .setStrokeStyle(1, hex(PAL.blueDark), 0.7)
+      .setScrollFactor(0);
+
     this.hpBar = new Bar(this, 6, 6, {
       width: 74,
       height: 7,
@@ -103,6 +113,16 @@ export class HUDScene extends Phaser.Scene {
 
   private buildResourceRows(): void {
     const { width } = BAL.view;
+
+    // The counters sit over open snow, where a bare number disappears. A panel is
+    // cheaper and steadier to read than outlining every digit.
+    this.resourcePanel = this.add
+      .rectangle(width - 2, 2, 46, 10, hex(PAL.black))
+      .setOrigin(1, 0)
+      .setAlpha(0.42)
+      .setStrokeStyle(1, hex(PAL.blueDark), 0.7)
+      .setScrollFactor(0);
+
     RESOURCE_IDS.forEach((id, i) => {
       const y = 6 + i * 11;
       const icon = this.add
@@ -227,5 +247,9 @@ export class HUDScene extends Phaser.Scene {
       entry.label.setText(String(amount));
       row++;
     }
+
+    this.resourcePanel.setVisible(row > 0);
+    if (row > 0) this.resourcePanel.height = 4 + row * 11;
+    this.statusPanel.height = hud.context === 'world' ? 22 : 13;
   }
 }

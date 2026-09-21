@@ -70,9 +70,19 @@ export class SummaryScene extends Phaser.Scene {
 
     if (died) {
       this.add
-        .bitmapText(width / 2, 36, FONT, 'You collapsed in the snow. Mira found you.')
+        .bitmapText(width / 2, 34, FONT, 'You collapsed in the snow. You woke up at the fire.')
         .setOrigin(0.5, 0)
         .setTint(hex(PAL.grey));
+      // Spelled out, because losing a haul should not feel like losing the camp.
+      this.add
+        .bitmapText(
+          width / 2,
+          44,
+          FONT,
+          'Your camp, your tools and everything you have built are safe.',
+        )
+        .setOrigin(0.5, 0)
+        .setTint(hex(PAL.green));
     } else if (this.summary.untouched) {
       this.add
         .bitmapText(width / 2, 36, FONT, 'Not a scratch. +10% on everything you carried.')
@@ -80,7 +90,7 @@ export class SummaryScene extends Phaser.Scene {
         .setTint(hex(PAL.green));
     }
 
-    this.lineY = 54;
+    this.lineY = died ? 58 : 54;
     this.delay = 260;
     this.buildResourceLines();
     this.buildEventLines();

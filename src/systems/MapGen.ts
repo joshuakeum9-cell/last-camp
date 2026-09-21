@@ -24,14 +24,39 @@ export interface PropPlacement {
   area: AreaId;
 }
 
+export type DecorKind =
+  | 'fallenLog'
+  | 'snowMound'
+  | 'deadShrub'
+  | 'grassTuft'
+  | 'bones'
+  | 'signpost'
+  | 'oldFire';
+
+/** Scenery that is only there to look at. Nothing blocks, nothing can be harvested. */
+export interface DecorPlacement {
+  kind: DecorKind;
+  tx: number;
+  ty: number;
+  area: AreaId;
+}
+
 export interface WorldMapData {
   tiles: number[][];
   props: PropPlacement[];
+  decor: DecorPlacement[];
   /** Tiles belonging to each gate, so opening one can clear them. */
   gateTiles: Record<GateId, Array<{ x: number; y: number }>>;
+  /**
+   * The rectangle the player can actually reach, in pixels. The camera is clamped to
+   * this so the edge of the map is never on screen: what you can see is what you can
+   * walk to.
+   */
+  walkable: { x: number; y: number; width: number; height: number };
 }
 
 const { cols, rows } = BAL.world;
+const TILE_PX = BAL.tile;
 
 /** Props that block movement, used by WorldScene to add static bodies. */
 export const SOLID_PROPS: PropKind[] = ['pine', 'deadTree', 'rock', 'wreck', 'crystal'];
@@ -105,7 +130,79 @@ export function generateWorld(seed: number): WorldMapData {
   }
 
   const props = placeProps(tiles, seed);
-  return { tiles, props, gateTiles };
+  const decor = placeDecor(tiles, seed, props);
+  return { tiles, props, decor, gateTiles, walkable: walkableBounds(tiles) };
+}
+
+/** The bounding box of everything that is not solid, in pixels. */
+function walkableBounds(tiles: number[][]): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
+  let minX: number = cols;
+  let minY: number = rows;
+  let maxX = 0;
+  let maxY = 0;
+
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      if (isSolidIndex(tiles[y][x])) continue;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+
+  const t = TILE_PX;
+  return {
+    x: minX * t,
+    y: minY * t,
+    width: (maxX - minX + 1) * t,
+    height: (maxY - minY + 1) * t,
+  };
+}
+
+/**
+ * Things to look at. The world was readable but bare: trees, rocks, wrecks and
+ * nothing else. These are scattered thickly because none of them cost anything to
+ * walk through, and a landscape with litter in it feels lived in.
+ */
+function placeDecor(tiles: number[][], seed: number, props: PropPlacement[]): DecorPlacement[] {
+  const out: DecorPlacement[] = [];
+  const taken = new Set(props.map((p) => `${p.tx},${p.ty}`));
+
+  for (const area of AREA_LIST) {
+    const rng = new Rng(subSeed(seed, `decor:${area.id}`));
+    const tilesInArea = (area.rect.x1 - area.rect.x0) * (area.rect.y1 - area.rect.y0);
+
+    // What turns up depends on where you are, which is most of what makes the
+    // areas feel like different places rather than different palettes.
+    const table: DecorKind[] =
+      area.ground === 'road'
+        ? ['signpost', 'bones', 'snowMound', 'deadShrub', 'grassTuft', 'oldFire']
+        : area.ground === 'ice'
+          ? ['snowMound', 'bones', 'grassTuft', 'snowMound']
+          : area.ground === 'deep'
+            ? ['bones', 'snowMound', 'deadShrub', 'oldFire']
+            : ['fallenLog', 'deadShrub', 'grassTuft', 'snowMound', 'grassTuft', 'oldFire'];
+
+    const count = Math.round((tilesInArea / 100) * 5.5);
+    for (let i = 0; i < count; i++) {
+      const tx = rng.int(area.rect.x0 + 1, area.rect.x1 - 2);
+      const ty = rng.int(area.rect.y0 + 1, area.rect.y1 - 2);
+      const key = `${tx},${ty}`;
+      if (taken.has(key)) continue;
+      if (!inBounds(tx, ty) || isSolidIndex(tiles[ty][tx])) continue;
+      if (isReserved(tx, ty)) continue;
+      taken.add(key);
+      out.push({ kind: rng.pick(table), tx, ty, area: area.id });
+    }
+  }
+
+  return out;
 }
 
 /**
@@ -120,7 +217,7 @@ export function generateWorld(seed: number): WorldMapData {
  * walkable or unwalkable, so it can never alter how the map is connected.
  */
 function blendGroundSeams(kinds: Array<Array<string | null>>, rng: Rng): void {
-  const REACH = 4;
+  const REACH = 3;
   const source = kinds.map((row) => row.slice());
 
   for (let y = 0; y < rows; y++) {
@@ -150,21 +247,20 @@ function blendGroundSeams(kinds: Array<Array<string | null>>, rng: Rng): void {
       if (!foundKind) continue;
 
       // Three waves at different frequencies, so the edge wanders without repeating.
+      // No random scatter: a coherent wave keeps the blended ground contiguous, where
+      // a dice roll left single dark road tiles stranded out in the snow looking like
+      // a bug.
       const wave =
-        Math.sin(x * 0.55) * 1.5 +
-        Math.sin(y * 0.41) * 1.5 +
-        Math.sin((x + y) * 0.17) * 1.2 +
-        Math.sin((x - y) * 0.27) * 0.8;
+        Math.sin(x * 0.55) * 1.3 +
+        Math.sin(y * 0.41) * 1.3 +
+        Math.sin((x + y) * 0.17) * 1.0 +
+        Math.sin((x - y) * 0.27) * 0.7;
 
-      if (foundDist <= wave) {
-        kinds[y][x] = foundKind;
-        continue;
-      }
-
-      // A little scatter on top, so the wave itself does not read as a drawn curve.
-      if (rng.chance(0.3 / (foundDist * foundDist))) kinds[y][x] = foundKind;
+      if (foundDist <= wave) kinds[y][x] = foundKind;
     }
   }
+
+  void rng;
 }
 
 function inBounds(x: number, y: number): boolean {

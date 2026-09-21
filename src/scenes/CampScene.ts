@@ -297,7 +297,18 @@ export class CampScene extends Phaser.Scene {
 
     const { width } = BAL.view;
     const text = lines.join('\n');
-    const label = new Label(this, Math.round(width / 2), 40, text, {
+    const lineCount = lines.length;
+    // A panel behind it, because this lands over open snow and a thin outline is not
+    // enough for a sentence you are meant to actually read.
+    const panel = this.add
+      .rectangle(Math.round(width / 2), 36, width - 60, 10 + lineCount * 11, hex(PAL.black))
+      .setOrigin(0.5, 0)
+      .setAlpha(0)
+      .setStrokeStyle(1, hex(PAL.blueDark), 0.8)
+      .setScrollFactor(0)
+      .setDepth(7599);
+
+    const label = new Label(this, Math.round(width / 2), 41, text, {
       color: PAL.cream,
       originX: 0.5,
       align: 'center',
@@ -305,6 +316,15 @@ export class CampScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(7600)
       .setAlpha(0);
+
+    this.tweens.add({
+      targets: panel,
+      alpha: 0.72,
+      duration: 600,
+      hold: 3200,
+      yoyo: true,
+      onComplete: () => panel.destroy(),
+    });
 
     this.tweens.add({
       targets: label.target,

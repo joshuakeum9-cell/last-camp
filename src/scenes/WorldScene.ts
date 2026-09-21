@@ -64,6 +64,16 @@ const PROP_TEXTURE: Record<string, string> = {
 
 const HARVESTABLE: PropKind[] = ['pine', 'pineSmall', 'deadTree', 'wreck', 'bush', 'crystal'];
 
+const DECOR_TEXTURE: Record<string, string> = {
+  fallenLog: SCENERY_KEYS.fallenLog,
+  snowMound: SCENERY_KEYS.snowMound,
+  deadShrub: SCENERY_KEYS.deadShrub,
+  grassTuft: SCENERY_KEYS.grassTuft,
+  bones: SCENERY_KEYS.bones,
+  signpost: SCENERY_KEYS.signpost,
+  oldFire: SCENERY_KEYS.oldFire,
+};
+
 /** The expedition. Explore, collect, fight, and decide when to turn for home. */
 export class WorldScene extends Phaser.Scene {
   private input$!: InputSystem;
@@ -198,7 +208,11 @@ export class WorldScene extends Phaser.Scene {
     this.layer.setDepth(0);
 
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
-    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+
+    // Clamp the view to what can actually be reached, so the edge of the map is never
+    // on screen. What you can see is what you can walk to.
+    const walk = this.mapData.walkable;
+    this.cameras.main.setBounds(walk.x, walk.y, walk.width, walk.height);
   }
 
   /** A far ridge with the signal tower on it, so the goal is always on the horizon. */
@@ -309,6 +323,7 @@ export class WorldScene extends Phaser.Scene {
       }
     }
 
+    this.drawDecor(rng);
     this.physics.add.collider(this.player.sprite, solids);
     this.scatterBreakables(seed, addPickup);
 
@@ -316,6 +331,33 @@ export class WorldScene extends Phaser.Scene {
       const px = (RETURN_ZONE.x1 + 1) * TILE_SIZE;
       const py = (WORLD_SPAWN.y + dy) * TILE_SIZE + TILE_SIZE;
       this.add.image(px, py, CAMP_KEYS.gatePost).setOrigin(0.5, 1).setScale(1.4).setDepth(py);
+    }
+  }
+
+  /** Scenery with no gameplay attached. It exists so the place feels inhabited. */
+  private drawDecor(rng: Rng): void {
+    for (const d of this.mapData.decor) {
+      const key = DECOR_TEXTURE[d.kind];
+      if (!key) continue;
+      const x = d.tx * TILE_SIZE + TILE_SIZE / 2;
+      const y = d.ty * TILE_SIZE + TILE_SIZE;
+      const scale = rng.range(0.9, 1.3);
+
+      // Flat things sit under the player; standing things sort with everything else.
+      const flat = d.kind === 'grassTuft' || d.kind === 'bones' || d.kind === 'oldFire';
+      if (!flat) {
+        this.add
+          .ellipse(x, y - 1, Math.round(16 * scale), Math.round(5 * scale), hex(PAL.blue))
+          .setAlpha(0.22)
+          .setDepth(y - 2);
+      }
+
+      this.add
+        .image(x, y, key)
+        .setOrigin(0.5, 1)
+        .setScale(scale)
+        .setFlipX(rng.chance(0.5))
+        .setDepth(flat ? 2 : y);
     }
   }
 

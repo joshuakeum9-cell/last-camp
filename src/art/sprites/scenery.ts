@@ -26,6 +26,7 @@ const P: Record<string, string | null> = {
   e: 'ember',
   y: 'gold',
   n: 'wood',
+  B: 'ember',
 };
 
 const PINE = [
@@ -196,6 +197,88 @@ const TOWER = [
   'ooo...ooo',
 ];
 
+/** A trunk that came down years ago, half buried. */
+const FALLEN_LOG = [
+  '..ttttttttttttt.',
+  '.tTTTTTTTTTTTTTt',
+  'tTbTTbTTTbTTTbTt',
+  'tTTTTTTTTTTTTTTt',
+  '.tTTTTTTTTTTTTt.',
+  '.sttttttttttts..',
+  'ssssssssssssss..',
+];
+
+/** A wind-heaped mound of snow. */
+const SNOW_MOUND = [
+  '.....wwww.....',
+  '...wwwwwwww...',
+  '..wwwwwwwwww..',
+  '.wwwwwwwwwwww.',
+  'wwwwwwwwwwwwww',
+  'wwwshhwwwshhww',
+  '.sssssssssss..',
+];
+
+/** A shrub the winter got to. */
+const DEAD_SHRUB = [
+  '..t...t..t....',
+  '.t.t.t.t.t.t..',
+  '..t.t.t.t.t...',
+  '...ttTtTtt....',
+  '....tTTTt.....',
+  '.....TTT......',
+  '..ssssssss....',
+  '.ssssssssss...',
+];
+
+/** Frozen grass poking through the snow. */
+const GRASS_TUFT = [
+  '.h..h...h.',
+  'h.h.h.h.h.',
+  '.hhh.hhh..',
+  '..hhhhh...',
+  '.sssssss..',
+];
+
+/** Something did not make it through the winter. */
+const BONES = [
+  '..wwww....',
+  '.wwoowww..',
+  '.wwwwwww..',
+  '..wwwww...',
+  '.w.w.w.w..',
+  'w..w.w..w.',
+  '.ssssssss.',
+];
+
+/** A road sign nobody is reading any more. */
+const SIGNPOST = [
+  '.mmmmmmmmm..',
+  'mMMMMMMMMMm.',
+  'mMdddMdddMm.',
+  'mMMMMMMMMMm.',
+  'mMdddddMMMm.',
+  'mMMMMMMMMMm.',
+  '.mmmmmmmmm..',
+  '.....tt.....',
+  '.....tt.....',
+  '.....tt.....',
+  '.....tt.....',
+  '....ssss....',
+];
+
+/** A ring of stones somebody once cooked over. */
+const OLD_FIRE = [
+  '..rr..rr..',
+  '.r..rr..r.',
+  'r..bbbb..r',
+  'r.bbBBbb.r',
+  'r..bbbb..r',
+  '.r..rr..r.',
+  '..rrrrrr..',
+  '.ssssssss.',
+];
+
 export const SCENERY_KEYS = {
   pine: 'sc-pine',
   pineSmall: 'sc-pine-small',
@@ -208,6 +291,13 @@ export const SCENERY_KEYS = {
   crate: 'sc-crate',
   iceChunk: 'sc-ice-chunk',
   tower: 'sc-tower',
+  fallenLog: 'sc-fallen-log',
+  snowMound: 'sc-snow-mound',
+  deadShrub: 'sc-dead-shrub',
+  grassTuft: 'sc-grass-tuft',
+  bones: 'sc-bones',
+  signpost: 'sc-signpost',
+  oldFire: 'sc-old-fire',
 } as const;
 
 export function buildScenery(scene: Phaser.Scene): void {
@@ -223,4 +313,11 @@ export function buildScenery(scene: Phaser.Scene): void {
   make(SCENERY_KEYS.crate, CRATE);
   make(SCENERY_KEYS.iceChunk, ICE_CHUNK);
   make(SCENERY_KEYS.tower, TOWER);
+  make(SCENERY_KEYS.fallenLog, FALLEN_LOG);
+  make(SCENERY_KEYS.snowMound, SNOW_MOUND);
+  make(SCENERY_KEYS.deadShrub, DEAD_SHRUB);
+  make(SCENERY_KEYS.grassTuft, GRASS_TUFT);
+  make(SCENERY_KEYS.bones, BONES);
+  make(SCENERY_KEYS.signpost, SIGNPOST);
+  make(SCENERY_KEYS.oldFire, OLD_FIRE);
 }
