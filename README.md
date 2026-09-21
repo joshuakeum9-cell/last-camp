@@ -40,6 +40,7 @@ accounts and no network calls.
 | `E` | Interact, read, open, advance dialogue |
 | `Q` | Swap weapon, once you have the Weapon Rack |
 | `Esc` | Close a menu |
+| Settings | Download or restore your camp as a file |
 | `` ` `` | Developer screen |
 
 **Touch**
@@ -48,6 +49,17 @@ A stick appears wherever you first touch the left half of the screen. Attack and
 sit bottom right. The interact button only appears when there is something in reach.
 Everything is sized and placed to stay out of the top of the screen and out of the way
 of your thumbs. Phones held in portrait get a rotate prompt.
+
+## Your camp is a file
+
+Open **Settings** from the title screen or the camp menu. At the bottom:
+
+- **DOWNLOAD CAMP** saves everything to `last-camp-day-4-2026-09-21.json`
+- **RESTORE FROM FILE** loads one back. It asks twice, because it replaces everything
+
+The game also autosaves to browser storage, but a browser can clear that without
+warning and it does not follow you to another computer. The file is the copy that is
+actually yours. A restored camp always starts at camp rather than mid-expedition.
 
 ## The first five minutes
 

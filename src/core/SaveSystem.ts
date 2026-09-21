@@ -89,6 +89,56 @@ export const SaveSystem = {
   exportJson(): string {
     return JSON.stringify(snapshot(state), null, 2);
   },
+
+  /**
+   * Restore a camp from a file the player exported earlier. This replaces everything,
+   * so the caller is expected to have asked first.
+   *
+   * Returns a readable reason on failure rather than throwing, because the input is a
+   * file a human chose and the failure needs to be shown to them.
+   */
+  importJson(text: string): { ok: true } | { ok: false; reason: string } {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return { ok: false, reason: 'That file is not readable as a save.' };
+    }
+    if (!parsed || typeof parsed !== 'object') {
+      return { ok: false, reason: 'That file does not contain a camp.' };
+    }
+
+    const raw = parsed as GameState;
+    if (typeof raw.version !== 'number' || typeof raw.day !== 'number' || !raw.camp) {
+      return { ok: false, reason: 'That file is not a Last Camp save.' };
+    }
+    if (raw.version > SAVE_VERSION) {
+      return { ok: false, reason: 'That save came from a newer version of the game.' };
+    }
+
+    const migrated = migrate(raw);
+    if (!migrated) return { ok: false, reason: 'That save could not be read.' };
+
+    // Keep whatever was already here, so a mistaken import is recoverable.
+    try {
+      const current = localStorage.getItem(KEY);
+      if (current) localStorage.setItem(BACKUP_KEY, current);
+    } catch {
+      /* ignore */
+    }
+
+    // A camp restored from a file always starts at camp, never mid-expedition.
+    migrated.run = null;
+    setState(migrated);
+    this.save();
+    return { ok: true };
+  },
+
+  /** A filename a player can recognise months later. */
+  suggestedFilename(): string {
+    const date = new Date().toISOString().slice(0, 10);
+    return `last-camp-day-${state.day}-${date}.json`;
+  },
 };
 
 /**

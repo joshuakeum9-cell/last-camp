@@ -4,6 +4,7 @@ import { bus } from '../core/EventBus';
 import { state } from '../core/GameState';
 import { SaveSystem } from '../core/SaveSystem';
 import { Button } from '../ui/Button';
+import { SaveFile } from '../core/SaveFile';
 import { FONT } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
 
@@ -23,13 +24,17 @@ export class SettingsScene extends Phaser.Scene {
   private rows: Row[] = [];
   private values: Phaser.GameObjects.BitmapText[] = [];
   private returnTo = 'Title';
+  private confirmingRestore = false;
+  private status?: Phaser.GameObjects.BitmapText;
 
   constructor() {
     super('Settings');
   }
 
-  init(data: { returnTo?: string }): void {
+  init(data: { returnTo?: string; confirming?: boolean }): void {
     this.returnTo = data?.returnTo ?? 'Title';
+    this.confirmingRestore = !!data?.confirming;
+    this.values = [];
   }
 
   create(): void {
@@ -43,7 +48,7 @@ export class SettingsScene extends Phaser.Scene {
     this.add.bitmapText(40, 22, FONT, 'SETTINGS').setScale(1.5).setTint(hex(PAL.gold));
 
     this.rows = this.buildRows();
-    let y = 44;
+    let y = 42;
     this.rows.forEach((row, i) => {
       const label = this.add.bitmapText(40, y, FONT, row.label).setTint(hex(PAL.white));
       this.add.bitmapText(40, y + 9, FONT, row.hint).setTint(hex(PAL.greyDark));
@@ -54,7 +59,7 @@ export class SettingsScene extends Phaser.Scene {
       this.values.push(value);
 
       const hit = this.add
-        .rectangle(38, y - 2, width - 80, 20, hex(PAL.deep))
+        .rectangle(38, y - 2, width - 80, 17, hex(PAL.deep))
         .setOrigin(0)
         .setAlpha(0.001)
         .setInteractive({ useHandCursor: true });
@@ -68,17 +73,105 @@ export class SettingsScene extends Phaser.Scene {
 
       void label;
       void i;
-      y += 21;
+      y += 18;
     });
+
+    this.buildSaveFileSection(y + 2);
 
     new Button(
       this,
-      Math.round(width / 2 - 30),
-      height - 26,
-      { width: 60, height: 16, text: 'BACK', fill: PAL.rust, border: PAL.gold, textColor: PAL.cream },
+      width - 96,
+      height - 30,
+      { width: 56, height: 16, text: 'BACK', fill: PAL.rust, border: PAL.gold, textColor: PAL.cream },
       () => this.leave(),
     );
     this.input.keyboard?.on('keydown-ESC', () => this.leave());
+  }
+
+  /**
+   * Your camp as a file. Browser storage can be cleared without warning and does not
+   * follow you to another machine, so this is the only way a camp is really yours.
+   */
+  private buildSaveFileSection(y: number): void {
+    const { width } = BAL.view;
+
+    this.add
+      .rectangle(40, y, width - 80, 1, hex(PAL.blueDark))
+      .setOrigin(0);
+    this.add.bitmapText(40, y + 6, FONT, 'YOUR CAMP').setTint(hex(PAL.gold));
+    this.add
+      .bitmapText(40, y + 16, FONT, 'Keep a copy, or move it to another computer.')
+      .setTint(hex(PAL.greyDark));
+
+    this.status = this.add
+      .bitmapText(40, y + 42, FONT, '')
+      .setTint(hex(PAL.green));
+
+    new Button(
+      this,
+      40,
+      y + 28,
+      {
+        width: 108,
+        height: 16,
+        text: 'DOWNLOAD CAMP',
+        fill: PAL.deep,
+        border: PAL.cyan,
+        textColor: PAL.cyan,
+      },
+      () => {
+        SaveSystem.save();
+        const name = SaveFile.download();
+        this.say(`Saved as ${name}`, PAL.green);
+      },
+    );
+
+    new Button(
+      this,
+      156,
+      y + 28,
+      {
+        width: 116,
+        height: 16,
+        text: this.confirmingRestore ? 'REPLACE? TAP AGAIN' : 'RESTORE FROM FILE',
+        fill: this.confirmingRestore ? PAL.rust : PAL.deep,
+        border: this.confirmingRestore ? PAL.gold : PAL.violet,
+        textColor: this.confirmingRestore ? PAL.cream : PAL.violet,
+      },
+      () => this.restore(),
+    );
+  }
+
+  /** Restoring replaces everything, so it takes two presses. */
+  private restore(): void {
+    if (!this.confirmingRestore) {
+      this.confirmingRestore = true;
+      this.say('This replaces your camp. Press again.', PAL.gold);
+      this.time.delayedCall(4000, () => {
+        if (!this.scene.isActive()) return;
+        this.confirmingRestore = false;
+        this.scene.restart({ returnTo: this.returnTo });
+      });
+      this.scene.restart({ returnTo: this.returnTo, confirming: true });
+      return;
+    }
+
+    this.confirmingRestore = false;
+    SaveFile.pickAndRestore((result) => {
+      if (!this.scene.isActive()) return;
+      this.say(result.message, result.ok ? PAL.green : PAL.blood);
+      if (result.ok) {
+        bus.emit('settings:changed', { key: 'import' });
+        // Start again from the restored camp rather than whatever was on screen.
+        this.time.delayedCall(900, () => this.scene.start('Camp'));
+      } else {
+        this.scene.restart({ returnTo: this.returnTo });
+      }
+    });
+  }
+
+  private say(message: string, color: string): void {
+    this.status?.setText(message).setTint(hex(color));
   }
 
   private buildRows(): Row[] {
