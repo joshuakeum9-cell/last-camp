@@ -18,6 +18,9 @@ import { hex, PAL } from '../art/palette';
 import { FONT } from '../art/PixelFont';
 import { Rng } from '../core/Rng';
 import { hud, resetHud } from '../core/HudState';
+import { NPCMira } from '../entities/NPCMira';
+import { Dialogue } from '../ui/Dialogue';
+import { NOTE_LIST } from '../data/story';
 
 interface Station {
   id: StationId;
@@ -43,6 +46,8 @@ export class CampScene extends Phaser.Scene {
   private lightLayer!: Phaser.GameObjects.Container;
   private stations: Station[] = [];
   private prompt!: Phaser.GameObjects.BitmapText;
+  private dialogue!: Dialogue;
+  private mira: NPCMira | null = null;
 
   constructor() {
     super('Camp');
@@ -72,6 +77,7 @@ export class CampScene extends Phaser.Scene {
     this.weather = new Weather(this);
 
     this.buildAmbient();
+    this.dialogue = new Dialogue(this);
     this.prompt = this.add
       .bitmapText(0, 0, FONT, '')
       .setOrigin(0.5, 1)
@@ -183,6 +189,20 @@ export class CampScene extends Phaser.Scene {
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut',
+      });
+    }
+
+    // Mira lives here once she is out of the cabin. The camp stops being empty.
+    this.mira?.destroy();
+    this.mira = null;
+    if (state.story.miraRescued) {
+      this.mira = new NPCMira(this, 13 * TILE_SIZE + 8, 13 * TILE_SIZE, 'camp');
+      this.stations.push({
+        id: 'mira',
+        x: this.mira.cx,
+        y: this.mira.cy,
+        radius: 28,
+        label: STATION_LABEL.mira,
       });
     }
 
@@ -321,12 +341,38 @@ export class CampScene extends Phaser.Scene {
         break;
 
       case 'board':
-        this.openMenu('camp');
+        this.showJournal();
+        break;
+
+      case 'mira':
+        if (this.mira) {
+          const lines = this.mira.interact();
+          if (lines.length) this.dialogue.show(lines, 'Mira');
+        }
         break;
 
       default:
         this.openMenu('camp');
     }
+  }
+
+  /** The journal: what has been found, and how much has not. */
+  private showJournal(): void {
+    const found = state.story.notesFound;
+    const lines: string[] = [`Notes found: ${found.length} of ${NOTE_LIST.length}.`];
+
+    for (const note of NOTE_LIST) {
+      if (found.includes(note.id)) lines.push(`${note.title}\n\n${note.body}`);
+    }
+    if (found.length === 0) {
+      lines.push('Nothing written down yet. Somebody must have left something out there.');
+    } else if (found.length < NOTE_LIST.length) {
+      lines.push('There is more of this somewhere.');
+    } else {
+      lines.push('That is all of it. It still does not say why.');
+    }
+
+    this.dialogue.show(lines, 'Notice board');
   }
 
   private openMenu(tab: string): void {
@@ -360,6 +406,12 @@ export class CampScene extends Phaser.Scene {
     hud.day = state.day;
     hud.dashCharge = this.player.dashCharge;
 
+    if (this.dialogue.isOpen) {
+      this.prompt.setVisible(false);
+      if (input.interactPressed) this.dialogue.advance();
+      return;
+    }
+
     let nearest: Station | null = null;
     let nearestDist = Infinity;
     for (const s of this.stations) {
@@ -383,6 +435,8 @@ export class CampScene extends Phaser.Scene {
 
   private cleanup(): void {
     this.subs.dispose();
+    this.dialogue?.close();
+    this.mira?.destroy();
     this.weather?.destroy();
     this.juice?.destroy();
     this.player?.destroy();

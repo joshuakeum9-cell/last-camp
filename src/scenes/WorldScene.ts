@@ -19,8 +19,16 @@ import { ColdSystem } from '../systems/ColdSystem';
 import { Lighting } from '../systems/Lighting';
 import { LootSystem } from '../systems/LootSystem';
 import { CACHES } from '../data/loot';
+import { NOTE_LIST } from '../data/story';
+import { WorldNote } from '../entities/WorldNote';
+import { Gate } from '../entities/Gate';
+import { NPCMira } from '../entities/NPCMira';
+import { BossWhiteMaw } from '../entities/BossWhiteMaw';
+import { Dialogue } from '../ui/Dialogue';
+import { GATE_IDS } from '../data/areas';
 import { RARITY_COLOR } from '../art/palette';
 import { ResourceSystem } from '../systems/ResourceSystem';
+import { UpgradeSystem } from '../systems/UpgradeSystem';
 import { generateWorld, SOLID_PROPS, type PropKind, type WorldMapData } from '../systems/MapGen';
 import { SOLID_TILES, TILESET_KEY, TILE_SIZE } from '../art/sprites/tiles';
 import { SCENERY_KEYS } from '../art/sprites/scenery';
@@ -65,7 +73,12 @@ export class WorldScene extends Phaser.Scene {
   private clock!: DayNightSystem;
   private cold!: ColdSystem;
   private lighting!: Lighting;
+  private dialogue!: Dialogue;
   private caches: Cache[] = [];
+  private notes: WorldNote[] = [];
+  private gates: Gate[] = [];
+  private mira: NPCMira | null = null;
+  private boss: BossWhiteMaw | null = null;
   private subs = new Subscriptions();
 
   private mapData!: WorldMapData;
@@ -91,6 +104,10 @@ export class WorldScene extends Phaser.Scene {
     this.ending = false;
     this.pickups = [];
     this.caches = [];
+    this.notes = [];
+    this.gates = [];
+    this.mira = null;
+    this.boss = null;
 
     this.mapData = generateWorld(seed);
     this.buildTilemap();
@@ -126,7 +143,11 @@ export class WorldScene extends Phaser.Scene {
 
     this.buildOverlays();
     this.lighting = new Lighting(this);
+    this.dialogue = new Dialogue(this);
     this.buildCaches();
+    this.buildNotes();
+    this.buildGates();
+    this.buildInhabitants();
     this.buildPrompt();
     this.setupCamera();
 
@@ -143,6 +164,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.subs.add(bus.on('player:died', () => this.endDay('death')));
     this.subs.add(bus.on('enemy:killed', (e) => this.onEnemyKilled(e.type, e.x, e.y)));
+    this.subs.add(bus.on('boss:defeated', () => this.onBossDefeated()));
     this.events.once('shutdown', () => this.cleanup());
     this.cameras.main.fadeIn(280, 0, 0, 0);
   }
@@ -344,6 +366,52 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  private buildNotes(): void {
+    for (const def of NOTE_LIST) {
+      if (def.area === 'secret' && !state.map.secretFound) continue;
+      this.notes.push(
+        new WorldNote(this, def, def.tx * TILE_SIZE + TILE_SIZE / 2, def.ty * TILE_SIZE + TILE_SIZE),
+      );
+    }
+  }
+
+  private buildGates(): void {
+    for (const id of GATE_IDS) this.gates.push(new Gate(this, id, this.layer, this.juice));
+  }
+
+  /** The Alpha guards the cabin, Mira is inside it, and the Maw waits in the den. */
+  private buildInhabitants(): void {
+    if (!state.bosses.alphaDefeated) {
+      const alpha = this.enemyManager.spawn('alpha', 68 * TILE_SIZE, 18 * TILE_SIZE);
+      alpha.sprite.setScale(1.7);
+    }
+
+    if (!state.story.miraRescued) {
+      this.mira = new NPCMira(this, 64 * TILE_SIZE, 22 * TILE_SIZE, 'field');
+    }
+
+    if (!state.bosses.mawDefeated) {
+      this.boss = new BossWhiteMaw(
+        this,
+        88 * TILE_SIZE,
+        44 * TILE_SIZE,
+        this.player,
+        this.juice,
+        (x, y, count) => {
+          for (let i = 0; i < count; i++) {
+            this.enemyManager.spawn(
+              'rat',
+              x + Phaser.Math.Between(-30, 30),
+              y + Phaser.Math.Between(-24, 24),
+            );
+          }
+        },
+      );
+      this.combat.boss = this.boss;
+      this.physics.add.collider(this.boss.sprite, this.layer);
+    }
+  }
+
   private onWeaponFound(name: string, rarity: string): void {
     bus.emit('juice:toast', {
       text: `${name.toUpperCase()} found.`,
@@ -408,6 +476,7 @@ export class WorldScene extends Phaser.Scene {
     if (input.swapPressed) this.weapons.swap();
 
     this.enemyManager.update(dt, this.player.cx, this.player.cy);
+    this.boss?.update(dt);
     this.combat.update();
     this.enemyManager.sweep();
     this.enemyManager.setNight(this.clock.isNight, this.player.cx, this.player.cy);
@@ -444,6 +513,14 @@ export class WorldScene extends Phaser.Scene {
     if (state.run) state.run.kills++;
     state.stats.enemiesKilled[type] = (state.stats.enemiesKilled[type] ?? 0) + 1;
 
+    if (type === 'alpha' && !state.bosses.alphaDefeated) {
+      state.bosses.alphaDefeated = true;
+      bus.emit('juice:toast', {
+        text: 'The cabin is quiet now. Something is moving inside it.',
+        color: '#ffcf1f',
+      });
+    }
+
     const def = ENEMIES[type as EnemyId];
     if (!def) return;
     const rng = new Rng(hashString(`${type}:${Math.round(x)}:${Math.round(y)}`));
@@ -477,6 +554,29 @@ export class WorldScene extends Phaser.Scene {
       lights.push({ x: cache.cx, y: cache.cy, radius: 46 });
     }
     return lights;
+  }
+
+  /** Killing the Maw is the closing beat of this version. */
+  private onBossDefeated(): void {
+    state.bosses.mawDefeated = true;
+    UpgradeSystem.award('trophy');
+    const night = this.clock.bountyActive;
+    ResourceSystem.collect('scrap', 40, night);
+    ResourceSystem.collect('crystal', 5, night);
+    ResourceSystem.collect('medical', 2, night);
+    if (state.run) state.run.rareFinds += 2;
+
+    bus.emit('juice:toast', { text: 'The White Maw is dead.', color: '#ffffff' });
+    this.time.delayedCall(1400, () => {
+      this.dialogue.show(
+        [
+          'It takes a long time to stop moving.',
+          'Around its neck, under the fur, there is a collar. Cut, not broken.',
+          'Somebody let this out on purpose.',
+        ],
+        'The Den',
+      );
+    });
   }
 
   private updatePickups(dt: number): void {
@@ -569,6 +669,42 @@ export class WorldScene extends Phaser.Scene {
     const tx = Math.floor(this.player.cx / TILE_SIZE);
     const ty = Math.floor(this.player.cy / TILE_SIZE);
 
+    // A reading panel swallows the key, so E never does two things at once.
+    if (this.dialogue.isOpen) {
+      this.prompt.setVisible(false);
+      if (pressed) this.dialogue.advance();
+      return;
+    }
+
+    if (this.mira && this.mira.inRange(this.player.cx, this.player.cy) && this.mira.prompt) {
+      this.showPrompt(this.mira.prompt);
+      if (pressed) {
+        const lines = this.mira.interact();
+        if (lines.length) this.dialogue.show(lines, 'Mira');
+      }
+      return;
+    }
+
+    for (const note of this.notes) {
+      if (!note.inRange(this.player.cx, this.player.cy)) continue;
+      this.showPrompt('E  READ');
+      if (pressed) {
+        const def = note.take();
+        this.dialogue.show(def.body.split('\n'), def.title);
+      }
+      return;
+    }
+
+    for (const gate of this.gates) {
+      if (!gate.inRange(this.player.cx, this.player.cy)) continue;
+      this.showPrompt(gate.prompt);
+      if (pressed) {
+        const message = gate.strike();
+        if (message) this.dialogue.show([message]);
+      }
+      return;
+    }
+
     for (const cache of this.caches) {
       if (!cache.inRange(this.player.cx, this.player.cy)) continue;
       this.prompt
@@ -583,14 +719,22 @@ export class WorldScene extends Phaser.Scene {
     }
 
     if (rectContains(RETURN_ZONE, tx, ty)) {
-      this.prompt
-        .setText('E  RETURN TO CAMP')
-        .setPosition(Math.round(this.player.cx), Math.round(this.player.sprite.y) - 26)
-        .setVisible(true);
+      this.showPrompt('E  RETURN TO CAMP');
       if (pressed) this.endDay('return');
       return;
     }
     this.prompt.setVisible(false);
+  }
+
+  private showPrompt(text: string): void {
+    if (!text) {
+      this.prompt.setVisible(false);
+      return;
+    }
+    this.prompt
+      .setText(text)
+      .setPosition(Math.round(this.player.cx), Math.round(this.player.sprite.y) - 26)
+      .setVisible(true);
   }
 
   // --- ending the day ----------------------------------------------------
@@ -640,7 +784,12 @@ export class WorldScene extends Phaser.Scene {
     for (const p of this.pickups) p.destroy();
     this.pickups = [];
     for (const c of this.caches) c.destroy();
+    for (const n of this.notes) n.destroy();
     this.caches = [];
+    this.notes = [];
+    this.mira?.destroy();
+    this.boss?.destroy();
+    this.dialogue?.close();
     this.lighting?.destroy();
     this.enemyManager?.destroy();
     this.weapons?.destroy();

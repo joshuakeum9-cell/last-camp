@@ -5,6 +5,7 @@ import { BAL } from '../data/balance';
 import type { EnemyBase } from '../entities/EnemyBase';
 import type { ResourceNode } from '../entities/ResourceNode';
 import type { Breakable } from '../entities/Breakable';
+import type { BossWhiteMaw } from '../entities/BossWhiteMaw';
 import type { Player } from '../entities/Player';
 import type { SwingShape, WeaponDef } from '../data/weapons';
 import { UPGRADES } from '../data/upgrades';
@@ -45,6 +46,8 @@ export class CombatSystem {
   /** Harvestable scenery. A swing that misses an enemy should still fell a tree. */
   nodes: ResourceNode[] = [];
   breakables: Breakable[] = [];
+  /** The Maw is its own controller, so it is checked alongside the enemy list. */
+  boss: BossWhiteMaw | null = null;
 
   constructor(
     private scene: Phaser.Scene,
@@ -97,6 +100,19 @@ export class CombatSystem {
       if (!enemy.alive) result.killed++;
 
       if (!req.pierce) break;
+    }
+
+    if (this.boss?.alive && this.inSwing({ ...req, reach: req.reach + 20 }, this.boss.cx, this.boss.cy)) {
+      const crit = perfectCrit || Math.random() < req.crit;
+      const damage = Math.max(
+        1,
+        Math.round(req.damage * this.damageMultiplier() * (crit ? BAL.combat.critMultiplier : 1)),
+      );
+      this.boss.takeDamage(damage, req.x, req.y, req.knockback, crit);
+      if (req.stun > 0) this.boss.applyStun(req.stun);
+      if (req.flags.includes('lifesteal')) this.player.heal(Math.max(1, Math.round(damage * 0.1)), 'lifesteal');
+      result.hits++;
+      if (crit) result.crits++;
     }
 
     this.strikeScenery(req);
@@ -162,31 +178,41 @@ export class CombatSystem {
     const px = this.player.cx;
     const py = this.player.cy;
 
+    if (this.boss?.hitbox) this.checkHitbox(this.boss.hitbox, 'maw', now, px, py);
+
     for (const enemy of this.enemies) {
-      const box = enemy.hitbox;
-      if (!box || box.spent || now > box.until) continue;
-
-      const dist = Math.hypot(px - box.x, py - box.y);
-      if (dist > box.radius + BAL.player.bodyRadius) continue;
-
-      // A dash started just as the box opened is a read, not luck. Reward it.
-      const dashedInTime =
-        this.player.isDashing &&
-        Math.abs(this.player.lastDashAt - box.bornAt) <= BAL.dash.perfectWindow * 1000;
-
-      if (dashedInTime) {
-        box.spent = true;
-        this.player.awardPerfectDodge();
-        this.juice.ring(px, py, PAL.white, 34, 300);
-        this.juice.floatText(px, this.player.sprite.y - 30, 'PERFECT', PAL.gold, 1.2);
-        continue;
-      }
-
-      if (this.player.isInvulnerable) continue;
-
-      box.spent = true;
-      this.player.takeDamage(box.damage, box.x, box.y, enemy.def.id);
+      if (enemy.hitbox) this.checkHitbox(enemy.hitbox, enemy.def.id, now, px, py);
     }
+  }
+
+  /** Shared between ordinary enemies and the boss. */
+  private checkHitbox(
+    box: { x: number; y: number; radius: number; damage: number; until: number; spent: boolean; bornAt: number },
+    source: string,
+    now: number,
+    px: number,
+    py: number,
+  ): void {
+    if (box.spent || now > box.until) return;
+    const dist = Math.hypot(px - box.x, py - box.y);
+    if (dist > box.radius + BAL.player.bodyRadius) return;
+
+    // A dash started just as the box opened is a read, not luck. Reward it.
+    const dashedInTime =
+      this.player.isDashing &&
+      Math.abs(this.player.lastDashAt - box.bornAt) <= BAL.dash.perfectWindow * 1000;
+
+    if (dashedInTime) {
+      box.spent = true;
+      this.player.awardPerfectDodge();
+      this.juice.ring(px, py, PAL.white, 34, 300);
+      this.juice.floatText(px, this.player.sprite.y - 30, 'PERFECT', PAL.gold, 1.2);
+      return;
+    }
+
+    if (this.player.isInvulnerable) return;
+    box.spent = true;
+    this.player.takeDamage(box.damage, box.x, box.y, source);
   }
 
   /** Nearest living enemy within `range`, for aim assist and the bow. */
