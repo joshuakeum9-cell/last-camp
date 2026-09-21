@@ -16,12 +16,13 @@ const P: Record<string, string | null> = {
   s: 'snow',
   h: 'snowShade',
   g: 'grey',
-  G: 'greyDark',
   m: 'steel',
   t: 'teal',
   d: 'rust',
   D: 'navy',
   i: 'cyan',
+  G: 'greyDark',
+  P: 'blood',
 };
 
 /** The campfire. The most recognisable thing in the game, so it gets real frames. */
@@ -226,6 +227,190 @@ const GATE_POST = [
   '.ssss.',
 ];
 
+
+const COOKING_POT = [
+  '....m..........m....',
+  '.....m........m.....',
+  '......m......m......',
+  '.......m....m.......',
+  '........m..m........',
+  '.........mm.........',
+  '....GGGGGGGGGGGG....',
+  '...GmmmmmmmmmmmmG...',
+  '...GmwwwwwwwwwwmG...',
+  '...Gmwyyyyyyyywm G..',
+  '...Gmmmmmmmmmmmm G..',
+  '....GGGGGGGGGGGG....',
+  '.....G.G....G.G.....',
+  '.....sss....sss.....',
+  '...ssssssssssssss...',
+];
+
+const WEAPON_RACK = [
+  '..m....m.....m......',
+  '..m....m.....mm.....',
+  '.mmm..mmm...mmmm....',
+  '..m....m.....mm.....',
+  '..m....m.....m......',
+  'nnnnnnnnnnnnnnnnnnnn',
+  'kkkkkkkkkkkkkkkkkkkk',
+  'nkn..............nkn',
+  'nkn..............nkn',
+  'nkn..............nkn',
+  'nnn..............nnn',
+  'sss..............sss',
+  '.ssssssssssssssssss.',
+];
+
+const DRYING_RACK = [
+  'n..................n',
+  'nkkkkkkkkkkkkkkkkkkn',
+  'n.c...e...c....e...n',
+  'n.c...e...c....e...n',
+  'n.cc..ee..cc...ee..n',
+  'n.cc..ee..cc...ee..n',
+  'n..c...e...c....e..n',
+  'n..................n',
+  'n..................n',
+  'nn................nn',
+  'ss................ss',
+  '.ssssssssssssssssss.',
+];
+
+const LANTERN_POST = [
+  '..yyyy..',
+  '.yowwoy.',
+  'yowwwwoy',
+  'yowwwwoy',
+  '.yowwoy.',
+  '..oooo..',
+  '...nn...',
+  '...kn...',
+  '...nk...',
+  '...kn...',
+  '...nk...',
+  '...nn...',
+  '...kn...',
+  '...nk...',
+  '..ssss..',
+];
+
+/** A palisade section. Upright stakes, so a wall reads as a wall and not a plank. */
+const LOG_WALL = [
+  '.n..n..n..n..n..',
+  'nknknknknknknknk',
+  'nknknknknknknknk',
+  'nknknknknknknknk',
+  'nbnknknbnknknbnk',
+  'nknknknknknknknk',
+  'nknknknknknknknk',
+  'nknbnknknbnknknk',
+  'nknknknknknknknk',
+  'nknknknknknknknk',
+  'nbnknknknknbnknk',
+  'nknknknknknknknk',
+  'kkkkkkkkkkkkkkkk',
+  'ssssssssssssssss',
+  '.ssssssssssssss.',
+];
+
+const WATCHTOWER = [
+  '.......nn.......',
+  '......nkkn......',
+  '...nnnnnnnnnn...',
+  '..nkkkkkkkkkkn..',
+  '..nkyyyyyyyykn..',
+  '..nkkkkkkkkkkn..',
+  '...nnnnnnnnnn...',
+  '....n......n....',
+  '....nk....kn....',
+  '....n.nnnn.n....',
+  '...nk......kn...',
+  '...n........n...',
+  '...nk.nnnn.kn...',
+  '..nk........kn..',
+  '..n..........n..',
+  '..nk..nnnn..kn..',
+  '.nk..........kn.',
+  '.n............n.',
+  'nk....nnnn....kn',
+  'n..............n',
+  'sss..........sss',
+  '.ssssssssssssss.',
+];
+
+const SIGNAL_TABLE = [
+  '.......i........',
+  '.......i........',
+  '....GGGiGGG.....',
+  '...GmmmmmmmG....',
+  '...GmcicicmG....',
+  '...GmmmmmmmG....',
+  '...GmeimmimG....',
+  '...GmmmmmmmG....',
+  '...GGGGGGGGG....',
+  'nnnnnnnnnnnnnnnn',
+  'kkkkkkkkkkkkkkkk',
+  'nkn..........nkn',
+  'nkn..........nkn',
+  'nnn..........nnn',
+  'sss..........sss',
+  '.ssssssssssssss.',
+];
+
+const MEDICAL_TABLE = [
+  '..w...w...w.....',
+  '..P...c...P.....',
+  '..w...w...w.....',
+  'wwwwwwwwwwwwwwww',
+  'wPwwwwwwwwwwwwPw',
+  'wwwwwwwwwwwwwwww',
+  'nnnnnnnnnnnnnnnn',
+  'kkkkkkkkkkkkkkkk',
+  'nkn..........nkn',
+  'nkn..........nkn',
+  'nnn..........nnn',
+  'sss..........sss',
+  '.ssssssssssssss.',
+];
+
+const CABIN = [
+  '.........rr.........',
+  '........rrrr........',
+  '.......rrrrrr.......',
+  '......rrrrrrrr......',
+  '.....rrrrrrrrrr.....',
+  '....rrrrrrrrrrrr....',
+  '...rrrrrrrrrrrrrr...',
+  '..rrrrrrrrrrrrrrrr..',
+  '.rrrrrrrrrrrrrrrrrr.',
+  'rrrrrrrrrrrrrrrrrrrr',
+  'nnnnnnnnnnnnnnnnnnnn',
+  'nkkkkkkkkkkkkkkkkkkn',
+  'nkyyykkkkkkkkyyyykkn',
+  'nkyyykkkkkkkkyyyykkn',
+  'nkkkkkkkkkkkkkkkkkkn',
+  'nkkkkkkDDDDkkkkkkkkn',
+  'nkkkkkkDDDDkkkkkkkkn',
+  'nkkkkkkDDDDkkkkkkkkn',
+  'nnnnnnnDDDDnnnnnnnnn',
+  'ssssssssssssssssssss',
+];
+
+const TROPHY_SKULL = [
+  '...wwwwwwwww....',
+  '..wwwwwwwwwww...',
+  '.wwwwwwwwwwwww..',
+  'wwDDwwwwwwwDDww.',
+  'wwDDwwwwwwwDDww.',
+  'wwwwwwwwwwwwwww.',
+  'wwwwwwDDDwwwwww.',
+  '.wwwwwwwwwwwww..',
+  '..wwDwDwDwDww...',
+  '...wwwwwwwww....',
+  '....ww.w.ww.....',
+];
+
 export const CAMP_KEYS = {
   tentBroken: 'camp-tent-broken',
   tentPatched: 'camp-tent-patched',
@@ -234,6 +419,16 @@ export const CAMP_KEYS = {
   workbench: 'camp-workbench',
   noticeBoard: 'camp-notice-board',
   gatePost: 'camp-gate-post',
+  cookingPot: 'camp-cooking-pot',
+  weaponRack: 'camp-weapon-rack',
+  dryingRack: 'camp-drying-rack',
+  lanternPost: 'camp-lantern-post',
+  logWall: 'camp-log-wall',
+  watchtower: 'camp-watchtower',
+  signalTable: 'camp-signal-table',
+  medicalTable: 'camp-medical-table',
+  cabin: 'camp-cabin',
+  trophy: 'camp-trophy',
 } as const;
 
 export function buildCampArt(scene: Phaser.Scene): void {
@@ -246,4 +441,14 @@ export function buildCampArt(scene: Phaser.Scene): void {
   make(CAMP_KEYS.workbench, WORKBENCH);
   make(CAMP_KEYS.noticeBoard, NOTICE_BOARD);
   make(CAMP_KEYS.gatePost, GATE_POST);
+  make(CAMP_KEYS.cookingPot, COOKING_POT);
+  make(CAMP_KEYS.weaponRack, WEAPON_RACK);
+  make(CAMP_KEYS.dryingRack, DRYING_RACK);
+  make(CAMP_KEYS.lanternPost, LANTERN_POST);
+  make(CAMP_KEYS.logWall, LOG_WALL);
+  make(CAMP_KEYS.watchtower, WATCHTOWER);
+  make(CAMP_KEYS.signalTable, SIGNAL_TABLE);
+  make(CAMP_KEYS.medicalTable, MEDICAL_TABLE);
+  make(CAMP_KEYS.cabin, CABIN);
+  make(CAMP_KEYS.trophy, TROPHY_SKULL);
 }

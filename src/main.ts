@@ -7,8 +7,10 @@ import { CampScene } from './scenes/CampScene';
 import { WorldScene } from './scenes/WorldScene';
 import { HUDScene } from './scenes/HUDScene';
 import { SummaryScene } from './scenes/SummaryScene';
+import { MenuScene } from './scenes/MenuScene';
 import { DevScene } from './scenes/DevScene';
 import { SaveSystem } from './core/SaveSystem';
+import { state } from './core/GameState';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -36,7 +38,7 @@ const config: Phaser.Types.Core.GameConfig = {
   render: {
     powerPreference: 'high-performance',
   },
-  scene: [BootScene, TitleScene, CampScene, WorldScene, SummaryScene, HUDScene, DevScene],
+  scene: [BootScene, TitleScene, CampScene, WorldScene, SummaryScene, MenuScene, HUDScene, DevScene],
 };
 
 try {
@@ -71,6 +73,15 @@ try {
         s.cameras?.main?.resetFX();
       }
     },
+    /** Playtesting only: stock the camp so a later day can be reached quickly. */
+    grant(amount = 50) {
+      for (const id of Object.keys(state.camp.storage) as Array<keyof typeof state.camp.storage>) {
+        state.camp.storage[id] += amount;
+      }
+      SaveSystem.save();
+      return state.camp.storage;
+    },
+    state: () => state,
   };
 
   // Keep the camp safe if the tab is closed mid-session.

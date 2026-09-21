@@ -7,27 +7,29 @@ import { InputSystem } from '../core/InputSystem';
 import { Player } from '../entities/Player';
 import { Juice } from '../systems/Juice';
 import { Weather } from '../systems/Weather';
+import { ResourceSystem } from '../systems/ResourceSystem';
+import { UpgradeSystem } from '../systems/UpgradeSystem';
+import { CampSystem, type CampPlacement, type StationId } from '../systems/CampSystem';
 import { SOLID_TILES, TILE, TILESET_KEY, TILE_SIZE } from '../art/sprites/tiles';
 import { SCENERY_KEYS } from '../art/sprites/scenery';
-import { CAMP_KEYS, campfireSprite } from '../art/sprites/camp';
+import { campfireSprite } from '../art/sprites/camp';
 import { FX } from '../art/sprites/fx';
 import { hex, PAL } from '../art/palette';
 import { FONT } from '../art/PixelFont';
 import { Rng } from '../core/Rng';
 import { hud, resetHud } from '../core/HudState';
-import { ResourceSystem } from '../systems/ResourceSystem';
 
 interface Station {
+  id: StationId;
   x: number;
   y: number;
   radius: number;
   label: string;
-  action: () => void;
 }
 
 /**
- * The camp. Warm, small and safe: the emotional opposite of the map. Phase 4 adds the
- * upgrade menus and the level 1 to 5 transformations.
+ * The camp. Warm, small and safe: the emotional opposite of the map. Everything bought
+ * in the menu appears here on the ground, so progress is something you walk past.
  */
 export class CampScene extends Phaser.Scene {
   private input$!: InputSystem;
@@ -37,9 +39,10 @@ export class CampScene extends Phaser.Scene {
   private subs = new Subscriptions();
 
   private layer!: Phaser.Tilemaps.TilemapLayer;
+  private campLayer!: Phaser.GameObjects.Container;
+  private lightLayer!: Phaser.GameObjects.Container;
   private stations: Station[] = [];
   private prompt!: Phaser.GameObjects.BitmapText;
-  private fireGlow!: Phaser.GameObjects.Image;
 
   constructor() {
     super('Camp');
@@ -49,14 +52,20 @@ export class CampScene extends Phaser.Scene {
     state.run = null;
     resetHud();
     hud.context = 'camp';
+    UpgradeSystem.refreshCampLevel();
     SaveSystem.save();
 
     this.buildGround();
-    this.player = new Player(this, 15 * TILE_SIZE + 8, 15 * TILE_SIZE);
+    this.buildTreeline();
+
+    this.campLayer = this.add.container(0, 0);
+    this.lightLayer = this.add.container(0, 0);
+
+    this.player = new Player(this, 15 * TILE_SIZE + 8, 16 * TILE_SIZE);
     this.player.setMaxHp(ResourceSystem.maxHp(), true);
     this.physics.add.collider(this.player.sprite, this.layer);
 
-    this.buildCamp();
+    this.rebuildCamp();
 
     this.input$ = new InputSystem(this);
     this.juice = new Juice(this);
@@ -79,30 +88,30 @@ export class CampScene extends Phaser.Scene {
     if (!this.scene.isActive('HUD')) this.scene.launch('HUD');
     this.scene.bringToTop('HUD');
 
+    this.showMorningReport();
     this.events.once('shutdown', () => this.cleanup());
   }
+
+  // --- ground ------------------------------------------------------------
 
   private buildGround(): void {
     const { cols, rows } = BAL.camp;
     const rng = new Rng(7);
     const data: number[][] = [];
+
     for (let y = 0; y < rows; y++) {
       const row: number[] = [];
       for (let x = 0; x < cols; x++) {
-        const edge = x < 2 || y < 2 || x >= cols - 2 || y >= rows - 2;
-        if (edge) {
+        if (x < 2 || y < 2 || x >= cols - 2 || y >= rows - 2) {
           row.push(TILE.CLIFF);
           continue;
         }
         // Trodden ground only where people actually walk: a ragged patch round the fire.
         const dist = Math.hypot((x - 15) * 0.85, y - 12);
         const ragged =
-          dist +
-          Math.sin(x * 0.9) * 0.8 +
-          Math.cos(y * 1.3 + x * 0.4) * 0.7 +
-          rng.range(-0.4, 0.4);
-        if (ragged < 4.4) row.push(rng.pick([TILE.CAMP_A, TILE.CAMP_A, TILE.CAMP_B]));
-        else if (ragged < 6.2) row.push(rng.chance(0.45) ? TILE.CAMP_B : TILE.SNOW_B);
+          dist + Math.sin(x * 0.9) * 0.8 + Math.cos(y * 1.3 + x * 0.4) * 0.7 + rng.range(-0.4, 0.4);
+        if (ragged < 6.4) row.push(rng.pick([TILE.CAMP_A, TILE.CAMP_A, TILE.CAMP_B]));
+        else if (ragged < 8.4) row.push(rng.chance(0.45) ? TILE.CAMP_B : TILE.SNOW_B);
         else row.push(rng.pick([TILE.SNOW_A, TILE.SNOW_A, TILE.SNOW_B, TILE.SNOW_C]));
       }
       data.push(row);
@@ -126,150 +135,205 @@ export class CampScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
   }
 
-  private buildCamp(): void {
-    const t = (n: number) => n * TILE_SIZE;
-
-    // Trees around the edge, so the camp feels like a clearing someone chose.
+  private buildTreeline(): void {
     const rng = new Rng(11);
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 18; i++) {
       const edge = rng.int(0, 3);
       const x = edge < 2 ? rng.int(2, 28) : edge === 2 ? rng.int(2, 5) : rng.int(25, 28);
       const y = edge < 2 ? (edge === 0 ? rng.int(2, 4) : rng.int(16, 18)) : rng.int(2, 18);
-      if (Math.hypot(x - 15, y - 11) < 8) continue;
+      if (Math.hypot(x - 15, y - 12) < 10) continue;
+      const px = x * TILE_SIZE + 8;
+      const py = y * TILE_SIZE + TILE_SIZE;
       this.add
-        .image(t(x) + 8, t(y) + 16, rng.chance(0.3) ? SCENERY_KEYS.pineSmall : SCENERY_KEYS.pine)
+        .ellipse(px, py - 1, 22, 7, hex(PAL.blue))
+        .setAlpha(0.28)
+        .setDepth(py - 2);
+      this.add
+        .image(px, py, rng.chance(0.3) ? SCENERY_KEYS.pineSmall : SCENERY_KEYS.pine)
         .setOrigin(0.5, 1)
-        .setScale(1.25)
-        .setDepth(t(y) + 16);
+        .setScale(1.3)
+        .setDepth(py);
+    }
+  }
+
+  // --- the camp itself ---------------------------------------------------
+
+  /** Rebuilt whenever something is bought, so a purchase changes the view at once. */
+  rebuildCamp(): void {
+    this.campLayer.removeAll(true);
+    this.lightLayer.removeAll(true);
+    this.stations = [];
+
+    for (const p of CampSystem.placements()) this.place(p);
+
+    for (const light of CampSystem.lightSources()) {
+      const glow = this.add
+        .image(light.tx * TILE_SIZE + 8, light.ty * TILE_SIZE, FX.glowLarge)
+        .setTint(hex(PAL.orange))
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setAlpha(light.intensity)
+        .setScale(light.radius / 80)
+        .setDepth(4990);
+      this.lightLayer.add(glow);
+      this.tweens.add({
+        targets: glow,
+        alpha: light.intensity * 1.35,
+        scale: (light.radius / 80) * 1.12,
+        duration: 820 + light.tx * 37,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
     }
 
-    // --- the fire --------------------------------------------------------
-    const fx = t(15);
-    const fy = t(12);
-    this.fireGlow = this.add
-      .image(fx, fy - 8, FX.glowLarge)
-      .setTint(hex(PAL.orange))
-      .setBlendMode(Phaser.BlendModes.ADD)
-      .setAlpha(0.45)
-      .setScale(1.0)
-      .setDepth(fy - 20);
-    this.tweens.add({
-      targets: this.fireGlow,
-      alpha: 0.62,
-      scale: 1.14,
-      duration: 820,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
+    // The way out is always available, wherever the camp has got to.
+    this.stations.push({
+      id: 'gate',
+      x: 22 * TILE_SIZE + 8,
+      y: 12.5 * TILE_SIZE,
+      radius: 32,
+      label: `E  HEAD OUT.  DAY ${state.day}`,
     });
-    this.add
-      .sprite(fx, fy, campfireSprite.key)
-      .setOrigin(0.5, 1)
-      .setScale(1.75)
-      .setDepth(fy)
-      .play(`${campfireSprite.key}_burn`);
+  }
 
-    // Embers drifting up from the fire. Small, but it makes the camp feel alive.
-    const embers = this.add.particles(fx, fy - 6, FX.dot1, {
-      speedY: { min: -34, max: -14 },
-      speedX: { min: -9, max: 9 },
-      lifespan: { min: 900, max: 1700 },
-      scale: { min: 0.8, max: 1.6 },
-      alpha: { start: 0.9, end: 0 },
-      tint: [hex(PAL.gold), hex(PAL.orange), hex(PAL.ember)],
-      frequency: 180,
-      blendMode: Phaser.BlendModes.ADD,
-    });
-    embers.setDepth(fy + 1);
+  private place(p: CampPlacement): void {
+    const x = p.tx * TILE_SIZE + 8;
+    const y = p.ty * TILE_SIZE + TILE_SIZE;
+    const depth = p.behind ? 1 : y;
 
-    // --- props -----------------------------------------------------------
-    const tent = this.add
-      .image(t(11) + 8, t(11), CAMP_KEYS.tentBroken)
-      .setOrigin(0.5, 1)
-      .setScale(1.5)
-      .setDepth(t(11));
-    const crate = this.add
-      .image(t(19), t(13), CAMP_KEYS.crateStack)
-      .setOrigin(0.5, 1)
-      .setScale(1.4)
-      .setDepth(t(13));
-    this.add
-      .image(t(13), t(14) + 6, CAMP_KEYS.log)
-      .setOrigin(0.5, 1)
-      .setScale(1.5)
-      .setDepth(t(14) + 6);
-    const board = this.add
-      .image(t(18), t(9), CAMP_KEYS.noticeBoard)
-      .setOrigin(0.5, 1)
-      .setScale(1.4)
-      .setDepth(t(9));
-
-    // --- the gate out ----------------------------------------------------
-    for (const gy of [10, 14]) {
-      this.add
-        .image(t(25), t(gy), CAMP_KEYS.gatePost)
-        .setOrigin(0.5, 1)
-        .setScale(1.6)
-        .setDepth(t(gy));
+    let obj: Phaser.GameObjects.Image | Phaser.GameObjects.Sprite;
+    if (p.key === 'campfire') {
+      obj = this.add.sprite(x, y, campfireSprite.key).play(`${campfireSprite.key}_burn`);
+      const embers = this.add.particles(x, y - 6, FX.dot1, {
+        speedY: { min: -34, max: -14 },
+        speedX: { min: -9, max: 9 },
+        lifespan: { min: 900, max: 1700 },
+        scale: { min: 0.8, max: 1.6 },
+        alpha: { start: 0.9, end: 0 },
+        tint: [hex(PAL.gold), hex(PAL.orange), hex(PAL.ember)],
+        frequency: 160,
+        blendMode: Phaser.BlendModes.ADD,
+      });
+      embers.setDepth(y + 1);
+      this.campLayer.add(embers);
+    } else {
+      obj = this.add.image(x, y, p.key);
     }
 
-    this.stations = [
-      { x: fx, y: fy - 6, radius: 26, label: 'E  WARM UP', action: () => this.warmUp() },
-      {
-        x: crate.x,
-        y: crate.y - 6,
-        radius: 22,
-        label: 'E  STORAGE',
-        action: () => this.notYet('Storage opens once you have something to store.'),
-      },
-      {
-        x: board.x,
-        y: board.y - 6,
-        radius: 22,
-        label: 'E  NOTICE BOARD',
-        action: () => this.notYet('The board is bare. Nothing has happened yet.'),
-      },
-      {
-        x: tent.x,
-        y: tent.y - 6,
-        radius: 24,
-        label: 'E  SHELTER',
-        action: () => this.notYet('The tent barely keeps the wind out.'),
-      },
-      { x: t(25), y: t(12), radius: 30, label: `E  HEAD OUT.  DAY ${state.day}`, action: () => this.headOut() },
-    ];
+    obj.setOrigin(0.5, 1).setScale(p.scale).setDepth(depth).setFlipX(!!p.flip);
+    this.campLayer.add(obj);
+
+    if (p.station) {
+      this.stations.push({
+        id: p.station,
+        x,
+        y: y - obj.displayHeight * 0.4,
+        radius: 26,
+        label: STATION_LABEL[p.station],
+      });
+    }
   }
 
   private buildAmbient(): void {
     const { width, height } = BAL.view;
-    // Warm overlay: coming home is literally a change of temperature on screen.
     this.add
       .rectangle(0, 0, width, height, hex(PAL.orange))
       .setOrigin(0)
       .setScrollFactor(0)
       .setAlpha(0.1)
       .setDepth(5000);
+  }
 
-    // A broad firelight wash over the whole camp, so home reads warm at a glance.
-    this.add
-      .image(15 * TILE_SIZE, 12 * TILE_SIZE, FX.glowHuge)
-      .setTint(hex(PAL.orange))
-      .setBlendMode(Phaser.BlendModes.ADD)
-      .setAlpha(0.1)
-      .setScale(0.75)
-      .setDepth(4999);
+  /**
+   * One line before the player leaves: the weather, and something that happened while
+   * they slept. It gives every day a hook of its own.
+   */
+  private showMorningReport(): void {
+    if (state.story.reportSeenDay === state.day) return;
+    state.story.reportSeenDay = state.day;
+
+    const lines: string[] = [];
+    if (state.day === 1) {
+      lines.push('You do not remember getting here. The fire was already burning.');
+    } else if (state.day >= BAL.day.stormFromDay) {
+      lines.push('The sky is the colour of old iron. There is weather coming.');
+    } else {
+      lines.push('Clear, and colder than yesterday.');
+    }
+
+    if (state.stats.deaths > 0 && state.day > 1) {
+      lines.push('Your hands still do not work properly.');
+    }
+    if (state.map.discoveredAreas.includes('road') && !state.story.miraRescued) {
+      lines.push('Something was howling out past the road last night.');
+    }
+
+    const { width } = BAL.view;
+    const text = lines.join('\n');
+    const label = this.add
+      .bitmapText(Math.round(width / 2), 40, FONT, text)
+      .setOrigin(0.5, 0)
+      .setTint(hex(PAL.cream))
+      .setCenterAlign()
+      .setScrollFactor(0)
+      .setDepth(7600)
+      .setAlpha(0);
+
+    this.tweens.add({
+      targets: label,
+      alpha: 1,
+      duration: 600,
+      hold: 3200,
+      yoyo: true,
+      onComplete: () => label.destroy(),
+    });
   }
 
   // --- interactions ------------------------------------------------------
 
-  private warmUp(): void {
-    this.player.heal(this.player.maxHp, 'fire');
-    this.juice.floatText(this.player.cx, this.player.sprite.y - 24, 'WARM', PAL.gold);
-    bus.emit('audio:play', { cue: 'warm' });
+  private useStation(id: StationId): void {
+    switch (id) {
+      case 'fire':
+        this.player.heal(this.player.maxHp, 'fire');
+        this.juice.floatText(this.player.cx, this.player.sprite.y - 24, 'WARM', PAL.gold);
+        bus.emit('audio:play', { cue: 'warm' });
+        break;
+
+      case 'gate':
+        this.headOut();
+        break;
+
+      case 'workbench':
+      case 'weaponrack':
+        this.openMenu('weapons');
+        break;
+
+      case 'storage':
+      case 'cookpot':
+      case 'medtable':
+        this.openMenu('inventory');
+        break;
+
+      case 'shelter':
+      case 'watchtower':
+      case 'signaltable':
+        this.openMenu('camp');
+        break;
+
+      case 'board':
+        this.openMenu('camp');
+        break;
+
+      default:
+        this.openMenu('camp');
+    }
   }
 
-  private notYet(message: string): void {
-    this.juice.floatText(this.player.cx, this.player.sprite.y - 24, message, PAL.cream, 1);
+  private openMenu(tab: string): void {
+    this.input$.flush();
+    this.scene.pause();
+    this.scene.launch('Menu', { tab });
+    this.scene.bringToTop('Menu');
   }
 
   private headOut(): void {
@@ -311,7 +375,7 @@ export class CampScene extends Phaser.Scene {
         .setText(nearest.label)
         .setPosition(Math.round(this.player.cx), Math.round(this.player.sprite.y) - 26)
         .setVisible(true);
-      if (input.interactPressed) nearest.action();
+      if (input.interactPressed) this.useStation(nearest.id);
     } else {
       this.prompt.setVisible(false);
     }
@@ -324,3 +388,19 @@ export class CampScene extends Phaser.Scene {
     this.player?.destroy();
   }
 }
+
+const STATION_LABEL: Record<StationId, string> = {
+  fire: 'E  WARM UP',
+  workbench: 'E  WORKBENCH',
+  storage: 'E  STORAGE',
+  board: 'E  NOTICE BOARD',
+  shelter: 'E  SHELTER',
+  cookpot: 'E  COOKING POT',
+  medtable: 'E  MEDICAL TABLE',
+  weaponrack: 'E  WEAPON RACK',
+  watchtower: 'E  WATCHTOWER',
+  signaltable: 'E  SIGNAL TABLE',
+  mira: 'E  TALK TO MIRA',
+  supplydrop: 'E  SUPPLY DROP',
+  gate: 'E  HEAD OUT',
+};
