@@ -23,6 +23,8 @@ const P: Record<string, string | null> = {
   i: 'cyan',
   G: 'greyDark',
   P: 'blood',
+  v: 'violet',
+  V: 'violetDark',
 };
 
 /** The campfire. The most recognisable thing in the game, so it gets real frames. */
@@ -466,6 +468,120 @@ const HANGING_LANTERN = [
   '...ssss...',
 ];
 
+
+/**
+ * The way out. A swirl in four frames, cycled at the scene, so it turns without
+ * needing a spritesheet.
+ */
+const PORTAL_FRAMES: string[][] = [
+  [
+    '......DDDD......',
+    '....DDvvvvDD....',
+    '...DDvvvvvvDD...',
+    '..DDVVVVVvvvDD..',
+    '..DVViiiVVvvvD..',
+    '.DVViiiDiVVvVVD.',
+    '.DVViiDDDiVVVVD.',
+    '.VVViiDDiDiVVVV.',
+    'DVVVViiDiiiVVVVD',
+    'DvVVViDDwiiiVVVD',
+    'DvvViDiiwiiiiiVD',
+    'DvvViiwwwiiiiiVD',
+    'DvvVDiwiiDDDiiVD',
+    'DvvVDiiiwiiDiVvD',
+    'DvviDiDDwwiDiVvD',
+    'DvvVDDDDiiDDiVvD',
+    '.vvViDiiiDiiVvv.',
+    '.DvViiiiiiVVvvD.',
+    '.DvviiiVVVVvvvD.',
+    '..DvViiVVVvvvD..',
+    '..DDvVVVVVvvDD..',
+    '...DDVVVVVvDD...',
+    '....DDvVVvDD....',
+    '......DDDD......',
+  ],
+  [
+    '......DDDD......',
+    '....DDvvvvDD....',
+    '...DDVVVVvvDD...',
+    '..DDVVViiVvvDD..',
+    '..DVVViiiiVvvD..',
+    '.DvvVViiDiiVvvD.',
+    '.DvvVViiDDiVvvD.',
+    '.vvvVViiDiDVvvv.',
+    'DvvVViDDDiDiVvvD',
+    'DvvViDiiDiiiVvvD',
+    'DvviDiwwiwiiVVVD',
+    'DvViDiwwwwDiVVVD',
+    'DvViDiiwiiDiVVVD',
+    'DvViDDDwiDiiiVVD',
+    'DvViDiDwwDDiiiVD',
+    'DvViiiiiiiDDiVVD',
+    '.vViiiiDiiDiiVv.',
+    '.DViiVViDDiiVvD.',
+    '.DvVVVVViiiVVvD.',
+    '..DVVVVVVVVvvD..',
+    '..DDVVvvvvvvDD..',
+    '...DDVvvvvvDD...',
+    '....DDvvvvDD....',
+    '......DDDD......',
+  ],
+  [
+    '......DDDD......',
+    '....DDvVVvDD....',
+    '...DDvVVVVVDD...',
+    '..DDvvVVVVVvDD..',
+    '..DvvvVVViiVvD..',
+    '.DvvvVVVViiivvD.',
+    '.DvvVViiiiiiVvD.',
+    '.vvViiDiiiDiVvv.',
+    'DvViDDiiDDDDVvvD',
+    'DvViDiwwDDiDivvD',
+    'DvViDiiwiiiDVvvD',
+    'DViiDDDiiwiDVvvD',
+    'DViiiiiwwwiiVvvD',
+    'DViiiiiwiiDiVvvD',
+    'DVVViiiwDDiVVVvD',
+    'DVVVViiiDiiVVVVD',
+    '.VVVViDiDDiiVVV.',
+    '.DVVVViDDDiiVVD.',
+    '.DVVvVViDiiiVVD.',
+    '..DvvvVViiiVVD..',
+    '..DDvvvVVVVVDD..',
+    '...DDvvvvvvDD...',
+    '....DDvvvvDD....',
+    '......DDDD......',
+  ],
+  [
+    '......DDDD......',
+    '....DDvvvvDD....',
+    '...DDvvvvvVDD...',
+    '..DDvvvvvvVVDD..',
+    '..DvvVVVVVVVVD..',
+    '.DvVViiiVVVVVvD.',
+    '.DvViiDDiVViiVD.',
+    '.vViiDiiDiiiiVv.',
+    'DVViDDiiiiiiiVvD',
+    'DViiiDDwwDiDiVvD',
+    'DVViiiDiwDDDiVvD',
+    'DVVViDiiwiiDiVvD',
+    'DVVViDwwwwiDiVvD',
+    'DVVViiwiwwiDivvD',
+    'DvvViiiDiiDiVvvD',
+    'DvvViDiDDDiVVvvD',
+    '.vvvVDiDiiVVvvv.',
+    '.DvvViDDiiVVvvD.',
+    '.DvvViiDiiVVvvD.',
+    '..DvvViiiiVVVD..',
+    '..DDvvViiVVVDD..',
+    '...DDvvVVVVDD...',
+    '....DDvvvvDD....',
+    '......DDDD......',
+  ],
+];
+
+export const PORTAL_FRAME_KEYS = ['camp-portal-0', 'camp-portal-1', 'camp-portal-2', 'camp-portal-3'] as const;
+
 export const CAMP_KEYS = {
   tentBroken: 'camp-tent-broken',
   tentPatched: 'camp-tent-patched',
@@ -500,6 +616,7 @@ export function buildCampArt(scene: Phaser.Scene): void {
   make(CAMP_KEYS.workbench, WORKBENCH);
   make(CAMP_KEYS.noticeBoard, NOTICE_BOARD);
   make(CAMP_KEYS.gatePost, GATE_POST);
+  PORTAL_FRAMES.forEach((rows, i) => make(PORTAL_FRAME_KEYS[i], rows));
   make(CAMP_KEYS.cookingPot, COOKING_POT);
   make(CAMP_KEYS.weaponRack, WEAPON_RACK);
   make(CAMP_KEYS.dryingRack, DRYING_RACK);

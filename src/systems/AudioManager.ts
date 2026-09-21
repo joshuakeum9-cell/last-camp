@@ -317,6 +317,10 @@ const CUES: Record<string, CueFn> = {
       blip(c, o, n, { freq: f, dur: 0.4, type: 'triangle', gain: 0.07 * p.volume, delay: i * 0.02 });
     }
   },
+  portal: (c, o, n, p) => {
+    blip(c, o, n, { freq: 180, to: 720, dur: 0.55, type: 'triangle', gain: 0.09 * p.volume });
+    blip(c, o, n + 0.08, { freq: 360, to: 1440, dur: 0.45, type: 'sine', gain: 0.05 * p.volume });
+  },
   warm: (c, o, n, p) => blip(c, o, n, { freq: 196, to: 330, dur: 0.6, type: 'sine', gain: 0.07 * p.volume }),
   note: (c, o, n, p) => blip(c, o, n, { freq: 1200, to: 900, dur: 0.14, type: 'sine', gain: 0.05 * p.volume }),
   discover: (c, o, n, p) => {

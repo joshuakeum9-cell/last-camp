@@ -15,8 +15,7 @@ export type StationId =
   | 'watchtower'
   | 'signaltable'
   | 'mira'
-  | 'supplydrop'
-  | 'gate';
+  | 'supplydrop';
 
 export interface CampPlacement {
   key: string;
@@ -118,7 +117,7 @@ export const CampSystem = {
     add({ key: SCENERY_KEYS.rockSmall, tx: 9, ty: 8, scale: 1.1, flip: true });
     add({ key: SCENERY_KEYS.grassTuft, tx: 24, ty: 15, scale: 1.2 });
     add({ key: SCENERY_KEYS.grassTuft, tx: 7, ty: 12, scale: 1.1 });
-    add({ key: SCENERY_KEYS.deadShrub, tx: 24, ty: 11, scale: 1.1 });
+    add({ key: SCENERY_KEYS.deadShrub, tx: 8, ty: 9, scale: 1.1 });
     add({ key: SCENERY_KEYS.fallenLog, tx: 7, ty: 17, scale: 1.2 });
 
     // --- bought stations -------------------------------------------------
@@ -157,8 +156,10 @@ export const CampSystem = {
     }
 
     // --- the way out -----------------------------------------------------
-    add({ key: CAMP_KEYS.gatePost, tx: 22, ty: 11, scale: 1.5 });
-    add({ key: CAMP_KEYS.gatePost, tx: 22, ty: 14, scale: 1.5 });
+    // A portal on the right edge. Walking into it starts the day; no key needed.
+    add({ key: CAMP_KEYS.gatePost, tx: 24.6, ty: 14, scale: 1.5 });
+    add({ key: CAMP_KEYS.gatePost, tx: 27.4, ty: 14, scale: 1.5 });
+    add({ key: 'portal', tx: 26, ty: 13.5, scale: 1.6 });
 
     return out;
   },

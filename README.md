@@ -84,7 +84,7 @@ actually yours. A restored camp always starts at camp rather than mid-expedition
 
 ## The first five minutes
 
-Leave camp through the gate on the right. Hit trees for wood and bushes for food. Two
+Walk into the portal on the right edge of camp to head out. Hit trees for wood and bushes for food. Two
 or three hits fells a pine. Rats come in packs and die in two swings of the axe. When
 the clock at the top reaches **NIGHTFALL**, a compass appears pointing home and
 everything you pick up after that is worth half as much again, if you live to carry it

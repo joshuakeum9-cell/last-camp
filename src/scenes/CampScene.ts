@@ -14,7 +14,7 @@ import { SOLID_TILES, TILE, TILE_SIZE } from '../art/sprites/tiles';
 import { TilesetBuilder, applyTransitions } from '../art/sprites/transitions';
 import { isSolidIndex } from '../systems/MapGen';
 import { SCENERY_KEYS } from '../art/sprites/scenery';
-import { campfireSprite } from '../art/sprites/camp';
+import { campfireSprite, PORTAL_FRAME_KEYS } from '../art/sprites/camp';
 import { FX } from '../art/sprites/fx';
 import { hex, PAL } from '../art/palette';
 import { FONT } from '../art/PixelFont';
@@ -57,6 +57,10 @@ export class CampScene extends Phaser.Scene {
   private cold = 0;
   private fireX = 15 * TILE_SIZE + 8;
   private fireY = 12 * TILE_SIZE;
+  private portalX = 0;
+  private portalY = 0;
+  private portalFrame = 0;
+  private leaving = false;
 
   constructor() {
     super('Camp');
@@ -173,6 +177,8 @@ export class CampScene extends Phaser.Scene {
       const x = edge < 2 ? rng.int(2, 28) : edge === 2 ? rng.int(2, 5) : rng.int(25, 28);
       const y = edge < 2 ? (edge === 0 ? rng.int(2, 4) : rng.int(16, 18)) : rng.int(2, 18);
       if (Math.hypot(x - 15, y - 12) < 10) continue;
+      // Nothing leaning over the portal.
+      if (Math.hypot(x - 26, y - 13) < 4.5) continue;
       const px = x * TILE_SIZE + 8;
       const py = y * TILE_SIZE + TILE_SIZE;
       this.add
@@ -231,20 +237,17 @@ export class CampScene extends Phaser.Scene {
       });
     }
 
-    // The way out is always available, wherever the camp has got to.
-    this.stations.push({
-      id: 'gate',
-      x: 22 * TILE_SIZE + 8,
-      y: 12.5 * TILE_SIZE,
-      radius: 32,
-      label: `Head out, day ${state.day}`,
-    });
   }
 
   private place(p: CampPlacement): void {
     const x = p.tx * TILE_SIZE + 8;
     const y = p.ty * TILE_SIZE + TILE_SIZE;
     const depth = p.behind ? 1 : y;
+
+    if (p.key === 'portal') {
+      this.placePortal(x, y, p.scale);
+      return;
+    }
 
     let obj: Phaser.GameObjects.Image | Phaser.GameObjects.Sprite;
     if (p.key === 'campfire') {
@@ -277,6 +280,84 @@ export class CampScene extends Phaser.Scene {
         label: STATION_LABEL[p.station],
       });
     }
+  }
+
+  /**
+   * The way out. It is a thing you walk into, not a thing you press a key at, so
+   * heading out feels like a decision made with your feet.
+   */
+  private placePortal(x: number, y: number, scale: number): void {
+    const centreY = y - 12 * scale;
+    this.portalX = x;
+    this.portalY = centreY;
+
+    const glow = this.add
+      .image(x, centreY, FX.glowMed)
+      .setTint(hex(PAL.violet))
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setAlpha(0.55)
+      .setScale(1.1)
+      .setDepth(y - 1);
+    this.campLayer.add(glow);
+    this.tweens.add({
+      targets: glow,
+      alpha: 0.85,
+      scale: 1.3,
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    const swirl = this.add
+      .sprite(x, y, PORTAL_FRAME_KEYS[0])
+      .setOrigin(0.5, 1)
+      .setScale(scale)
+      .setDepth(y);
+    this.campLayer.add(swirl);
+    this.time.addEvent({
+      delay: 130,
+      loop: true,
+      callback: () => {
+        if (!swirl.active) return;
+        this.portalFrame = (this.portalFrame + 1) % PORTAL_FRAME_KEYS.length;
+        swirl.setTexture(PORTAL_FRAME_KEYS[this.portalFrame]);
+      },
+    });
+
+    // Motes drawn in from around the rim, so it reads as pulling rather than pushing.
+    const motes = this.add.particles(x, centreY, FX.dot1, {
+      emitZone: {
+        type: 'edge',
+        source: new Phaser.Geom.Ellipse(0, 0, 40 * scale, 56 * scale),
+        quantity: 24,
+      },
+      moveToX: 0,
+      moveToY: 0,
+      lifespan: { min: 500, max: 900 },
+      scale: { start: 1.4, end: 0.3 },
+      alpha: { start: 0.9, end: 0 },
+      tint: [hex(PAL.cyan), hex(PAL.violet), hex(PAL.white)],
+      frequency: 70,
+      blendMode: Phaser.BlendModes.ADD,
+    });
+    motes.setDepth(y + 1);
+    this.campLayer.add(motes);
+
+    const sign = new Label(this, x, centreY - 22 * scale, 'HEAD OUT', {
+      color: PAL.cyan,
+      originX: 0.5,
+      align: 'center',
+    }).setDepth(y + 2);
+    this.campLayer.add(sign.container);
+    this.tweens.add({
+      targets: sign.container,
+      y: centreY - 22 * scale - 3,
+      duration: 900,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
   }
 
   private buildAmbient(): void {
@@ -364,10 +445,6 @@ export class CampScene extends Phaser.Scene {
         bus.emit('audio:play', { cue: 'warm' });
         break;
 
-      case 'gate':
-        this.headOut();
-        break;
-
       case 'workbench':
       case 'weaponrack':
         this.openMenu('weapons');
@@ -428,21 +505,54 @@ export class CampScene extends Phaser.Scene {
   }
 
   private headOut(): void {
+    if (this.leaving) return;
+    this.leaving = true;
+
     const storm = state.day >= BAL.day.stormFromDay && Math.random() < BAL.day.stormChance;
     state.run = newRunState(Date.now() & 0xffffff, ResourceSystem.maxHp(), storm);
     SaveSystem.save();
     bus.emit('day:started', { day: state.day });
+    bus.emit('audio:play', { cue: 'portal' });
 
-    this.cameras.main.fadeOut(280, 0, 0, 0);
-    this.time.delayedCall(310, () => this.scene.start('World'));
+    // Pulled into the swirl: the sprite shrinks to the portal's centre as the
+    // screen goes to black.
+    const body = this.player.sprite.body as Phaser.Physics.Arcade.Body | null;
+    body?.setVelocity(0, 0);
+    this.tweens.add({
+      targets: this.player.sprite,
+      x: this.portalX,
+      y: this.portalY + 6,
+      scale: 0.15,
+      alpha: 0.2,
+      angle: 180,
+      duration: 340,
+      ease: 'Quad.easeIn',
+    });
+    this.cameras.main.flash(120, 140, 80, 255);
+    this.cameras.main.fadeOut(360, 0, 0, 0);
+    this.time.delayedCall(400, () => this.scene.start('World'));
   }
 
   // --- loop --------------------------------------------------------------
 
   update(_time: number, delta: number): void {
     const dt = Math.min(delta, 50);
+    if (this.leaving) {
+      this.weather.update(dt, 0.1);
+      return;
+    }
     const input = this.input$.update(this.player.cx, this.player.cy);
     this.player.update(dt, input);
+
+    // Walk into the portal and the day starts. No prompt, no key.
+    if (
+      !this.dialogue.isOpen &&
+      Phaser.Math.Distance.Between(this.player.cx, this.player.cy, this.portalX, this.portalY) <
+        BAL.camp.portalRadius
+    ) {
+      this.headOut();
+      return;
+    }
     this.weather.update(dt, 0.1);
 
     this.recoverAtFire(dt);
@@ -527,5 +637,4 @@ const STATION_LABEL: Record<StationId, string> = {
   signaltable: 'Work the radio',
   mira: 'Talk to Mira',
   supplydrop: 'Open supply drop',
-  gate: 'Head out',
 };

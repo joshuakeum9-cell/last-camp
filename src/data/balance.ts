@@ -126,6 +126,8 @@ export const BAL = {
     fireColdPerSec: 14,
     /** How close to the fire counts, in pixels. */
     fireRadius: 84,
+    /** Walk this close to the portal's centre and the day starts. */
+    portalRadius: 14,
   },
   eat: {
     /** Seconds between bites, so a stack of food cannot be inhaled mid-fight. */
