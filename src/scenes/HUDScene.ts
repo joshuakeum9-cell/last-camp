@@ -9,6 +9,8 @@ import { Label } from '../ui/Label';
 import { hex, PAL } from '../art/palette';
 import { RESOURCE_IDS, type ResourceId } from '../data/resources';
 import { RESOURCE_ICON } from '../art/sprites/icons';
+import { WEAPON_ICON_KEY } from '../art/sprites/weapons';
+import { ResourceSystem } from '../systems/ResourceSystem';
 import { FX } from '../art/sprites/fx';
 
 /**
@@ -26,6 +28,12 @@ export class HUDScene extends Phaser.Scene {
   private clockArc!: Phaser.GameObjects.Graphics;
   private weaponLabel!: Label;
   private dashPips: Phaser.GameObjects.Rectangle[] = [];
+  private hotbar: Array<{
+    frame: Phaser.GameObjects.Rectangle;
+    icon: Phaser.GameObjects.Image;
+    count: Label;
+    key: Phaser.GameObjects.BitmapText;
+  }> = [];
   private comboLabel!: Label;
   private compass!: Phaser.GameObjects.Image;
   private resourceRows = new Map<ResourceId, { icon: Phaser.GameObjects.Image; label: Label }>();
@@ -79,18 +87,20 @@ export class HUDScene extends Phaser.Scene {
     }).setScrollFactor(0);
 
     // --- weapon and dash, bottom right -----------------------------------
-    this.weaponLabel = new Label(this, width - 6, BAL.view.height - 13, 'RUSTED AXE', {
+    this.buildHotbar();
+
+    // The weapon's name sits just above its slot, so the icon never has to be
+    // guessed at.
+    this.weaponLabel = new Label(this, width - 6, BAL.view.height - 38, 'RUSTED AXE', {
       color: PAL.steel,
       originX: 1,
     }).setScrollFactor(0);
 
-    for (let i = 0; i < 1; i++) {
-      const pip = this.add
-        .rectangle(width - 6 - i * 10, BAL.view.height - 20, 8, 3, hex(PAL.cyan))
-        .setOrigin(1, 0)
-        .setScrollFactor(0);
-      this.dashPips.push(pip);
-    }
+    const pip = this.add
+      .rectangle(width - 6, BAL.view.height - 43, 8, 3, hex(PAL.cyan))
+      .setOrigin(1, 0)
+      .setScrollFactor(0);
+    this.dashPips.push(pip);
 
     this.comboLabel = new Label(this, Math.round(width / 2), 30, '', {
       color: PAL.gold,
@@ -111,28 +121,101 @@ export class HUDScene extends Phaser.Scene {
     this.events.once('shutdown', () => this.subs.dispose());
   }
 
-  private buildResourceRows(): void {
-    const { width } = BAL.view;
+  /**
+   * Three slots, bottom right: primary weapon, second weapon, food. The kind of bar
+   * every survival game has taught players to look for. The active weapon's frame is
+   * gold; a slot you cannot use yet is dimmed rather than hidden.
+   */
+  private buildHotbar(): void {
+    const { width, height } = BAL.view;
+    const size = 22;
+    const gap = 3;
+    const count = 3;
+    const totalW = count * size + (count - 1) * gap;
+    const x0 = width - 4 - totalW;
+    const y = height - 4 - size;
 
-    // The counters sit over open snow, where a bare number disappears. A panel is
-    // cheaper and steadier to read than outlining every digit.
+    this.add
+      .rectangle(x0 - 3, y - 3, totalW + 6, size + 6, hex(PAL.black))
+      .setOrigin(0)
+      .setAlpha(0.55)
+      .setStrokeStyle(1, hex(PAL.blueDark), 0.7)
+      .setScrollFactor(0);
+
+    const keys = ['1', '2', 'F'];
+    for (let i = 0; i < count; i++) {
+      const x = x0 + i * (size + gap);
+      const frame = this.add
+        .rectangle(x, y, size, size, hex(PAL.navy))
+        .setOrigin(0)
+        .setAlpha(0.9)
+        .setStrokeStyle(1, hex(PAL.greyDark))
+        .setScrollFactor(0);
+      const icon = this.add
+        .image(x + size / 2, y + size / 2, 'fx-dot1')
+        .setScale(1.6)
+        .setScrollFactor(0)
+        .setVisible(false);
+      const countLabel = new Label(this, x + size - 2, y + size - 9, '', {
+        color: PAL.white,
+        outline: 'shadow',
+        originX: 1,
+      }).setScrollFactor(0);
+      const key = this.add
+        .bitmapText(x + 2, y + 1, FONT, keys[i])
+        .setTint(hex(PAL.uiMuted))
+        .setScrollFactor(0);
+      this.hotbar.push({ frame, icon, count: countLabel, key });
+    }
+  }
+
+  private updateHotbar(): void {
+    const [primary, secondary, food] = this.hotbar;
+    const equipped = state.player.equipped;
+    const find = (uid: string | null) => state.player.weapons.find((w) => w.uid === uid);
+
+    const active = state.player.activeSlot ?? 0;
+    const hasRack = ResourceSystem.campEffects().weaponSlots > 1;
+
+    const w1 = find(equipped[0]);
+    primary.icon.setVisible(!!w1);
+    if (w1) primary.icon.setTexture(WEAPON_ICON_KEY[w1.base] ?? 'fx-dot1').setScale(1.6).setAlpha(1);
+    primary.frame.setStrokeStyle(1, hex(active === 0 ? PAL.gold : PAL.greyDark)).setAlpha(0.9);
+    primary.count.setText('');
+
+    const w2 = find(equipped[1]);
+    secondary.icon.setVisible(!!w2);
+    if (w2) secondary.icon.setTexture(WEAPON_ICON_KEY[w2.base] ?? 'fx-dot1').setScale(1.6).setAlpha(1);
+    secondary.frame
+      .setStrokeStyle(1, hex(active === 1 ? PAL.gold : PAL.greyDark))
+      .setAlpha(hasRack ? 0.9 : 0.45);
+    secondary.count.setText('');
+
+    const foodCount = hud.context === 'world' ? (hud.carried.food ?? 0) : (state.camp.storage.food ?? 0);
+    food.icon.setVisible(true).setTexture(RESOURCE_ICON.food).setScale(1.5).setAlpha(foodCount > 0 ? 1 : 0.35);
+    food.count.setText(foodCount > 0 ? String(Math.min(99, foodCount)) : '');
+    food.frame.setStrokeStyle(1, hex(foodCount > 0 ? PAL.green : PAL.greyDark));
+  }
+
+  private buildResourceRows(): void {
+    const { height } = BAL.view;
+    const y = height - 15;
+    const slot = 42;
+
+    // A permanent strip along the bottom left. Every resource is always shown, even at
+    // zero, so a new player can see what the game counts before they have any of it.
     this.resourcePanel = this.add
-      .rectangle(width - 2, 2, 46, 10, hex(PAL.black))
-      .setOrigin(1, 0)
-      .setAlpha(0.42)
+      .rectangle(2, y - 3, RESOURCE_IDS.length * slot + 6, 16, hex(PAL.black))
+      .setOrigin(0)
+      .setAlpha(0.55)
       .setStrokeStyle(1, hex(PAL.blueDark), 0.7)
       .setScrollFactor(0);
 
     RESOURCE_IDS.forEach((id, i) => {
-      const y = 6 + i * 11;
-      const icon = this.add
-        .image(width - 6, y, RESOURCE_ICON[id])
-        .setOrigin(1, 0)
-        .setScrollFactor(0)
-        .setVisible(false);
-      const label = new Label(this, width - 18, y + 1, '0', { color: PAL.white, originX: 1 })
-        .setScrollFactor(0)
-        .setVisible(false);
+      const x = 6 + i * slot;
+      const icon = this.add.image(x, y - 1, RESOURCE_ICON[id]).setOrigin(0).setScrollFactor(0);
+      const label = new Label(this, x + 13, y, '0', { color: PAL.white, outline: 'shadow' })
+        .setScrollFactor(0);
       this.resourceRows.set(id, { icon, label });
     });
   }
@@ -169,9 +252,11 @@ export class HUDScene extends Phaser.Scene {
     this.hpBar.update(delta);
     this.hpBar.setFillColor(hud.hp / hud.maxHp < 0.3 ? PAL.ember : PAL.blood);
 
-    this.coldBar.setVisible(inWorld).set(hud.cold / hud.maxCold);
-    this.coldIcon.setVisible(inWorld);
-    if (inWorld && hud.cold >= BAL.cold.warnAt) {
+    // Cold is shown at camp too now, because it drains off at the fire and the
+    // player should be able to watch that happen.
+    this.coldBar.setVisible(true).set(hud.cold / hud.maxCold);
+    this.coldIcon.setVisible(true);
+    if (hud.cold >= BAL.cold.warnAt) {
       // The icon shivers, so the warning does not depend on the bar's colour alone.
       this.coldIcon.x = 68 + Phaser.Math.Between(-1, 1);
       this.coldIcon.setTint(hex(PAL.white));
@@ -194,6 +279,7 @@ export class HUDScene extends Phaser.Scene {
     }
 
     this.weaponLabel.setText(hud.weaponName).setTint(hud.weaponColor);
+    this.updateHotbar();
     for (const pip of this.dashPips) {
       pip.setFillStyle(hex(hud.dashCharge >= 1 ? PAL.cyan : PAL.greyDark));
       pip.scaleX = hud.dashCharge >= 1 ? 1 : Math.max(0.08, hud.dashCharge);
@@ -231,25 +317,17 @@ export class HUDScene extends Phaser.Scene {
   }
 
   private updateResources(): void {
+    // Out in the world this is what you are carrying; at camp it is what is stored.
     const bag = hud.context === 'world' ? hud.carried : state.camp.storage;
-    let row = 0;
     for (const id of RESOURCE_IDS) {
       const entry = this.resourceRows.get(id);
       if (!entry) continue;
       const amount = bag[id] ?? 0;
-      const show = amount > 0;
-      entry.icon.setVisible(show);
-      entry.label.setVisible(show);
-      if (!show) continue;
-      const y = 6 + row * 11;
-      entry.icon.y = y;
-      entry.label.y = y + 1;
       entry.label.setText(String(amount));
-      row++;
+      // Empty slots are dimmed rather than hidden, so the row never changes shape.
+      entry.icon.setAlpha(amount > 0 ? 1 : 0.35);
+      entry.label.setAlpha(amount > 0 ? 1 : 0.4);
     }
-
-    this.resourcePanel.setVisible(row > 0);
-    if (row > 0) this.resourcePanel.height = 4 + row * 11;
-    this.statusPanel.height = hud.context === 'world' ? 22 : 13;
+    this.statusPanel.height = 22;
   }
 }

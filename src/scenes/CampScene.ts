@@ -10,7 +10,9 @@ import { Weather } from '../systems/Weather';
 import { ResourceSystem } from '../systems/ResourceSystem';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
 import { CampSystem, type CampPlacement, type StationId } from '../systems/CampSystem';
-import { SOLID_TILES, TILE, TILESET_KEY, TILE_SIZE } from '../art/sprites/tiles';
+import { SOLID_TILES, TILE, TILE_SIZE } from '../art/sprites/tiles';
+import { TilesetBuilder, applyTransitions } from '../art/sprites/transitions';
+import { isSolidIndex } from '../systems/MapGen';
 import { SCENERY_KEYS } from '../art/sprites/scenery';
 import { campfireSprite } from '../art/sprites/camp';
 import { FX } from '../art/sprites/fx';
@@ -19,6 +21,7 @@ import { FONT } from '../art/PixelFont';
 import { Rng } from '../core/Rng';
 import { hud, resetHud } from '../core/HudState';
 import { Label } from '../ui/Label';
+import { Prompt } from '../ui/Prompt';
 import { NPCMira } from '../entities/NPCMira';
 import { Dialogue } from '../ui/Dialogue';
 import { TouchControls } from '../ui/TouchControls';
@@ -47,10 +50,13 @@ export class CampScene extends Phaser.Scene {
   private campLayer!: Phaser.GameObjects.Container;
   private lightLayer!: Phaser.GameObjects.Container;
   private stations: Station[] = [];
-  private prompt!: Label;
+  private prompt!: Prompt;
   private dialogue!: Dialogue;
   private touch!: TouchControls;
   private mira: NPCMira | null = null;
+  private cold = 0;
+  private fireX = 15 * TILE_SIZE + 8;
+  private fireY = 12 * TILE_SIZE;
 
   constructor() {
     super('Camp');
@@ -70,7 +76,10 @@ export class CampScene extends Phaser.Scene {
     this.lightLayer = this.add.container(0, 0);
 
     this.player = new Player(this, 15 * TILE_SIZE + 8, 16 * TILE_SIZE);
-    this.player.setMaxHp(ResourceSystem.maxHp(), true);
+    // You come home as you left the wilderness. The fire does the rest, slowly.
+    this.player.setMaxHp(ResourceSystem.maxHp(), false);
+    this.player.hp = Math.max(1, Math.min(state.player.hp, this.player.maxHp));
+    this.cold = Math.max(0, Math.min(BAL.cold.max, state.player.cold));
     this.physics.add.collider(this.player.sprite, this.layer);
 
     this.rebuildCamp();
@@ -81,13 +90,7 @@ export class CampScene extends Phaser.Scene {
 
     this.buildAmbient();
     this.dialogue = new Dialogue(this);
-    this.prompt = new Label(this, 0, 0, '', {
-      color: PAL.gold,
-      originX: 0.5,
-      originY: 1,
-    })
-      .setDepth(7500)
-      .setVisible(false);
+    this.prompt = new Prompt(this);
 
     const cam = this.cameras.main;
     cam.startFollow(this.player.sprite, true, 0.1, 0.1);
@@ -111,23 +114,34 @@ export class CampScene extends Phaser.Scene {
     const { cols, rows } = BAL.camp;
     const rng = new Rng(7);
     const data: number[][] = [];
+    const kinds: Array<Array<string | null>> = [];
 
     for (let y = 0; y < rows; y++) {
       const row: number[] = [];
+      const kindRow: Array<string | null> = [];
       for (let x = 0; x < cols; x++) {
         if (x < 2 || y < 2 || x >= cols - 2 || y >= rows - 2) {
           row.push(TILE.CLIFF);
+          kindRow.push(null);
           continue;
         }
         // Trodden ground only where people actually walk: a ragged patch round the fire.
         const dist = Math.hypot((x - 15) * 0.85, y - 12);
         const ragged =
           dist + Math.sin(x * 0.9) * 0.8 + Math.cos(y * 1.3 + x * 0.4) * 0.7 + rng.range(-0.4, 0.4);
-        if (ragged < 6.4) row.push(rng.pick([TILE.CAMP_A, TILE.CAMP_A, TILE.CAMP_B]));
-        else if (ragged < 8.4) row.push(rng.chance(0.45) ? TILE.CAMP_B : TILE.SNOW_B);
-        else row.push(rng.pick([TILE.SNOW_A, TILE.SNOW_A, TILE.SNOW_B, TILE.SNOW_C]));
+        // One clean edge. Scattering trodden tiles through a band put a seam on
+        // nearly every tile and the feathering turned the whole yard into a maze.
+        // The wobble in `ragged` is what keeps the edge from being a circle.
+        if (ragged < 7.2) {
+          row.push(rng.pick([TILE.CAMP_A, TILE.CAMP_A, TILE.CAMP_B]));
+          kindRow.push('camp');
+        } else {
+          row.push(rng.pick([TILE.SNOW_A, TILE.SNOW_A, TILE.SNOW_B, TILE.SNOW_C]));
+          kindRow.push('snow');
+        }
       }
       data.push(row);
+      kinds.push(kindRow);
     }
 
     // Snow caps only where a wall actually faces the camera.
@@ -139,8 +153,12 @@ export class CampScene extends Phaser.Scene {
       }
     }
 
+    const builder = new TilesetBuilder();
+    applyTransitions(kinds, data, builder, isSolidIndex);
+    builder.build(this, 'tileset-camp');
+
     const map = this.make.tilemap({ data, tileWidth: TILE_SIZE, tileHeight: TILE_SIZE });
-    const tileset = map.addTilesetImage('tiles', TILESET_KEY, TILE_SIZE, TILE_SIZE, 0, 0);
+    const tileset = map.addTilesetImage('tiles', 'tileset-camp', TILE_SIZE, TILE_SIZE, 0, 0);
     const layer = map.createLayer(0, tileset!, 0, 0);
     if (!layer) throw new Error('[CampScene] tile layer could not be created');
     this.layer = layer;
@@ -219,7 +237,7 @@ export class CampScene extends Phaser.Scene {
       x: 22 * TILE_SIZE + 8,
       y: 12.5 * TILE_SIZE,
       radius: 32,
-      label: `E  HEAD OUT.  DAY ${state.day}`,
+      label: `Head out, day ${state.day}`,
     });
   }
 
@@ -341,8 +359,8 @@ export class CampScene extends Phaser.Scene {
   private useStation(id: StationId): void {
     switch (id) {
       case 'fire':
-        this.player.heal(this.player.maxHp, 'fire');
-        this.juice.floatText(this.player.cx, this.player.sprite.y - 24, 'WARM', PAL.gold);
+        // No instant heal. Standing here is what heals you, and it says so.
+        this.juice.floatText(this.player.cx, this.player.sprite.y - 24, 'Stay close', PAL.gold);
         bus.emit('audio:play', { cue: 'warm' });
         break;
 
@@ -427,14 +445,17 @@ export class CampScene extends Phaser.Scene {
     this.player.update(dt, input);
     this.weather.update(dt, 0.1);
 
+    this.recoverAtFire(dt);
+
     hud.context = 'camp';
     hud.hp = this.player.hp;
     hud.maxHp = this.player.maxHp;
+    hud.cold = this.cold;
     hud.day = state.day;
     hud.dashCharge = this.player.dashCharge;
 
     if (this.dialogue.isOpen) {
-      this.prompt.setVisible(false);
+      this.prompt.hide();
       if (input.interactPressed) this.dialogue.advance();
       return;
     }
@@ -452,14 +473,34 @@ export class CampScene extends Phaser.Scene {
     this.touch.update(!!nearest, !!state.player.equipped[1]);
 
     if (nearest) {
-      this.prompt
-        .setText(nearest.label)
-        .setPosition(Math.round(this.player.cx), Math.round(this.player.sprite.y) - 26)
-        .setVisible(true);
+      this.prompt.show(nearest.label, this.player.cx, this.player.sprite.y - 30);
       if (input.interactPressed) this.useStation(nearest.id);
     } else {
-      this.prompt.setVisible(false);
+      this.prompt.hide();
     }
+  }
+
+  /**
+   * The firelight is what mends you. Health comes back and the cold drains off while
+   * you stand in it, and both stop the moment you step away, so returning to camp is
+   * an act rather than a reset.
+   */
+  private recoverAtFire(dt: number): void {
+    const seconds = dt / 1000;
+    const dist = Phaser.Math.Distance.Between(this.player.cx, this.player.cy, this.fireX, this.fireY);
+    const inLight = dist < BAL.camp.fireRadius;
+
+    if (inLight) {
+      if (this.player.hp < this.player.maxHp) {
+        this.player.hp = Math.min(this.player.maxHp, this.player.hp + BAL.camp.fireHealPerSec * seconds);
+      }
+      if (this.cold > 0) {
+        this.cold = Math.max(0, this.cold - BAL.camp.fireColdPerSec * seconds);
+      }
+    }
+
+    state.player.hp = this.player.hp;
+    state.player.cold = this.cold;
   }
 
   private cleanup(): void {
@@ -472,18 +513,19 @@ export class CampScene extends Phaser.Scene {
   }
 }
 
+/** Verbs only. The prompt widget adds the key, so touch players see a tap mark. */
 const STATION_LABEL: Record<StationId, string> = {
-  fire: 'E  WARM UP',
-  workbench: 'E  WORKBENCH',
-  storage: 'E  STORAGE',
-  board: 'E  NOTICE BOARD',
-  shelter: 'E  SHELTER',
-  cookpot: 'E  COOKING POT',
-  medtable: 'E  MEDICAL TABLE',
-  weaponrack: 'E  WEAPON RACK',
-  watchtower: 'E  WATCHTOWER',
-  signaltable: 'E  SIGNAL TABLE',
-  mira: 'E  TALK TO MIRA',
-  supplydrop: 'E  SUPPLY DROP',
-  gate: 'E  HEAD OUT',
+  fire: 'Warm up',
+  workbench: 'Use workbench',
+  storage: 'Open storage',
+  board: 'Read the board',
+  shelter: 'Rest in shelter',
+  cookpot: 'Cook',
+  medtable: 'Treat wounds',
+  weaponrack: 'Choose weapon',
+  watchtower: 'Climb the tower',
+  signaltable: 'Work the radio',
+  mira: 'Talk to Mira',
+  supplydrop: 'Open supply drop',
+  gate: 'Head out',
 };

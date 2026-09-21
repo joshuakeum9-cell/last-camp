@@ -139,8 +139,8 @@ export class NPCMira {
   }
 
   get prompt(): string {
-    if (this.mode === 'field') return state.story.miraRescued ? '' : 'E  CUT HER LOOSE';
-    return 'E  TALK TO MIRA';
+    if (this.mode === 'field') return state.story.miraRescued ? '' : 'Cut her loose';
+    return 'Talk to Mira';
   }
 
   /** Returns the lines to show. */

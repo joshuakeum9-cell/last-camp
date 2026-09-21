@@ -62,8 +62,8 @@ export class Gate {
 
   get prompt(): string {
     if (this.open) return '';
-    if (this.def.kind === 'locked') return 'E  LOOK';
-    return this.isHidden ? 'E  LISTEN' : `E  BREAK THROUGH  (${this.hitsLeft})`;
+    if (this.def.kind === 'locked') return 'Look closer';
+    return this.isHidden ? 'Listen' : `Break through (${this.hitsLeft} left)`;
   }
 
   /**

@@ -14,6 +14,8 @@ export interface InputState {
   dashPressed: boolean;
   interactPressed: boolean;
   swapPressed: boolean;
+  eatPressed: boolean;
+  slotPressed: 0 | 1 | 2;
   menuPressed: boolean;
 }
 
@@ -27,6 +29,7 @@ export interface TouchInput {
   dashPressed: boolean;
   interactPressed: boolean;
   swapPressed: boolean;
+  eatPressed: boolean;
 }
 
 export const touchInput: TouchInput = {
@@ -38,6 +41,7 @@ export const touchInput: TouchInput = {
   dashPressed: false,
   interactPressed: false,
   swapPressed: false,
+  eatPressed: false,
 };
 
 /**
@@ -64,6 +68,8 @@ export class InputSystem {
     dashPressed: false,
     interactPressed: false,
     swapPressed: false,
+    eatPressed: false,
+    slotPressed: 0,
     menuPressed: false,
   };
 
@@ -71,14 +77,18 @@ export class InputSystem {
     const kb = scene.input.keyboard;
     if (kb) {
       this.keys = kb.addKeys(
-        'W,A,S,D,UP,LEFT,DOWN,RIGHT,SPACE,E,Q,ONE,TWO,THREE,ESC,SHIFT,J,K',
+        'W,A,S,D,UP,LEFT,DOWN,RIGHT,SPACE,E,Q,R,F,ONE,TWO,THREE,ESC,SHIFT',
       ) as Record<string, Phaser.Input.Keyboard.Key>;
       // Stop the browser scrolling the page on space and arrows.
       kb.addCapture(['SPACE', 'UP', 'DOWN', 'LEFT', 'RIGHT']);
       kb.on('keydown-SPACE', () => this.press('dash'));
       kb.on('keydown-E', () => this.press('interact'));
-      kb.on('keydown-Q', () => this.press('swap'));
-      kb.on('keydown-J', () => this.press('attack'));
+      // Q attacks and R swaps. Q sits under the fingers already on WASD.
+      kb.on('keydown-Q', () => this.press('attack'));
+      kb.on('keydown-R', () => this.press('swap'));
+      kb.on('keydown-F', () => this.press('eat'));
+      kb.on('keydown-ONE', () => this.press('slot1'));
+      kb.on('keydown-TWO', () => this.press('slot2'));
       kb.on('keydown-ESC', () => this.press('menu'));
     } else {
       this.keys = {};
@@ -175,13 +185,19 @@ export class InputSystem {
       this.press('swap');
       touchInput.swapPressed = false;
     }
+    if (touchInput.eatPressed) {
+      this.press('eat');
+      touchInput.eatPressed = false;
+    }
 
     o.attackPressed = this.take('attack');
     o.dashPressed = this.take('dash');
     o.interactPressed = this.take('interact');
     o.swapPressed = this.take('swap');
+    o.eatPressed = this.take('eat');
+    o.slotPressed = this.take('slot1') ? 1 : this.take('slot2') ? 2 : 0;
     o.menuPressed = this.take('menu');
-    o.attackHeld = touchInput.active ? touchInput.attackHeld : this.pointerDown || down(k.J);
+    o.attackHeld = touchInput.active ? touchInput.attackHeld : this.pointerDown || down(k.Q);
 
     return o;
   }

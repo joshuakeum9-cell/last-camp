@@ -130,7 +130,7 @@ const deepDrift: Draw = (ctx, ox, rng) => {
   speckle(ctx, ox, rng, PAL.cyan, 2);
 };
 
-const TILE_DRAW: Draw[] = [
+export const TILE_DRAW: Draw[] = [
   // SNOW_A / B / C
   snow,
   (ctx, ox, rng) => {

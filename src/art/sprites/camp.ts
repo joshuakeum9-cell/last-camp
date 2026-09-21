@@ -411,6 +411,61 @@ const TROPHY_SKULL = [
   '....ww.w.ww.....',
 ];
 
+/** Split firewood, stacked. The camp's most honest sign that someone lives here. */
+const WOODPILE = [
+  '..nnnn..nnnn....',
+  '.nkkkkn.nkkkkn..',
+  '.nkbkkn.nkkbkn..',
+  'nnnnnnnnnnnnnnnn',
+  'nkkkknkkkknkkkkn',
+  'nkkbknkbkknkkbkn',
+  'nnnnnnnnnnnnnnnn',
+  '.ssssssssssssss.',
+];
+
+/** A log end cut for sitting on. */
+const STOOL = [
+  '.nnnnnn.',
+  'nkkkkkkn',
+  'nkbkkbkn',
+  'nkkkkkkn',
+  '.nnnnnn.',
+  '.n....n.',
+  '.n....n.',
+  '.ssssss.',
+];
+
+/** A barrel with snow on the lid. */
+const BARREL = [
+  '..ssssss..',
+  '.nnnnnnnn.',
+  'nkkkkkkkkn',
+  'nmmmmmmmmn',
+  'nkkkkkkkkn',
+  'nkkkkkkkkn',
+  'nmmmmmmmmn',
+  'nkkkkkkkkn',
+  '.nnnnnnnn.',
+  '.ssssssss.',
+];
+
+/** A lantern hung from a pole, lit. */
+const HANGING_LANTERN = [
+  '....nn....',
+  '....nn....',
+  '...nkkn...',
+  '..oyyyyo..',
+  '.oywwwwyo.',
+  '.oywwwwyo.',
+  '.oyyyyyyo.',
+  '..oooooo..',
+  '....nn....',
+  '....nn....',
+  '....nn....',
+  '....nn....',
+  '...ssss...',
+];
+
 export const CAMP_KEYS = {
   tentBroken: 'camp-tent-broken',
   tentPatched: 'camp-tent-patched',
@@ -429,6 +484,10 @@ export const CAMP_KEYS = {
   medicalTable: 'camp-medical-table',
   cabin: 'camp-cabin',
   trophy: 'camp-trophy',
+  woodpile: 'camp-woodpile',
+  stool: 'camp-stool',
+  barrel: 'camp-barrel',
+  hangingLantern: 'camp-hanging-lantern',
 } as const;
 
 export function buildCampArt(scene: Phaser.Scene): void {
@@ -451,4 +510,8 @@ export function buildCampArt(scene: Phaser.Scene): void {
   make(CAMP_KEYS.medicalTable, MEDICAL_TABLE);
   make(CAMP_KEYS.cabin, CABIN);
   make(CAMP_KEYS.trophy, TROPHY_SKULL);
+  make(CAMP_KEYS.woodpile, WOODPILE);
+  make(CAMP_KEYS.stool, STOOL);
+  make(CAMP_KEYS.barrel, BARREL);
+  make(CAMP_KEYS.hangingLantern, HANGING_LANTERN);
 }

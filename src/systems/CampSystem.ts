@@ -1,5 +1,6 @@
 import { state } from '../core/GameState';
 import { CAMP_KEYS } from '../art/sprites/camp';
+import { SCENERY_KEYS } from '../art/sprites/scenery';
 import type { UpgradeId } from '../data/upgrades';
 
 export type StationId =
@@ -105,6 +106,21 @@ export const CampSystem = {
     add({ key: CAMP_KEYS.noticeBoard, tx: 17, ty: 10, scale: 1.3, station: 'board' });
     add({ key: CAMP_KEYS.log, tx: 14, ty: 14, scale: 1.4 });
 
+    // --- things that make it a place someone lives, not a diagram ---------
+    add({ key: CAMP_KEYS.woodpile, tx: 10, ty: 10, scale: 1.3 });
+    add({ key: CAMP_KEYS.stool, tx: 17, ty: 13, scale: 1.3 });
+    add({ key: CAMP_KEYS.stool, tx: 13, ty: 12, scale: 1.2, flip: true });
+    add({ key: CAMP_KEYS.barrel, tx: 20, ty: 14, scale: 1.2 });
+    add({ key: CAMP_KEYS.hangingLantern, tx: 14, ty: 10, scale: 1.3 });
+    add({ key: SCENERY_KEYS.snowMound, tx: 8, ty: 15, scale: 1.2 });
+    add({ key: SCENERY_KEYS.snowMound, tx: 23, ty: 8, scale: 1.4, flip: true });
+    add({ key: SCENERY_KEYS.rockSmall, tx: 21, ty: 16, scale: 1.3 });
+    add({ key: SCENERY_KEYS.rockSmall, tx: 9, ty: 8, scale: 1.1, flip: true });
+    add({ key: SCENERY_KEYS.grassTuft, tx: 24, ty: 15, scale: 1.2 });
+    add({ key: SCENERY_KEYS.grassTuft, tx: 7, ty: 12, scale: 1.1 });
+    add({ key: SCENERY_KEYS.deadShrub, tx: 24, ty: 11, scale: 1.1 });
+    add({ key: SCENERY_KEYS.fallenLog, tx: 7, ty: 17, scale: 1.2 });
+
     // --- bought stations -------------------------------------------------
     if (this.owned('workbench')) {
       add({ key: CAMP_KEYS.workbench, tx: 11, ty: 14, scale: 1.15, station: 'workbench' });
@@ -150,7 +166,9 @@ export const CampSystem = {
   /** Where lanterns and the fire cast light, for the camp's warm glow. */
   lightSources(): Array<{ tx: number; ty: number; radius: number; intensity: number }> {
     const lights = [
-      { tx: 15, ty: 12, radius: this.owned('fire2') ? 150 : 110, intensity: 0.5 },
+      { tx: 15, ty: 12, radius: this.owned('fire2') ? 175 : 135, intensity: 0.5 },
+      // The hanging lantern by the tent is always lit.
+      { tx: 14, ty: 10, radius: 40, intensity: 0.28 },
     ];
     if (this.owned('lantern')) {
       for (const [tx, ty] of [

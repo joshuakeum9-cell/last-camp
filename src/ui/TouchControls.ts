@@ -29,6 +29,7 @@ export class TouchControls {
   private dash!: TouchButton;
   private interact!: TouchButton;
   private swap!: TouchButton;
+  private eat!: TouchButton;
   private enabled = false;
 
   constructor(private scene: Phaser.Scene) {
@@ -71,7 +72,8 @@ export class TouchControls {
     this.attack = this.makeButton(width - 34, height - 34, 24, 'HIT', PAL.ember);
     this.dash = this.makeButton(width - 74, height - 26, 17, 'DSH', PAL.ice);
     this.swap = this.makeButton(width - 30, height - 82, 14, 'SWP', PAL.gold);
-    this.interact = this.makeButton(width - 76, height - 74, 17, 'E', PAL.gold);
+    this.interact = this.makeButton(width - 76, height - 74, 17, 'USE', PAL.gold);
+    this.eat = this.makeButton(width - 118, height - 40, 14, 'EAT', PAL.green);
     this.setButtonVisible(this.interact, false);
     this.setButtonVisible(this.swap, false);
   }
@@ -109,7 +111,7 @@ export class TouchControls {
     if (!this.enabled) return;
     const { x, y } = this.toLocal(p);
 
-    for (const btn of [this.attack, this.dash, this.interact, this.swap]) {
+    for (const btn of [this.attack, this.dash, this.interact, this.swap, this.eat]) {
       if (!btn.circle.visible) continue;
       if (Phaser.Math.Distance.Between(x, y, btn.x, btn.y) > btn.radius + 8) continue;
       btn.pointerId = p.id;
@@ -121,6 +123,7 @@ export class TouchControls {
       if (btn === this.dash) touchInput.dashPressed = true;
       if (btn === this.interact) touchInput.interactPressed = true;
       if (btn === this.swap) touchInput.swapPressed = true;
+      if (btn === this.eat) touchInput.eatPressed = true;
       return;
     }
 
@@ -165,7 +168,7 @@ export class TouchControls {
       touchInput.moveY = 0;
       this.knob.setPosition(this.stickOrigin.x, this.stickOrigin.y);
     }
-    for (const btn of [this.attack, this.dash, this.interact, this.swap]) {
+    for (const btn of [this.attack, this.dash, this.interact, this.swap, this.eat]) {
       if (btn.pointerId !== p.id) continue;
       btn.pointerId = null;
       btn.circle.setFillStyle(hex(PAL.navy), state.settings.touchOpacity * 0.6);
@@ -176,10 +179,11 @@ export class TouchControls {
   // --- per-frame ---------------------------------------------------------
 
   /** `canInteract` shows the contextual button; `hasSecond` shows the swap button. */
-  update(canInteract: boolean, hasSecond: boolean): void {
+  update(canInteract: boolean, hasSecond: boolean, canEat = false): void {
     if (!this.enabled) return;
     this.setButtonVisible(this.interact, canInteract);
     this.setButtonVisible(this.swap, hasSecond);
+    this.setButtonVisible(this.eat, canEat);
   }
 
   setEnabled(on: boolean): void {
@@ -189,6 +193,7 @@ export class TouchControls {
     this.knob.setVisible(on);
     this.setButtonVisible(this.attack, on);
     this.setButtonVisible(this.dash, on);
+    this.setButtonVisible(this.eat, false);
     if (!on) {
       touchInput.moveX = 0;
       touchInput.moveY = 0;
@@ -201,7 +206,7 @@ export class TouchControls {
     const alpha = state.settings.touchOpacity;
     this.base.setAlpha(alpha);
     this.knob.setAlpha(alpha);
-    for (const btn of [this.attack, this.dash, this.interact, this.swap]) {
+    for (const btn of [this.attack, this.dash, this.interact, this.swap, this.eat]) {
       btn.circle.setAlpha(alpha);
       btn.label.setAlpha(alpha);
     }
@@ -214,7 +219,7 @@ export class TouchControls {
     touchInput.active = false;
     this.base.destroy();
     this.knob.destroy();
-    for (const btn of [this.attack, this.dash, this.interact, this.swap]) {
+    for (const btn of [this.attack, this.dash, this.interact, this.swap, this.eat]) {
       btn.circle.destroy();
       btn.label.destroy();
     }

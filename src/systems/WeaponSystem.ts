@@ -102,7 +102,8 @@ export class WeaponSystem {
   }
 
   get equipped(): ResolvedWeapon {
-    const uid = state.player.equipped[0];
+    const slot = state.player.activeSlot ?? 0;
+    const uid = state.player.equipped[slot] ?? state.player.equipped[0];
     const instance =
       state.player.weapons.find((w) => w.uid === uid) ?? state.player.weapons[0];
     return WeaponSystem.resolve(instance);
@@ -116,9 +117,15 @@ export class WeaponSystem {
   }
 
   swap(): void {
-    const [a, b] = state.player.equipped;
-    if (!b) return;
-    state.player.equipped = [b, a];
+    this.select(state.player.activeSlot === 0 ? 2 : 1);
+  }
+
+  /** Put slot 1 or 2 in the hand, if there is something in it. */
+  select(slot: 1 | 2): void {
+    const index = (slot - 1) as 0 | 1;
+    if (!state.player.equipped[index]) return;
+    if (state.player.activeSlot === index) return;
+    state.player.activeSlot = index;
     this.reset();
     bus.emit('audio:play', { cue: 'swap' });
   }

@@ -122,7 +122,7 @@ export class Cache {
   }
 
   get prompt(): string {
-    return this.opened ? '' : 'E  OPEN';
+    return this.opened ? '' : 'Open';
   }
 
   inRange(px: number, py: number): boolean {

@@ -32,13 +32,16 @@ import { ResourceSystem } from '../systems/ResourceSystem';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
 import { audio } from '../systems/AudioManager';
 import { generateWorld, SOLID_PROPS, type PropKind, type WorldMapData } from '../systems/MapGen';
-import { SOLID_TILES, TILESET_KEY, TILE_SIZE } from '../art/sprites/tiles';
+import { SOLID_TILES, TILE_SIZE } from '../art/sprites/tiles';
+import { TilesetBuilder, applyTransitions } from '../art/sprites/transitions';
+import { isSolidIndex } from '../systems/MapGen';
 import { SCENERY_KEYS } from '../art/sprites/scenery';
 import { CAMP_KEYS } from '../art/sprites/camp';
 import { hex, mix, PAL } from '../art/palette';
 import { FONT } from '../art/PixelFont';
 import { hud } from '../core/HudState';
 import { Label } from '../ui/Label';
+import { Prompt } from '../ui/Prompt';
 import { Rng, hashString, subSeed } from '../core/Rng';
 import { ENEMIES, type EnemyId } from '../data/enemies';
 import { RESOURCES } from '../data/resources';
@@ -101,7 +104,7 @@ export class WorldScene extends Phaser.Scene {
   private ambient!: Phaser.GameObjects.Rectangle;
   private frostVignette!: Phaser.GameObjects.Image;
   private currentArea: AreaDef | null = null;
-  private prompt!: Label;
+  private prompt!: Prompt;
   private pickups: Pickup[] = [];
   private bossMusicOn = false;
   private ambientTarget: string = PAL.blue;
@@ -135,7 +138,11 @@ export class WorldScene extends Phaser.Scene {
       WORLD_SPAWN.y * TILE_SIZE + TILE_SIZE,
     );
     this.player.setMaxHp(ResourceSystem.maxHp(), false);
-    this.player.hp = state.run.hp > 0 ? Math.min(state.run.hp, this.player.maxHp) : this.player.maxHp;
+    // Health carries over from wherever you were. A fresh run starts with whatever the
+    // fire gave you, not a free full bar.
+    const carried = state.run.timeSec > 0 ? state.run.hp : state.player.hp;
+    this.player.hp = Math.max(1, Math.min(carried, this.player.maxHp));
+    state.run.cold = state.run.timeSec > 0 ? state.run.cold : state.player.cold;
     this.physics.add.collider(this.player.sprite, this.layer);
 
     this.input$ = new InputSystem(this);
@@ -194,12 +201,18 @@ export class WorldScene extends Phaser.Scene {
   // --- world building ----------------------------------------------------
 
   private buildTilemap(): void {
+    // Feather every seam at the pixel level, then build a tileset holding exactly the
+    // transition tiles this map turned out to need.
+    const builder = new TilesetBuilder();
+    applyTransitions(this.mapData.kinds, this.mapData.tiles, builder, isSolidIndex);
+    builder.build(this, 'tileset-world');
+
     const map = this.make.tilemap({
       data: this.mapData.tiles,
       tileWidth: TILE_SIZE,
       tileHeight: TILE_SIZE,
     });
-    const tileset = map.addTilesetImage('tiles', TILESET_KEY, TILE_SIZE, TILE_SIZE, 0, 0);
+    const tileset = map.addTilesetImage('tiles', 'tileset-world', TILE_SIZE, TILE_SIZE, 0, 0);
     if (!tileset) throw new Error('[WorldScene] tileset could not be created');
     const layer = map.createLayer(0, tileset, 0, 0);
     if (!layer) throw new Error('[WorldScene] tile layer could not be created');
@@ -503,13 +516,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private buildPrompt(): void {
-    this.prompt = new Label(this, 0, 0, '', {
-      color: PAL.gold,
-      originX: 0.5,
-      originY: 1,
-    })
-      .setDepth(7500)
-      .setVisible(false);
+    this.prompt = new Prompt(this);
   }
 
   private setupCamera(): void {
@@ -530,6 +537,8 @@ export class WorldScene extends Phaser.Scene {
     this.player.update(dt, input);
     this.weapons.update(dt, input);
     if (input.swapPressed) this.weapons.swap();
+    if (input.slotPressed) this.weapons.select(input.slotPressed);
+    if (input.eatPressed) this.eat();
 
     this.enemyManager.update(dt, this.player.cx, this.player.cy);
     this.boss?.update(dt);
@@ -543,7 +552,7 @@ export class WorldScene extends Phaser.Scene {
     this.updateClockAndCold(dt);
     this.updateInteraction(input.interactPressed);
     this.updateHud();
-    this.touch.update(this.canInteract, !!state.player.equipped[1]);
+    this.touch.update(this.canInteract, !!state.player.equipped[1], (state.run?.collected.food ?? 0) > 0);
 
     this.weather.update(dt, this.currentArea?.id === 'lake' ? 0.5 : 0.18);
     this.weather.setNight(this.clock.darkness);
@@ -564,7 +573,44 @@ export class WorldScene extends Phaser.Scene {
       Phaser.Math.Linear(cam.followOffset.y, -6 - this.player.facingY * 6, 0.05),
     );
 
-    if (state.run) state.run.hp = this.player.hp;
+    if (state.run) {
+      state.run.hp = this.player.hp;
+      state.player.hp = this.player.hp;
+      state.player.cold = state.run.cold;
+    }
+  }
+
+  private lastEatAt = -9999;
+
+  /**
+   * Eat one food from the run's haul. This is the answer to being hurt out in the
+   * open: it costs something you were going to bank, so it is a real trade.
+   */
+  private eat(): void {
+    const run = state.run;
+    if (!run) return;
+    const now = this.time.now;
+    if (now - this.lastEatAt < BAL.eat.cooldown * 1000) return;
+
+    if ((run.collected.food ?? 0) <= 0) {
+      bus.emit('juice:toast', { text: 'Nothing to eat. Bushes and rats carry food.', color: '#a8b8dc' });
+      bus.emit('audio:play', { cue: 'empty', volume: 0.5 });
+      return;
+    }
+    if (this.player.hp >= this.player.maxHp && this.cold.cold < 10) {
+      bus.emit('juice:toast', { text: 'You are not hungry.', color: '#a8b8dc' });
+      return;
+    }
+
+    this.lastEatAt = now;
+    run.collected.food -= 1;
+    const heal = ResourceSystem.campEffects().foodHeal;
+    this.player.heal(heal, 'food');
+    this.cold.relieve(BAL.cold.foodRelief);
+    this.juice.floatText(this.player.cx, this.player.sprite.y - 26, `+${heal}`, PAL.green);
+    this.juice.sparks(this.player.cx, this.player.cy - 6, PAL.green, 6, 60);
+    bus.emit('audio:play', { cue: 'eat' });
+    bus.emit('consumable:used', { id: 'ration' });
   }
 
   /** Drops are rolled here rather than in the enemy, so loot rules live in one place. */
@@ -753,7 +799,7 @@ export class WorldScene extends Phaser.Scene {
 
     // A reading panel swallows the key, so E never does two things at once.
     if (this.dialogue.isOpen) {
-      this.prompt.setVisible(false);
+      this.prompt.hide();
       if (pressed) this.dialogue.advance();
       return;
     }
@@ -769,7 +815,7 @@ export class WorldScene extends Phaser.Scene {
 
     for (const note of this.notes) {
       if (!note.inRange(this.player.cx, this.player.cy)) continue;
-      this.showPrompt('E  READ');
+      this.showPrompt('Read');
       if (pressed) {
         const def = note.take();
         this.dialogue.show(def.body.split('\n'), def.title);
@@ -789,10 +835,7 @@ export class WorldScene extends Phaser.Scene {
 
     for (const cache of this.caches) {
       if (!cache.inRange(this.player.cx, this.player.cy)) continue;
-      this.prompt
-        .setText(cache.prompt)
-        .setPosition(Math.round(this.player.cx), Math.round(this.player.sprite.y) - 26)
-        .setVisible(true);
+      this.showPrompt(cache.prompt);
       if (pressed) {
         const flavour = cache.open();
         if (flavour) bus.emit('juice:toast', { text: flavour, color: '#fff3ce' });
@@ -801,24 +844,21 @@ export class WorldScene extends Phaser.Scene {
     }
 
     if (rectContains(RETURN_ZONE, tx, ty)) {
-      this.showPrompt('E  RETURN TO CAMP');
+      this.showPrompt('Return to camp');
       if (pressed) this.endDay('return');
       return;
     }
     this.canInteract = false;
-    this.prompt.setVisible(false);
+    this.prompt.hide();
   }
 
-  private showPrompt(text: string): void {
-    this.canInteract = !!text;
-    if (!text) {
-      this.prompt.setVisible(false);
+  private showPrompt(verb: string): void {
+    this.canInteract = !!verb;
+    if (!verb) {
+      this.prompt.hide();
       return;
     }
-    this.prompt
-      .setText(text)
-      .setPosition(Math.round(this.player.cx), Math.round(this.player.sprite.y) - 26)
-      .setVisible(true);
+    this.prompt.show(verb, this.player.cx, this.player.sprite.y - 30);
   }
 
   // --- ending the day ----------------------------------------------------

@@ -43,6 +43,8 @@ export interface DecorPlacement {
 
 export interface WorldMapData {
   tiles: number[][];
+  /** Ground name per tile, or null where solid. Used to build feathered seams. */
+  kinds: Array<Array<string | null>>;
   props: PropPlacement[];
   decor: DecorPlacement[];
   /** Tiles belonging to each gate, so opening one can clear them. */
@@ -82,7 +84,9 @@ export function generateWorld(seed: number): WorldMapData {
     }
   };
 
-  for (const area of AREA_LIST) carve(area.rect, area.ground);
+  // Carved in reverse so an earlier, more specific area (the camp gate patch inside
+  // the forest) is written last and wins its own tiles.
+  for (const area of [...AREA_LIST].reverse()) carve(area.rect, area.ground);
   for (const corridor of CORRIDORS) carve(corridor.rect, corridor.ground);
 
   blendGroundSeams(kinds, new Rng(subSeed(seed, 'blend')));
@@ -101,7 +105,7 @@ export function generateWorld(seed: number): WorldMapData {
   const secretGate = GATES.secretIce.rect;
   for (let y = secretGate.y0 - 1; y < secretGate.y1 + 1; y++) {
     for (let x = secretGate.x0 - 3; x < secretGate.x0; x++) {
-      if (inBounds(x, y)) tiles[y][x] = TILE.ICE_GLOSS;
+      if (inBounds(x, y) && !isSolidIndex(tiles[y][x])) tiles[y][x] = TILE.ICE_GLOSS;
     }
   }
 
@@ -131,7 +135,7 @@ export function generateWorld(seed: number): WorldMapData {
 
   const props = placeProps(tiles, seed);
   const decor = placeDecor(tiles, seed, props);
-  return { tiles, props, decor, gateTiles, walkable: walkableBounds(tiles) };
+  return { tiles, kinds, props, decor, gateTiles, walkable: walkableBounds(tiles) };
 }
 
 /** The bounding box of everything that is not solid, in pixels. */
@@ -267,7 +271,7 @@ function inBounds(x: number, y: number): boolean {
   return x >= 0 && y >= 0 && x < cols && y < rows;
 }
 
-function isSolidIndex(index: number): boolean {
+export function isSolidIndex(index: number): boolean {
   return (
     index === TILE.CLIFF ||
     index === TILE.CLIFF_TOP ||

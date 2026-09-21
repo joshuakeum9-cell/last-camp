@@ -327,6 +327,10 @@ const CUES: Record<string, CueFn> = {
   telegraph: (c, o, n, p) => blip(c, o, n, { freq: 140, to: 190, dur: 0.22, type: 'sawtooth', gain: 0.05 * p.volume }),
   spit: (c, o, n, p) => blip(c, o, n, { freq: 700, to: 300, dur: 0.14, type: 'square', gain: 0.06 * p.volume }),
   bow: (c, o, n, p) => blip(c, o, n, { freq: 900, to: 1600, dur: 0.12, type: 'triangle', gain: 0.07 * p.volume }),
+  eat: (c, o, n, p) => {
+    crunch(c, o, n, { dur: 0.09, gain: 0.22 * p.volume, cutoff: 2600, sweep: 0.4 });
+    blip(c, o, n, { freq: 330, to: 440, dur: 0.18, type: 'sine', gain: 0.1 * p.volume, delay: 0.08 });
+  },
   empty: (c, o, n, p) => blip(c, o, n, { freq: 200, dur: 0.06, type: 'square', gain: 0.04 * p.volume }),
   swap: (c, o, n, p) => blip(c, o, n, { freq: 520, to: 700, dur: 0.09, type: 'square', gain: 0.06 * p.volume }),
   gateOpen: (c, o, n, p) => {

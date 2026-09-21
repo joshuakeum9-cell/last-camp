@@ -64,10 +64,15 @@ export interface GameState {
   };
 
   player: {
+    /** Carried between the world and the camp. Nothing resets them but the fire. */
+    hp: number;
+    cold: number;
     perks: Record<PerkId, number>;
     weapons: WeaponInstance[];
     /** Two slots. The second is null until the Weapon Rack is built. */
     equipped: [string | null, string | null];
+    /** Which slot is in the hand. Slots keep their place; only this moves. */
+    activeSlot: 0 | 1;
     consumables: Record<ConsumableId, number>;
     cosmetics: { outfit: string; weaponSkin: string; fireColor: string; trail: string };
   };
@@ -149,9 +154,12 @@ export function newGameState(): GameState {
       shortcutBuilt: false,
     },
     player: {
+      hp: BAL.player.baseMaxHp,
+      cold: 0,
       perks: emptyPerks(),
       weapons: [{ uid: 'w-axe-0', base: 'axe', rarity: 'common', mods: [], tier: 0, branch: null }],
       equipped: ['w-axe-0', null],
+      activeSlot: 0,
       consumables: emptyConsumables(),
       cosmetics: { outfit: 'default', weaponSkin: 'default', fireColor: 'default', trail: 'none' },
     },

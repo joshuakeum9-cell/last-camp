@@ -9,6 +9,8 @@ export interface DifficultyDef {
   enemyHp: number;
   enemyDamage: number;
   enemySpeed: number;
+  /** Multiplies how many packs an area holds. */
+  spawnRate: number;
   /** How fast the cold takes hold. */
   coldRate: number;
   /** Multiplies the fraction of a haul lost when you fall. */
@@ -30,12 +32,13 @@ export const DIFFICULTIES: Record<DifficultyId, DifficultyDef> = {
     id: 'easy',
     name: 'Bearable',
     desc: 'Animals hit softer and move slower. The cold is patient. Mistakes cost less.',
-    enemyHp: 0.85,
-    enemyDamage: 0.65,
-    enemySpeed: 0.85,
-    coldRate: 0.7,
-    deathLoss: 0.6,
-    telegraph: 1.25,
+    enemyHp: 0.8,
+    enemyDamage: 0.5,
+    enemySpeed: 0.82,
+    spawnRate: 0.65,
+    coldRate: 0.6,
+    deathLoss: 0.5,
+    telegraph: 1.3,
   },
   normal: {
     id: 'normal',
@@ -44,6 +47,7 @@ export const DIFFICULTIES: Record<DifficultyId, DifficultyDef> = {
     enemyHp: 1,
     enemyDamage: 1,
     enemySpeed: 1,
+    spawnRate: 1,
     coldRate: 1,
     deathLoss: 1,
     telegraph: 1,
@@ -52,12 +56,13 @@ export const DIFFICULTIES: Record<DifficultyId, DifficultyDef> = {
     id: 'hard',
     name: 'Killing Cold',
     desc: 'Animals are faster and hit far harder. The cold does not wait. Falling hurts.',
-    enemyHp: 1.25,
-    enemyDamage: 1.45,
-    enemySpeed: 1.12,
-    coldRate: 1.35,
-    deathLoss: 1.3,
-    telegraph: 0.85,
+    enemyHp: 1.2,
+    enemyDamage: 1.25,
+    enemySpeed: 1.1,
+    spawnRate: 1.3,
+    coldRate: 1.25,
+    deathLoss: 1.25,
+    telegraph: 0.9,
   },
 };
 

@@ -74,7 +74,16 @@ export const ResourceSystem = {
   /** Add to the current run's haul. Returns the amount actually granted. */
   collect(id: ResourceId, amount: number, night: boolean): number {
     const run = state.run;
-    const granted = Math.max(1, Math.round(amount * this.yieldMultiplier()));
+    const wanted = Math.max(1, Math.round(amount * this.yieldMultiplier()));
+    // Capped at 999 in the pack and 999 in the store, so numbers stay readable and
+    // there is a reason to go home and unload.
+    const bag = run ? run.collected : state.camp.storage;
+    const room = Math.max(0, BAL.resourceCap - (bag[id] ?? 0));
+    const granted = Math.min(wanted, room);
+    if (granted <= 0) {
+      bus.emit('juice:toast', { text: `You cannot carry any more ${RESOURCES[id].name.toLowerCase()}.`, color: '#a8b8dc' });
+      return 0;
+    }
     if (run) {
       run.collected[id] = (run.collected[id] ?? 0) + granted;
       if (night) run.nightCollected[id] = (run.nightCollected[id] ?? 0) + granted;
@@ -120,7 +129,7 @@ export const ResourceSystem = {
       banked[id] = kept;
       bonusNight[id] = nightExtra;
       lost[id] = total - kept;
-      state.camp.storage[id] = (state.camp.storage[id] ?? 0) + kept;
+      state.camp.storage[id] = Math.min(BAL.resourceCap, (state.camp.storage[id] ?? 0) + kept);
     }
 
     return { banked, bonusNight, lost, untouched, keepFraction };

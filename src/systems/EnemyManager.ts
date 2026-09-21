@@ -9,6 +9,7 @@ import { iceWolfBehavior } from '../entities/enemies/IceWolf';
 import { frozenWalkerBehavior } from '../entities/enemies/FrozenWalker';
 import { snowSpitterBehavior } from '../entities/enemies/SnowSpitter';
 import { Rng, subSeed } from '../core/Rng';
+import { activeDifficulty } from '../data/difficulty';
 import { SOLID_TILES, TILE_SIZE } from '../art/sprites/tiles';
 import type { Juice } from './Juice';
 import type { WorldMapData } from './MapGen';
@@ -48,7 +49,10 @@ export class EnemyManager {
 
       const rng = new Rng(subSeed(seed, `spawn:${area.id}`));
       const tiles = (area.rect.x1 - area.rect.x0) * (area.rect.y1 - area.rect.y0);
-      const groups = Math.max(1, Math.round((tiles / 100) * SPAWN_DENSITY));
+      const groups = Math.max(
+        1,
+        Math.round((tiles / 100) * SPAWN_DENSITY * activeDifficulty(state.settings.difficulty).spawnRate),
+      );
 
       for (let g = 0; g < groups; g++) {
         const rule = this.pickRule(rules, rng);

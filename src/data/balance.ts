@@ -7,7 +7,6 @@ export const BAL = {
   view: { width: 480, height: 270 },
   tile: 16,
   world: { cols: 100, rows: 60 },
-  camp: { cols: 30, rows: 20 },
 
   // --- player movement ---------------------------------------------------
   player: {
@@ -15,12 +14,12 @@ export const BAL = {
     /** Seconds to reach full speed and to stop. Small numbers feel snappy. */
     accelTime: 0.07,
     stopTime: 0.05,
-    baseMaxHp: 60,
+    baseMaxHp: 75,
     /** Radius of the physics body, in pixels. */
     bodyRadius: 5,
     /** Body offset from the 16x22 sprite's top-left. */
     bodyOffset: { x: 3, y: 12 },
-    invulnAfterHit: 0.6,
+    invulnAfterHit: 0.75,
     knockbackTaken: 90,
   },
 
@@ -73,8 +72,8 @@ export const BAL = {
       { id: 'morning', name: 'MORNING', until: 80, darkness: 0.0, coldMult: 1.0, enemyDmg: 1.0 },
       { id: 'midday', name: 'MIDDAY', until: 150, darkness: 0.0, coldMult: 1.0, enemyDmg: 1.0 },
       { id: 'evening', name: 'EVENING', until: 200, darkness: 0.22, coldMult: 1.3, enemyDmg: 1.0 },
-      { id: 'nightfall', name: 'NIGHTFALL', until: 240, darkness: 0.6, coldMult: 1.6, enemyDmg: 1.2 },
-      { id: 'night', name: 'NIGHT', until: Infinity, darkness: 0.8, coldMult: 2.0, enemyDmg: 1.4 },
+      { id: 'nightfall', name: 'NIGHTFALL', until: 240, darkness: 0.6, coldMult: 1.5, enemyDmg: 1.1 },
+      { id: 'night', name: 'NIGHT', until: Infinity, darkness: 0.8, coldMult: 1.8, enemyDmg: 1.25 },
     ],
     /** Resources gathered after nightfall are worth this much more in the summary. */
     nightBounty: 1.5,
@@ -114,14 +113,34 @@ export const BAL = {
   /** Bonus for returning with no damage taken. */
   untouchedBonus: 0.1,
 
+  /** Nothing stacks past this. Bank it at camp or spend it. */
+  resourceCap: 999,
+
+  // --- recovery ----------------------------------------------------------
+  camp: {
+    cols: 30,
+    rows: 20,
+    /** Health per second while standing in the firelight. A full heal is a short wait. */
+    fireHealPerSec: 7,
+    /** Cold shed per second in the firelight. */
+    fireColdPerSec: 14,
+    /** How close to the fire counts, in pixels. */
+    fireRadius: 84,
+  },
+  eat: {
+    /** Seconds between bites, so a stack of food cannot be inhaled mid-fight. */
+    cooldown: 1.2,
+  },
+
   // --- enemy scaling by day ----------------------------------------------
   scaling: {
-    hpPerDay: 0.08,
-    hpCap: 1.6,
-    damagePerDay: 0.05,
-    damageCap: 1.5,
-    packBonusEveryDays: 2,
-    packBonusCap: 3,
+    hpPerDay: 0.06,
+    hpCap: 1.45,
+    damagePerDay: 0.03,
+    damageCap: 1.25,
+    /** A pack grows this slowly on purpose: day eight should not be a wall of bodies. */
+    packBonusEveryDays: 3,
+    packBonusCap: 1,
   },
 
   // --- loot --------------------------------------------------------------

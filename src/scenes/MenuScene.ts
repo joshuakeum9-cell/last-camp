@@ -245,7 +245,8 @@ export class MenuScene extends Phaser.Scene {
         onClick: equipped
           ? undefined
           : () => {
-              state.player.equipped[0] = instance.uid;
+              // Goes into whichever slot is active, so the hotbar shows the change.
+              state.player.equipped[state.player.activeSlot ?? 0] = instance.uid;
               SaveSystem.save();
               this.refresh();
             },

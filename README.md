@@ -41,10 +41,10 @@ accounts and no network calls.
 | Key | Action |
 |---|---|
 | `W` `A` `S` `D` or arrows | Move |
-| `J` or left mouse | Attack. Hold to charge |
+| `Q` or left mouse | Attack. Hold to charge |
 | `Space` | Dash. Invulnerable while dashing |
 | `E` | Interact, read, open, advance dialogue |
-| `Q` | Swap weapon, once you have the Weapon Rack |
+| `R` | Swap weapon, once you have the Weapon Rack |
 | `Esc` | Close a menu |
 | Settings | Download or restore your camp as a file |
 | `` ` `` | Developer screen |

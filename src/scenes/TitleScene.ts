@@ -147,7 +147,7 @@ export class TitleScene extends Phaser.Scene {
 
     this.buildDifficultyRow(by + 72);
 
-    const hint = 'WASD move   J or click attack   SPACE dash   E interact';
+    const hint = 'WASD move   Q or click attack   SPACE dash   E interact   F eat';
     this.add
       .bitmapText(Math.round(width / 2), height - 16, FONT, hint)
       .setOrigin(0.5, 0)

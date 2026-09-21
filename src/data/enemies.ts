@@ -56,7 +56,7 @@ export const ENEMIES: Record<EnemyId, EnemyDef> = {
     color: PAL.grey,
     accent: PAL.magenta,
     hp: 14,
-    damage: 6,
+    damage: 4,
     speed: 110,
     rushSpeed: 200,
     attackRange: 20,
@@ -70,7 +70,7 @@ export const ENEMIES: Record<EnemyId, EnemyDef> = {
     telegraphSize: 10,
     interruptible: true,
     mass: 0.7,
-    pack: [3, 5],
+    pack: [2, 3],
     drops: [{ id: 'food', chance: 0.3, min: 1, max: 1 }],
     teaches: 'Crowd control. Keep swinging, keep moving.',
   },
@@ -79,8 +79,8 @@ export const ENEMIES: Record<EnemyId, EnemyDef> = {
     name: 'Ice Wolf',
     color: PAL.snowShade,
     accent: PAL.cyan,
-    hp: 40,
-    damage: 14,
+    hp: 36,
+    damage: 9,
     speed: 75,
     rushSpeed: 260,
     attackRange: 120,
@@ -94,7 +94,7 @@ export const ENEMIES: Record<EnemyId, EnemyDef> = {
     telegraphSize: 130,
     interruptible: false,
     mass: 1.1,
-    pack: [1, 2],
+    pack: [1, 1],
     drops: [
       { id: 'food', chance: 0.4, min: 1, max: 2 },
       { id: 'scrap', chance: 0.25, min: 1, max: 1 },
@@ -106,8 +106,8 @@ export const ENEMIES: Record<EnemyId, EnemyDef> = {
     name: 'Frozen Walker',
     color: PAL.violetDark,
     accent: PAL.violet,
-    hp: 90,
-    damage: 22,
+    hp: 80,
+    damage: 15,
     speed: 35,
     rushSpeed: 35,
     attackRange: 26,
@@ -121,7 +121,7 @@ export const ENEMIES: Record<EnemyId, EnemyDef> = {
     telegraphSize: 26,
     interruptible: false,
     mass: 2.4,
-    pack: [1, 2],
+    pack: [1, 1],
     drops: [
       { id: 'scrap', chance: 0.6, min: 1, max: 3 },
       { id: 'crystal', chance: 0.15, min: 1, max: 1 },
@@ -133,8 +133,8 @@ export const ENEMIES: Record<EnemyId, EnemyDef> = {
     name: 'Snow Spitter',
     color: PAL.teal,
     accent: PAL.green,
-    hp: 30,
-    damage: 8,
+    hp: 28,
+    damage: 5,
     speed: 60,
     rushSpeed: 60,
     attackRange: 150,
@@ -148,7 +148,7 @@ export const ENEMIES: Record<EnemyId, EnemyDef> = {
     telegraphSize: 12,
     interruptible: true,
     mass: 1,
-    pack: [1, 3],
+    pack: [1, 2],
     drops: [
       { id: 'crystal', chance: 0.2, min: 1, max: 1 },
       { id: 'scrap', chance: 0.3, min: 1, max: 2 },
@@ -160,8 +160,8 @@ export const ENEMIES: Record<EnemyId, EnemyDef> = {
     name: 'Alpha Beast',
     color: PAL.woodDark,
     accent: PAL.ember,
-    hp: 260,
-    damage: 18,
+    hp: 240,
+    damage: 13,
     speed: 70,
     rushSpeed: 240,
     attackRange: 140,
@@ -187,8 +187,8 @@ export const ENEMIES: Record<EnemyId, EnemyDef> = {
     name: 'Night Stalker',
     color: PAL.white,
     accent: PAL.ice,
-    hp: 55,
-    damage: 18,
+    hp: 50,
+    damage: 13,
     speed: 95,
     rushSpeed: 310,
     attackRange: 140,
@@ -245,7 +245,11 @@ export const AREA_SPAWNS: Record<string, SpawnRule[]> = {
 };
 
 /**
- * Packs per 100 tiles of an area, before day scaling. Deliberately low: the Frozen
- * Forest should hold four or five encounters you can choose to take, not a swarm.
+ * Packs per 100 tiles of an area, before day scaling.
+ *
+ * Playtesting said the whole game was too hard on every setting, and the cause was
+ * local density rather than individual enemies: three packs could be on screen at
+ * once. An area should hold a handful of encounters you can choose to take, and you
+ * should be able to fight one of them without a second arriving.
  */
-export const SPAWN_DENSITY = 0.42;
+export const SPAWN_DENSITY = 0.26;

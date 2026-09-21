@@ -55,7 +55,7 @@ export const AREAS: Record<AreaId, AreaDef> = {
   forest: {
     id: 'forest',
     name: 'Frozen Forest',
-    rect: { x0: 9, y0: 8, x1: 34, y1: 53 },
+    rect: { x0: 2, y0: 6, x1: 34, y1: 54 },
     ground: 'snow',
     tint: PAL.blue,
     coldMult: 1.0,
@@ -65,7 +65,7 @@ export const AREAS: Record<AreaId, AreaDef> = {
   road: {
     id: 'road',
     name: 'Abandoned Road',
-    rect: { x0: 34, y0: 6, x1: 60, y1: 29 },
+    rect: { x0: 34, y0: 6, x1: 60, y1: 32 },
     ground: 'road',
     tint: PAL.violet,
     coldMult: 1.0,
@@ -75,7 +75,7 @@ export const AREAS: Record<AreaId, AreaDef> = {
   cabin: {
     id: 'cabin',
     name: 'Ruined Cabin',
-    rect: { x0: 60, y0: 6, x1: 85, y1: 29 },
+    rect: { x0: 60, y0: 6, x1: 85, y1: 32 },
     ground: 'snow',
     tint: PAL.violetDark,
     coldMult: 1.0,
@@ -85,7 +85,7 @@ export const AREAS: Record<AreaId, AreaDef> = {
   lake: {
     id: 'lake',
     name: 'Frozen Lake',
-    rect: { x0: 34, y0: 32, x1: 68, y1: 54 },
+    rect: { x0: 34, y0: 32, x1: 67, y1: 54 },
     ground: 'ice',
     tint: PAL.ice,
     coldMult: 1.5,
@@ -106,7 +106,7 @@ export const AREAS: Record<AreaId, AreaDef> = {
   bossden: {
     id: 'bossden',
     name: "The Maw's Den",
-    rect: { x0: 78, y0: 32, x1: 98, y1: 54 },
+    rect: { x0: 79, y0: 33, x1: 98, y1: 54 },
     ground: 'deep',
     tint: PAL.deep,
     coldMult: 1.5,
@@ -116,7 +116,7 @@ export const AREAS: Record<AreaId, AreaDef> = {
   towerpass: {
     id: 'towerpass',
     name: 'Signal Tower Pass',
-    rect: { x0: 86, y0: 8, x1: 98, y1: 23 },
+    rect: { x0: 87, y0: 6, x1: 98, y1: 31 },
     ground: 'deep',
     tint: PAL.cyan,
     coldMult: 2.0,
@@ -154,14 +154,14 @@ export interface GateDef {
 export const GATES: Record<GateId, GateDef> = {
   bossSnowbank: {
     id: 'bossSnowbank',
-    rect: { x0: 75, y0: 34, x1: 78, y1: 39 },
+    rect: { x0: 76, y0: 33, x1: 79, y1: 40 },
     kind: 'breakable',
     hits: 3,
     message: 'A packed wall of snow. Something big goes in and out of here.',
   },
   secretIce: {
     id: 'secretIce',
-    rect: { x0: 67, y0: 45, x1: 70, y1: 49 },
+    rect: { x0: 67, y0: 45, x1: 69, y1: 49 },
     kind: 'breakable',
     hits: 2,
     message: 'The ice here is thin and glassy. It hums when you step on it.',
@@ -169,22 +169,22 @@ export const GATES: Record<GateId, GateDef> = {
   },
   towerIce: {
     id: 'towerIce',
-    rect: { x0: 84, y0: 13, x1: 87, y1: 18 },
+    rect: { x0: 85, y0: 13, x1: 87, y1: 18 },
     kind: 'locked',
     hits: 0,
     message: 'A wall of blue ice blocks the pass. It hums. Nothing you carry will cut it.',
   },
 };
 
+/**
+ * Areas now touch each other directly, so nearly every corridor is gone. What is left
+ * is the three passages that have a gate in them, because a gate needs a wall on
+ * either side of it to mean anything.
+ */
 export const CORRIDORS: Corridor[] = [
-  { rect: { x0: 8, y0: 27, x1: 11, y1: 32 }, ground: 'camp' },
-  { rect: { x0: 32, y0: 14, x1: 36, y1: 21 }, ground: 'snow' },
-  { rect: { x0: 31, y0: 44, x1: 36, y1: 50 }, ground: 'snow' },
-  { rect: { x0: 58, y0: 12, x1: 62, y1: 21 }, ground: 'road' },
-  { rect: { x0: 62, y0: 27, x1: 68, y1: 34 }, ground: 'snow' },
-  { rect: { x0: 66, y0: 34, x1: 80, y1: 39 }, ground: 'deep', gate: 'bossSnowbank' },
-  { rect: { x0: 67, y0: 45, x1: 70, y1: 49 }, ground: 'ice', gate: 'secretIce' },
-  { rect: { x0: 84, y0: 13, x1: 87, y1: 18 }, ground: 'deep', gate: 'towerIce' },
+  { rect: { x0: 66, y0: 33, x1: 80, y1: 40 }, ground: 'deep', gate: 'bossSnowbank' },
+  { rect: { x0: 67, y0: 45, x1: 69, y1: 49 }, ground: 'ice', gate: 'secretIce' },
+  { rect: { x0: 85, y0: 13, x1: 87, y1: 18 }, ground: 'deep', gate: 'towerIce' },
 ];
 
 /** Where the player appears when they leave camp, in tiles. */
