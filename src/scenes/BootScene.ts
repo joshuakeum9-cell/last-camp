@@ -8,6 +8,7 @@ import { buildCampArt } from '../art/sprites/camp';
 import { buildFx } from '../art/sprites/fx';
 import { buildEnemyArt } from '../art/sprites/enemies';
 import { buildWeaponFx, buildWeaponIcons } from '../art/sprites/weapons';
+import { buildCacheArt } from '../entities/Cache';
 import { SaveSystem } from '../core/SaveSystem';
 import { state } from '../core/GameState';
 import { bus } from '../core/EventBus';
@@ -30,6 +31,7 @@ export class BootScene extends Phaser.Scene {
     buildEnemyArt(this);
     buildWeaponFx(this);
     buildWeaponIcons(this);
+    buildCacheArt(this);
     for (const sprite of PLAYER_SPRITES) PixelFactory.build(this, sprite);
 
     SaveSystem.load();

@@ -8,6 +8,7 @@ import { Player } from '../entities/Player';
 import { Pickup } from '../entities/Pickup';
 import { ResourceNode, type NodeKind } from '../entities/ResourceNode';
 import { Breakable } from '../entities/Breakable';
+import { Cache } from '../entities/Cache';
 import { Juice } from '../systems/Juice';
 import { Weather } from '../systems/Weather';
 import { CombatSystem } from '../systems/CombatSystem';
@@ -15,6 +16,10 @@ import { WeaponSystem } from '../systems/WeaponSystem';
 import { EnemyManager } from '../systems/EnemyManager';
 import { DayNightSystem } from '../systems/DayNightSystem';
 import { ColdSystem } from '../systems/ColdSystem';
+import { Lighting } from '../systems/Lighting';
+import { LootSystem } from '../systems/LootSystem';
+import { CACHES } from '../data/loot';
+import { RARITY_COLOR } from '../art/palette';
 import { ResourceSystem } from '../systems/ResourceSystem';
 import { generateWorld, SOLID_PROPS, type PropKind, type WorldMapData } from '../systems/MapGen';
 import { SOLID_TILES, TILESET_KEY, TILE_SIZE } from '../art/sprites/tiles';
@@ -59,12 +64,13 @@ export class WorldScene extends Phaser.Scene {
   private enemyManager!: EnemyManager;
   private clock!: DayNightSystem;
   private cold!: ColdSystem;
+  private lighting!: Lighting;
+  private caches: Cache[] = [];
   private subs = new Subscriptions();
 
   private mapData!: WorldMapData;
   private layer!: Phaser.Tilemaps.TilemapLayer;
   private ambient!: Phaser.GameObjects.Rectangle;
-  private darkness!: Phaser.GameObjects.Rectangle;
   private frostVignette!: Phaser.GameObjects.Image;
   private currentArea: AreaDef | null = null;
   private prompt!: Phaser.GameObjects.BitmapText;
@@ -84,6 +90,7 @@ export class WorldScene extends Phaser.Scene {
     const seed = state.run.seed;
     this.ending = false;
     this.pickups = [];
+    this.caches = [];
 
     this.mapData = generateWorld(seed);
     this.buildTilemap();
@@ -118,6 +125,8 @@ export class WorldScene extends Phaser.Scene {
     );
 
     this.buildOverlays();
+    this.lighting = new Lighting(this);
+    this.buildCaches();
     this.buildPrompt();
     this.setupCamera();
 
@@ -318,6 +327,38 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  /** Hand-placed caches. Everything the player needs to find is one of these. */
+  private buildCaches(): void {
+    for (const def of CACHES) {
+      if (def.area === 'secret' && !state.map.secretFound) continue;
+      this.caches.push(
+        new Cache(
+          this,
+          def,
+          def.tx * TILE_SIZE + TILE_SIZE / 2,
+          def.ty * TILE_SIZE + TILE_SIZE,
+          this.juice,
+          (name, rarity) => this.onWeaponFound(name, rarity),
+        ),
+      );
+    }
+  }
+
+  private onWeaponFound(name: string, rarity: string): void {
+    bus.emit('juice:toast', {
+      text: `${name.toUpperCase()} found.`,
+      color: RARITY_COLOR[rarity as keyof typeof RARITY_COLOR],
+    });
+    this.juice.floatText(
+      this.player.cx,
+      this.player.sprite.y - 34,
+      name.toUpperCase(),
+      RARITY_COLOR[rarity as keyof typeof RARITY_COLOR],
+      1.3,
+    );
+    bus.emit('juice:shake', { intensity: 4, ms: 180 });
+  }
+
   private buildOverlays(): void {
     const { width, height } = BAL.view;
     // A light tint, not a dimmer. Multiply blending crushed the saturation out of
@@ -328,15 +369,6 @@ export class WorldScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setAlpha(0.09)
       .setDepth(5000);
-
-    // Night falls as a deep navy wash rather than a black one, so the world stays
-    // colourful even when it is dangerous.
-    this.darkness = this.add
-      .rectangle(0, 0, width, height, hex(PAL.navy))
-      .setOrigin(0)
-      .setScrollFactor(0)
-      .setAlpha(0)
-      .setDepth(5010);
 
     this.frostVignette = this.add
       .image(width / 2, height / 2, 'fx-glow-xl')
@@ -388,6 +420,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.weather.update(dt, this.currentArea?.id === 'lake' ? 0.5 : 0.18);
     this.weather.setNight(this.clock.darkness);
+    this.lighting.update(_time, this.clock.darkness, this.collectLights());
 
     // Ease the ambient tint between areas, so crossing a border changes the temperature
     // of the screen rather than snapping it.
@@ -423,6 +456,29 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  /** What is still lit once the sun has gone. */
+  private collectLights(): Array<{ x: number; y: number; radius: number }> {
+    const lights: Array<{ x: number; y: number; radius: number }> = [];
+    const carried = ResourceSystem.campEffects().playerLightMult;
+    lights.push({ x: this.player.cx, y: this.player.cy, radius: 66 * carried });
+
+    // Home always shows, so the way back is never guesswork.
+    lights.push({
+      x: WORLD_SPAWN.x * TILE_SIZE,
+      y: WORLD_SPAWN.y * TILE_SIZE,
+      radius: 90,
+    });
+
+    // Crystal spires and unopened caches are the only other things that glow.
+    for (const cache of this.caches) {
+      if (cache.isOpen) continue;
+      if (Math.abs(cache.cx - this.player.cx) > 320) continue;
+      if (Math.abs(cache.cy - this.player.cy) > 220) continue;
+      lights.push({ x: cache.cx, y: cache.cy, radius: 46 });
+    }
+    return lights;
+  }
+
   private updatePickups(dt: number): void {
     for (let i = this.pickups.length - 1; i >= 0; i--) {
       if (this.pickups[i].update(dt, this.player.cx, this.player.cy, this.juice)) {
@@ -445,9 +501,6 @@ export class WorldScene extends Phaser.Scene {
     if (damage > 0) this.player.hp = Math.max(0, this.player.hp - damage);
     if (this.player.hp <= 0 && !this.ending) this.endDay('death');
 
-    this.darkness.setAlpha(
-      Phaser.Math.Linear(this.darkness.alpha, this.clock.darkness * 0.75, 0.04),
-    );
     this.frostVignette.setAlpha(Math.max(0, (this.cold.fraction - 0.6) * 0.9));
   }
 
@@ -516,6 +569,19 @@ export class WorldScene extends Phaser.Scene {
     const tx = Math.floor(this.player.cx / TILE_SIZE);
     const ty = Math.floor(this.player.cy / TILE_SIZE);
 
+    for (const cache of this.caches) {
+      if (!cache.inRange(this.player.cx, this.player.cy)) continue;
+      this.prompt
+        .setText(cache.prompt)
+        .setPosition(Math.round(this.player.cx), Math.round(this.player.sprite.y) - 26)
+        .setVisible(true);
+      if (pressed) {
+        const flavour = cache.open();
+        if (flavour) bus.emit('juice:toast', { text: flavour, color: '#fff3ce' });
+      }
+      return;
+    }
+
     if (rectContains(RETURN_ZONE, tx, ty)) {
       this.prompt
         .setText('E  RETURN TO CAMP')
@@ -573,6 +639,9 @@ export class WorldScene extends Phaser.Scene {
     this.subs.dispose();
     for (const p of this.pickups) p.destroy();
     this.pickups = [];
+    for (const c of this.caches) c.destroy();
+    this.caches = [];
+    this.lighting?.destroy();
     this.enemyManager?.destroy();
     this.weapons?.destroy();
     this.weather?.destroy();
