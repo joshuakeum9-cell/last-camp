@@ -3,6 +3,8 @@ import { bus } from '../core/EventBus';
 import { state } from '../core/GameState';
 import { BAL } from '../data/balance';
 import type { EnemyBase } from '../entities/EnemyBase';
+import type { ResourceNode } from '../entities/ResourceNode';
+import type { Breakable } from '../entities/Breakable';
 import type { Player } from '../entities/Player';
 import type { SwingShape, WeaponDef } from '../data/weapons';
 import { UPGRADES } from '../data/upgrades';
@@ -40,6 +42,9 @@ export interface StrikeResult {
  */
 export class CombatSystem {
   private enemies: EnemyBase[] = [];
+  /** Harvestable scenery. A swing that misses an enemy should still fell a tree. */
+  nodes: ResourceNode[] = [];
+  breakables: Breakable[] = [];
 
   constructor(
     private scene: Phaser.Scene,
@@ -94,8 +99,32 @@ export class CombatSystem {
       if (!req.pierce) break;
     }
 
+    this.strikeScenery(req);
+
     if (result.hits > 0 && perfectCrit) this.player.perfectCritUntil = 0;
     return result;
+  }
+
+  /**
+   * The same swing also works on the world. Gathering uses the combat verb, which is
+   * what keeps the rhythm of a run consistent whether you are fighting or foraging.
+   */
+  private strikeScenery(req: StrikeRequest): void {
+    const breaker = req.flags.includes('nodeBreaker');
+    const woodBonus = req.flags.includes('nodeBreaker') ? 0.3 : 0;
+
+    for (const node of this.nodes) {
+      if (!node.alive) continue;
+      if (!this.inSwing({ ...req, reach: req.reach + node.radius }, node.cx, node.cy)) continue;
+      node.hit(req.x, req.y, breaker, woodBonus);
+      if (!req.pierce) break;
+    }
+    for (const b of this.breakables) {
+      if (!b.alive) continue;
+      if (!this.inSwing({ ...req, reach: req.reach + b.radius }, b.cx, b.cy)) continue;
+      b.hit();
+      if (!req.pierce) break;
+    }
   }
 
   private inSwing(req: StrikeRequest, tx: number, ty: number): boolean {
@@ -188,6 +217,8 @@ export class CombatSystem {
   destroy(): void {
     for (const e of this.enemies) e.destroy();
     this.enemies = [];
+    this.nodes = [];
+    this.breakables = [];
     void bus;
   }
 }

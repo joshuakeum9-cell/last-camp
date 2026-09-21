@@ -82,6 +82,7 @@ export const BAL = {
     /** Chance of a storm, from this day onward. */
     stormFromDay: 3,
     stormChance: 0.35,
+    stormMult: 1.5,
   },
 
   // --- cold --------------------------------------------------------------

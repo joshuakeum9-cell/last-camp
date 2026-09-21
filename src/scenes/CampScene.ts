@@ -15,6 +15,7 @@ import { hex, PAL } from '../art/palette';
 import { FONT } from '../art/PixelFont';
 import { Rng } from '../core/Rng';
 import { hud, resetHud } from '../core/HudState';
+import { ResourceSystem } from '../systems/ResourceSystem';
 
 interface Station {
   x: number;
@@ -52,6 +53,7 @@ export class CampScene extends Phaser.Scene {
 
     this.buildGround();
     this.player = new Player(this, 15 * TILE_SIZE + 8, 15 * TILE_SIZE);
+    this.player.setMaxHp(ResourceSystem.maxHp(), true);
     this.physics.add.collider(this.player.sprite, this.layer);
 
     this.buildCamp();
@@ -272,12 +274,12 @@ export class CampScene extends Phaser.Scene {
 
   private headOut(): void {
     const storm = state.day >= BAL.day.stormFromDay && Math.random() < BAL.day.stormChance;
-    state.run = newRunState(Date.now() & 0xffffff, this.player.maxHp, storm);
+    state.run = newRunState(Date.now() & 0xffffff, ResourceSystem.maxHp(), storm);
     SaveSystem.save();
     bus.emit('day:started', { day: state.day });
 
     this.cameras.main.fadeOut(280, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('World'));
+    this.time.delayedCall(310, () => this.scene.start('World'));
   }
 
   // --- loop --------------------------------------------------------------

@@ -159,7 +159,7 @@ export class Juice {
   static flashSprite(
     scene: Phaser.Scene,
     sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image,
-    ms = BAL.combat.flashMs,
+    ms: number = BAL.combat.flashMs,
   ): void {
     if (state.settings.flashReduction) {
       sprite.setTint(hex(PAL.blood));
