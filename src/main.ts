@@ -8,6 +8,7 @@ import { WorldScene } from './scenes/WorldScene';
 import { HUDScene } from './scenes/HUDScene';
 import { SummaryScene } from './scenes/SummaryScene';
 import { MenuScene } from './scenes/MenuScene';
+import { SettingsScene } from './scenes/SettingsScene';
 import { DevScene } from './scenes/DevScene';
 import { SaveSystem } from './core/SaveSystem';
 import { state } from './core/GameState';
@@ -44,7 +45,17 @@ const config: Phaser.Types.Core.GameConfig = {
   render: {
     powerPreference: 'high-performance',
   },
-  scene: [BootScene, TitleScene, CampScene, WorldScene, SummaryScene, MenuScene, HUDScene, DevScene],
+  scene: [
+    BootScene,
+    TitleScene,
+    CampScene,
+    WorldScene,
+    SummaryScene,
+    MenuScene,
+    SettingsScene,
+    HUDScene,
+    DevScene,
+  ],
 };
 
 try {

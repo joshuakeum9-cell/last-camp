@@ -80,6 +80,18 @@ export class MenuScene extends Phaser.Scene {
       () => this.close(),
     );
 
+    new Button(
+      this,
+      width - 118,
+      height - 22,
+      { width: 52, height: 14, text: 'OPTIONS', fill: PAL.deep, border: PAL.greyDark, textColor: PAL.grey },
+      () => {
+        this.scene.stop();
+        this.scene.launch('Settings', { returnTo: 'Camp' });
+        this.scene.bringToTop('Settings');
+      },
+    );
+
     this.input.keyboard?.on('keydown-ESC', () => this.close());
     this.input.keyboard?.on('keydown-TAB', () => this.cycleTab());
   }

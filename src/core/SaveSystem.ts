@@ -100,7 +100,7 @@ function migrate(raw: GameState): GameState | null {
   if (raw.version > SAVE_VERSION) return null;
 
   const base = newGameState();
-  const merged = deepFill(raw as unknown as Record<string, unknown>, base as unknown as Record<string, unknown>);
+  const merged = deepFill(raw, base);
   const out = merged as unknown as GameState;
   out.version = SAVE_VERSION;
 
@@ -111,30 +111,50 @@ function migrate(raw: GameState): GameState | null {
   return out;
 }
 
-/** Copy `src` over `template`, keeping template values for anything missing or mistyped. */
-function deepFill(
-  src: Record<string, unknown>,
-  template: Record<string, unknown>,
-): Record<string, unknown> {
+/**
+ * Copy `src` over `template`, keeping template values for anything missing or mistyped.
+ *
+ * `typeof null === 'object'` is the trap here: a template field that is legitimately
+ * null (`run`, `miraAssignedAt`) paired with a saved object used to recurse with a null
+ * template and throw, which left a returning player on a black screen. Both sides are
+ * now checked for null before recursing.
+ */
+function deepFill(src: unknown, template: unknown): unknown {
+  if (!isPlainObject(template)) {
+    // The template has no shape to enforce, so keep whatever was saved.
+    return src === undefined ? template : src;
+  }
+  if (!isPlainObject(src)) return template;
+
   const out: Record<string, unknown> = {};
+
   for (const key of Object.keys(template)) {
     const t = template[key];
-    const s = src ? src[key] : undefined;
+    const s = src[key];
+
     if (s === undefined || s === null) {
       out[key] = t;
     } else if (Array.isArray(t)) {
       out[key] = Array.isArray(s) ? s : t;
-    } else if (typeof t === 'object' && typeof s === 'object') {
-      out[key] = deepFill(s as Record<string, unknown>, t as Record<string, unknown>);
+    } else if (isPlainObject(t) && isPlainObject(s)) {
+      out[key] = deepFill(s, t);
+    } else if (t === null) {
+      // A field the template leaves empty, such as an expedition in progress.
+      out[key] = s;
     } else if (typeof t === typeof s) {
       out[key] = s;
     } else {
       out[key] = t;
     }
   }
-  // Keep extra keys the template does not know about, e.g. maps keyed by id.
-  for (const key of Object.keys(src ?? {})) {
+
+  // Keep extra keys the template does not know about: maps keyed by id, mostly.
+  for (const key of Object.keys(src)) {
     if (!(key in out)) out[key] = src[key];
   }
   return out;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

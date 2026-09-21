@@ -25,6 +25,7 @@ import { Gate } from '../entities/Gate';
 import { NPCMira } from '../entities/NPCMira';
 import { BossWhiteMaw } from '../entities/BossWhiteMaw';
 import { Dialogue } from '../ui/Dialogue';
+import { TouchControls } from '../ui/TouchControls';
 import { GATE_IDS } from '../data/areas';
 import { RARITY_COLOR } from '../art/palette';
 import { ResourceSystem } from '../systems/ResourceSystem';
@@ -75,6 +76,8 @@ export class WorldScene extends Phaser.Scene {
   private cold!: ColdSystem;
   private lighting!: Lighting;
   private dialogue!: Dialogue;
+  private touch!: TouchControls;
+  private canInteract = false;
   private caches: Cache[] = [];
   private notes: WorldNote[] = [];
   private gates: Gate[] = [];
@@ -161,9 +164,12 @@ export class WorldScene extends Phaser.Scene {
       });
     }
 
+    this.touch = new TouchControls(this);
+
     if (!this.scene.isActive('HUD')) this.scene.launch('HUD');
     this.scene.bringToTop('HUD');
 
+    this.subs.add(bus.on('settings:changed', () => this.touch.refreshSettings()));
     this.subs.add(bus.on('player:died', () => this.endDay('death')));
     this.subs.add(bus.on('enemy:killed', (e) => this.onEnemyKilled(e.type, e.x, e.y)));
     this.subs.add(bus.on('boss:defeated', () => this.onBossDefeated()));
@@ -493,6 +499,7 @@ export class WorldScene extends Phaser.Scene {
     this.updateClockAndCold(dt);
     this.updateInteraction(input.interactPressed);
     this.updateHud();
+    this.touch.update(this.canInteract, !!state.player.equipped[1]);
 
     this.weather.update(dt, this.currentArea?.id === 'lake' ? 0.5 : 0.18);
     this.weather.setNight(this.clock.darkness);
@@ -753,10 +760,12 @@ export class WorldScene extends Phaser.Scene {
       if (pressed) this.endDay('return');
       return;
     }
+    this.canInteract = false;
     this.prompt.setVisible(false);
   }
 
   private showPrompt(text: string): void {
+    this.canInteract = !!text;
     if (!text) {
       this.prompt.setVisible(false);
       return;

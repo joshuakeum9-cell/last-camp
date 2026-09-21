@@ -133,6 +133,17 @@ export class TitleScene extends Phaser.Scene {
       },
     ).setDepth(600);
 
+    new Button(
+      this,
+      bx,
+      by + 26,
+      { width: bw, height: 20, text: 'SETTINGS', fill: PAL.deep, border: PAL.greyDark, textColor: PAL.grey },
+      () => {
+        this.weather.destroy();
+        this.scene.start('Settings', { returnTo: 'Title' });
+      },
+    ).setDepth(600);
+
     const hint = 'WASD move   J or click attack   SPACE dash   E interact';
     this.add
       .bitmapText(Math.round(width / 2), height - 16, FONT, hint)

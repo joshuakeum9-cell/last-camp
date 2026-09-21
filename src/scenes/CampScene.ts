@@ -20,6 +20,7 @@ import { Rng } from '../core/Rng';
 import { hud, resetHud } from '../core/HudState';
 import { NPCMira } from '../entities/NPCMira';
 import { Dialogue } from '../ui/Dialogue';
+import { TouchControls } from '../ui/TouchControls';
 import { NOTE_LIST } from '../data/story';
 
 interface Station {
@@ -47,6 +48,7 @@ export class CampScene extends Phaser.Scene {
   private stations: Station[] = [];
   private prompt!: Phaser.GameObjects.BitmapText;
   private dialogue!: Dialogue;
+  private touch!: TouchControls;
   private mira: NPCMira | null = null;
 
   constructor() {
@@ -90,6 +92,9 @@ export class CampScene extends Phaser.Scene {
     cam.setBounds(0, 0, BAL.camp.cols * TILE_SIZE, BAL.camp.rows * TILE_SIZE);
     cam.setBackgroundColor(PAL.navy);
     cam.fadeIn(320, 0, 0, 0);
+
+    this.touch = new TouchControls(this);
+    this.subs.add(bus.on('settings:changed', () => this.touch.refreshSettings()));
 
     if (!this.scene.isActive('HUD')) this.scene.launch('HUD');
     this.scene.bringToTop('HUD');
@@ -421,6 +426,8 @@ export class CampScene extends Phaser.Scene {
         nearestDist = d;
       }
     }
+
+    this.touch.update(!!nearest, !!state.player.equipped[1]);
 
     if (nearest) {
       this.prompt
