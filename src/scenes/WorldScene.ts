@@ -5,6 +5,9 @@ import { state } from '../core/GameState';
 import { InputSystem } from '../core/InputSystem';
 import { Player } from '../entities/Player';
 import { Juice } from '../systems/Juice';
+import { CombatSystem } from '../systems/CombatSystem';
+import { WeaponSystem } from '../systems/WeaponSystem';
+import { EnemyManager } from '../systems/EnemyManager';
 import { Weather } from '../systems/Weather';
 import { generateWorld, SOLID_PROPS, type WorldMapData } from '../systems/MapGen';
 import { SOLID_TILES, TILESET_KEY, TILE_SIZE } from '../art/sprites/tiles';
@@ -40,6 +43,9 @@ export class WorldScene extends Phaser.Scene {
   private player!: Player;
   private juice!: Juice;
   private weather!: Weather;
+  private combat!: CombatSystem;
+  private weapons!: WeaponSystem;
+  private enemyManager!: EnemyManager;
   private subs = new Subscriptions();
 
   private mapData!: WorldMapData;
@@ -55,7 +61,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   create(): void {
-    const seed = state.run?.seed ?? Date.now();
+    const seed = (state.run?.seed ?? Date.now()) & 0xffffff;
     this.mapData = generateWorld(seed);
 
     this.buildTilemap();
@@ -73,6 +79,18 @@ export class WorldScene extends Phaser.Scene {
     this.input$ = new InputSystem(this);
     this.juice = new Juice(this);
     this.weather = new Weather(this);
+
+    this.combat = new CombatSystem(this, this.player, this.juice);
+    this.weapons = new WeaponSystem(this, this.player, this.combat);
+    this.enemyManager = new EnemyManager(this, this.mapData, this.juice);
+    this.enemyManager.populate(seed);
+    this.combat.setEnemies(this.enemyManager.enemies);
+    // Projectiles look the player up here rather than holding a reference to the scene.
+    this.registry.set('player', this.player);
+    this.physics.add.collider(
+      this.enemyManager.enemies.map((e) => e.sprite),
+      this.layer,
+    );
 
     this.buildAmbient();
     this.buildPrompt();
@@ -245,6 +263,12 @@ export class WorldScene extends Phaser.Scene {
     const dt = Math.min(delta, 50);
     const input = this.input$.update(this.player.cx, this.player.cy);
     this.player.update(dt, input);
+    this.weapons.update(dt, input);
+    if (input.swapPressed) this.weapons.swap();
+
+    this.enemyManager.update(dt, this.player.cx, this.player.cy);
+    this.combat.update();
+    this.enemyManager.sweep();
 
     this.updateArea();
     this.updateInteraction(input.interactPressed);
@@ -344,9 +368,12 @@ export class WorldScene extends Phaser.Scene {
 
   private cleanup(): void {
     this.subs.dispose();
+    this.enemyManager?.destroy();
+    this.weapons?.destroy();
     this.weather?.destroy();
     this.juice?.destroy();
     this.player?.destroy();
+    this.registry.remove('player');
   }
 }
 
