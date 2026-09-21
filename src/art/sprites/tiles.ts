@@ -103,6 +103,35 @@ const ice: Draw = (ctx, ox, rng) => {
   speckle(ctx, ox, rng, PAL.white, 6);
 };
 
+/**
+ * A patch of dense evergreen canopy seen from above: dark base, overlapping
+ * crowns, and snow caught on the tops. Used for everywhere the player cannot go.
+ */
+const canopy: Draw = (ctx, ox, rng) => {
+  fill(ctx, ox, '#0c251f');
+
+  for (let i = 0; i < 5; i++) {
+    const cx = rng.int(1, TILE_SIZE - 2);
+    const cy = rng.int(1, TILE_SIZE - 2);
+    const r = rng.int(3, 5);
+
+    // Crown
+    ctx.fillStyle = i % 2 === 0 ? '#17402f' : '#1b5038';
+    for (let y = -r; y <= r; y++) {
+      const halfWidth = Math.round(Math.sqrt(Math.max(0, r * r - y * y)));
+      ctx.fillRect(ox + cx - halfWidth, cy + y, halfWidth * 2 + 1, 1);
+    }
+    // Snow on the upper side of the crown
+    ctx.fillStyle = rng.chance(0.5) ? PAL.snow : '#bcd8ef';
+    ctx.fillRect(ox + cx - 1, cy - r, 3, 1);
+    ctx.fillRect(ox + cx, cy - r + 1, 1, 1);
+  }
+
+  speckle(ctx, ox, rng, '#092019', 10);
+  speckle(ctx, ox, rng, '#246b48', 6);
+  speckle(ctx, ox, rng, PAL.white, 3);
+};
+
 const TILE_DRAW: Draw[] = [
   // SNOW_A / B / C
   snow,
@@ -198,24 +227,23 @@ const TILE_DRAW: Draw[] = [
     ctx.fillRect(ox + 6, 11, 7, 1);
   },
 
-  // CLIFF / CLIFF_TOP
+  // CLIFF: dense forest you cannot walk into. A flat blue wall read as a bug
+  // rather than as terrain, so the edge of the map is now a treeline.
+  canopy,
+
+  // CLIFF_TOP: the same trees where they face the camera, with a snowy skirt
+  // at the bottom so the boundary softens into the ground instead of cutting it.
   (ctx, ox, rng) => {
-    fill(ctx, ox, PAL.deep);
-    speckle(ctx, ox, rng, PAL.navy, 18);
-    streak(ctx, ox, rng, '#3247d8', 4, 7);
-    speckle(ctx, ox, rng, PAL.violet, 3);
-  },
-  (ctx, ox, rng) => {
-    fill(ctx, ox, PAL.deep);
-    speckle(ctx, ox, rng, PAL.navy, 10);
-    speckle(ctx, ox, rng, PAL.violet, 3);
-    ctx.fillStyle = PAL.white;
-    ctx.fillRect(ox, 0, TILE_SIZE, 4);
-    ctx.fillStyle = PAL.snow;
-    ctx.fillRect(ox, 4, TILE_SIZE, 2);
+    canopy(ctx, ox, rng);
+    ctx.fillStyle = '#0a1f1a';
+    ctx.fillRect(ox, 11, TILE_SIZE, 2);
     ctx.fillStyle = PAL.snowShade;
-    ctx.fillRect(ox, 6, TILE_SIZE, 1);
-    speckle(ctx, ox, rng, PAL.cyan, 3);
+    ctx.fillRect(ox, 13, TILE_SIZE, 1);
+    ctx.fillStyle = PAL.snow;
+    ctx.fillRect(ox, 14, TILE_SIZE, 1);
+    ctx.fillStyle = PAL.white;
+    ctx.fillRect(ox, 15, TILE_SIZE, 1);
+    speckle(ctx, ox, rng, PAL.white, 4);
   },
 
   // GATE_SNOW: a packed drift you can break through

@@ -106,7 +106,7 @@ export class SummaryScene extends Phaser.Scene {
       ).setDepth(50);
       this.add
         .bitmapText(Math.round(width / 2 - 154), height - 33, FONT, 'prototype: watch an ad')
-        .setTint(hex(PAL.greyDark));
+        .setTint(hex(PAL.uiMuted));
     }
 
     if (died && StorePrototype.adAvailable('revive', this.summary.day)) {
@@ -127,7 +127,7 @@ export class SummaryScene extends Phaser.Scene {
       ).setDepth(50);
       this.add
         .bitmapText(Math.round(width / 2 - 154), height - 33, FONT, 'prototype: watch an ad')
-        .setTint(hex(PAL.greyDark));
+        .setTint(hex(PAL.uiMuted));
     }
 
     // The challenge reward lands with the rest of the haul.
@@ -310,7 +310,7 @@ export class SummaryScene extends Phaser.Scene {
 
     if (nearest) {
       y += 6;
-      this.add.bitmapText(x, y, FONT, 'Closest').setTint(hex(PAL.greyDark));
+      this.add.bitmapText(x, y, FONT, 'Closest').setTint(hex(PAL.uiMuted));
       this.add.bitmapText(x + 50, y, FONT, nearest.name).setTint(hex(PAL.white));
       this.add.bitmapText(x, y + 11, FONT, nearest.missing).setTint(hex(PAL.cyan));
     }
@@ -332,7 +332,7 @@ export class SummaryScene extends Phaser.Scene {
     const skip = this.add
       .bitmapText(width / 2, height / 2 + 14, FONT, 'nothing is actually playing')
       .setOrigin(0.5)
-      .setTint(hex(PAL.greyDark))
+      .setTint(hex(PAL.uiMuted))
       .setDepth(101);
 
     bus.emit('ad:clicked', { rewardId: 'doubleHaul' });

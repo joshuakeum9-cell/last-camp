@@ -7,9 +7,15 @@ makes you harder to kill.
 
 The whole game is one loop: **explore, collect, fight, return, upgrade, unlock, repeat.**
 
+## ▶ Play it now
+
+### **https://joshuakeum9-cell.github.io/last-camp/**
+
+No install, no account. It runs in a browser on desktop or on a phone held sideways.
+
 ---
 
-## Running it
+## Running it locally
 
 ```bash
 npm install

@@ -137,7 +137,7 @@ export class TitleScene extends Phaser.Scene {
       this,
       bx,
       by + 26,
-      { width: bw, height: 20, text: 'SETTINGS', fill: PAL.deep, border: PAL.greyDark, textColor: PAL.grey },
+      { width: bw, height: 20, text: 'SETTINGS', fill: PAL.deep, border: PAL.uiDim, textColor: PAL.uiDim },
       () => {
         this.weather.destroy();
         this.scene.start('Settings', { returnTo: 'Title' });
@@ -153,7 +153,7 @@ export class TitleScene extends Phaser.Scene {
 
     this.add
       .bitmapText(4, height - 11, FONT, 'v0.1')
-      .setTint(hex(PAL.greyDark))
+      .setTint(hex(PAL.uiMuted))
       .setDepth(600)
       .setInteractive({ useHandCursor: true })
       .on('pointerup', () => this.scene.start('Dev'));

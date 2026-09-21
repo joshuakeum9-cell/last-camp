@@ -43,22 +43,34 @@ export const SOLID_PROPS: PropKind[] = ['pine', 'deadTree', 'rock', 'wreck', 'cr
  */
 export function generateWorld(seed: number): WorldMapData {
   const rng = new Rng(subSeed(seed, 'world'));
-  const tiles: number[][] = [];
-  for (let y = 0; y < rows; y++) {
-    tiles.push(new Array<number>(cols).fill(TILE.CLIFF));
-  }
 
-  const carve = (rect: Rect, ground: string, r: Rng) => {
-    const variants = GROUND_TILES[ground] ?? GROUND_TILES.snow;
+  // Ground is decided as a kind first and only turned into tiles at the end, so the
+  // seams between areas can be dithered rather than left as hard rectangle edges.
+  const kinds: Array<Array<string | null>> = [];
+  for (let y = 0; y < rows; y++) kinds.push(new Array<string | null>(cols).fill(null));
+
+  const carve = (rect: Rect, ground: string) => {
     for (let y = Math.max(0, rect.y0); y < Math.min(rows, rect.y1); y++) {
       for (let x = Math.max(0, rect.x0); x < Math.min(cols, rect.x1); x++) {
-        tiles[y][x] = r.pick(variants);
+        kinds[y][x] = ground;
       }
     }
   };
 
-  for (const area of AREA_LIST) carve(area.rect, area.ground, rng);
-  for (const corridor of CORRIDORS) carve(corridor.rect, corridor.ground, rng);
+  for (const area of AREA_LIST) carve(area.rect, area.ground);
+  for (const corridor of CORRIDORS) carve(corridor.rect, corridor.ground);
+
+  blendGroundSeams(kinds, new Rng(subSeed(seed, 'blend')));
+
+  const tiles: number[][] = [];
+  for (let y = 0; y < rows; y++) {
+    const row = new Array<number>(cols).fill(TILE.CLIFF);
+    for (let x = 0; x < cols; x++) {
+      const kind = kinds[y][x];
+      if (kind) row[x] = rng.pick(GROUND_TILES[kind] ?? GROUND_TILES.snow);
+    }
+    tiles.push(row);
+  }
 
   // The one visual tell for the secret: glossy ice on the lake side of the cracked patch.
   const secretGate = GATES.secretIce.rect;
@@ -94,6 +106,65 @@ export function generateWorld(seed: number): WorldMapData {
 
   const props = placeProps(tiles, seed);
   return { tiles, props, gateTiles };
+}
+
+/**
+ * Soften the joins between areas.
+ *
+ * A dither alone still reads as a straight line with noise sprinkled on it, so the
+ * boundary is first pushed around by smooth waves and only then dithered. The result is
+ * a floor that wanders across the seam, which is what makes walking from snow onto ice
+ * feel like a place changing rather than a tile index changing.
+ *
+ * This only ever changes which ground a walkable tile shows. It cannot make a tile
+ * walkable or unwalkable, so it can never alter how the map is connected.
+ */
+function blendGroundSeams(kinds: Array<Array<string | null>>, rng: Rng): void {
+  const REACH = 4;
+  const source = kinds.map((row) => row.slice());
+
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const mine = source[y][x];
+      if (!mine) continue;
+
+      // Nearest tile of a different kind, and how far off it is.
+      let foundKind: string | null = null;
+      let foundDist = REACH + 1;
+
+      for (let dy = -REACH; dy <= REACH; dy++) {
+        for (let dx = -REACH; dx <= REACH; dx++) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+          const other = source[ny][nx];
+          if (!other || other === mine) continue;
+          const dist = Math.max(Math.abs(dx), Math.abs(dy));
+          if (dist < foundDist) {
+            foundDist = dist;
+            foundKind = other;
+          }
+        }
+      }
+
+      if (!foundKind) continue;
+
+      // Three waves at different frequencies, so the edge wanders without repeating.
+      const wave =
+        Math.sin(x * 0.55) * 1.5 +
+        Math.sin(y * 0.41) * 1.5 +
+        Math.sin((x + y) * 0.17) * 1.2 +
+        Math.sin((x - y) * 0.27) * 0.8;
+
+      if (foundDist <= wave) {
+        kinds[y][x] = foundKind;
+        continue;
+      }
+
+      // A little scatter on top, so the wave itself does not read as a drawn curve.
+      if (rng.chance(0.3 / (foundDist * foundDist))) kinds[y][x] = foundKind;
+    }
+  }
 }
 
 function inBounds(x: number, y: number): boolean {

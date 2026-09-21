@@ -73,7 +73,7 @@ export class Dialogue {
     const hint = this.scene.add
       .bitmapText(x + boxW - 8, y + boxH - 11, FONT, 'E  more')
       .setOrigin(1, 0)
-      .setTint(hex(PAL.greyDark));
+      .setTint(hex(PAL.uiMuted));
     c.add(hint);
 
     this.render();

@@ -91,8 +91,8 @@ export class Button {
   private refresh(): void {
     if (!this.enabled) {
       this.bg.setFillStyle(hex(PAL.navy));
-      this.border.setStrokeStyle(1, hex(PAL.greyDark));
-      this.label.setTint(hex(PAL.greyDark));
+      this.border.setStrokeStyle(1, hex(PAL.uiMuted));
+      this.label.setTint(hex(PAL.uiMuted));
       return;
     }
     this.bg.setFillStyle(hex(this.hovered ? this.opts.fillHover : this.opts.fill));

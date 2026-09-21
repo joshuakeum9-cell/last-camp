@@ -84,7 +84,7 @@ export class MenuScene extends Phaser.Scene {
       this,
       width - 118,
       height - 22,
-      { width: 52, height: 14, text: 'OPTIONS', fill: PAL.deep, border: PAL.greyDark, textColor: PAL.grey },
+      { width: 52, height: 14, text: 'OPTIONS', fill: PAL.deep, border: PAL.uiDim, textColor: PAL.uiDim },
       () => {
         this.scene.stop();
         this.scene.launch('Settings', { returnTo: 'Camp' });
@@ -122,7 +122,7 @@ export class MenuScene extends Phaser.Scene {
           height: 14,
           text: t.label,
           fill: this.tab === t.id ? PAL.blueDark : PAL.deep,
-          border: this.tab === t.id ? PAL.cyan : PAL.greyDark,
+          border: this.tab === t.id ? PAL.cyan : PAL.uiDim,
           textColor: this.tab === t.id ? PAL.white : PAL.grey,
         },
         () => {

@@ -5,6 +5,7 @@ import { state } from '../core/GameState';
 import { bus, Subscriptions } from '../core/EventBus';
 import { Bar } from '../ui/Bar';
 import { FONT } from '../art/PixelFont';
+import { Label } from '../ui/Label';
 import { hex, PAL } from '../art/palette';
 import { RESOURCES, RESOURCE_IDS, type ResourceId } from '../data/resources';
 import { FX } from '../art/sprites/fx';
@@ -19,18 +20,15 @@ export class HUDScene extends Phaser.Scene {
   private hpBar!: Bar;
   private coldBar!: Bar;
   private coldIcon!: Phaser.GameObjects.BitmapText;
-  private clock!: Phaser.GameObjects.BitmapText;
-  private dayLabel!: Phaser.GameObjects.BitmapText;
+  private clock!: Label;
+  private dayLabel!: Label;
   private clockArc!: Phaser.GameObjects.Graphics;
-  private weaponLabel!: Phaser.GameObjects.BitmapText;
+  private weaponLabel!: Label;
   private dashPips: Phaser.GameObjects.Rectangle[] = [];
-  private comboLabel!: Phaser.GameObjects.BitmapText;
+  private comboLabel!: Label;
   private compass!: Phaser.GameObjects.Image;
-  private resourceRows = new Map<ResourceId, {
-    icon: Phaser.GameObjects.Rectangle;
-    label: Phaser.GameObjects.BitmapText;
-  }>();
-  private toasts: Phaser.GameObjects.BitmapText[] = [];
+  private resourceRows = new Map<ResourceId, { icon: Phaser.GameObjects.Rectangle; label: Label }>();
+  private toasts: Label[] = [];
 
   constructor() {
     super('HUD');
@@ -60,23 +58,20 @@ export class HUDScene extends Phaser.Scene {
 
     // --- day clock, top centre -------------------------------------------
     this.clockArc = this.add.graphics().setScrollFactor(0);
-    this.dayLabel = this.add
-      .bitmapText(Math.round(width / 2), 5, FONT, 'DAY 1')
-      .setOrigin(0.5, 0)
-      .setTint(hex(PAL.white))
-      .setScrollFactor(0);
-    this.clock = this.add
-      .bitmapText(Math.round(width / 2), 15, FONT, 'MORNING')
-      .setOrigin(0.5, 0)
-      .setTint(hex(PAL.cyan))
-      .setScrollFactor(0);
+    this.dayLabel = new Label(this, Math.round(width / 2), 5, 'DAY 1', {
+      color: PAL.white,
+      originX: 0.5,
+    }).setScrollFactor(0);
+    this.clock = new Label(this, Math.round(width / 2), 15, 'MORNING', {
+      color: PAL.cyan,
+      originX: 0.5,
+    }).setScrollFactor(0);
 
     // --- weapon and dash, bottom right -----------------------------------
-    this.weaponLabel = this.add
-      .bitmapText(width - 6, BAL.view.height - 13, FONT, 'RUSTED AXE')
-      .setOrigin(1, 0)
-      .setTint(hex(PAL.steel))
-      .setScrollFactor(0);
+    this.weaponLabel = new Label(this, width - 6, BAL.view.height - 13, 'RUSTED AXE', {
+      color: PAL.steel,
+      originX: 1,
+    }).setScrollFactor(0);
 
     for (let i = 0; i < 1; i++) {
       const pip = this.add
@@ -86,10 +81,10 @@ export class HUDScene extends Phaser.Scene {
       this.dashPips.push(pip);
     }
 
-    this.comboLabel = this.add
-      .bitmapText(Math.round(width / 2), 30, FONT, '')
-      .setOrigin(0.5, 0)
-      .setTint(hex(PAL.gold))
+    this.comboLabel = new Label(this, Math.round(width / 2), 30, '', {
+      color: PAL.gold,
+      originX: 0.5,
+    })
       .setScrollFactor(0)
       .setVisible(false);
 
@@ -114,10 +109,7 @@ export class HUDScene extends Phaser.Scene {
         .setOrigin(1, 0)
         .setScrollFactor(0)
         .setVisible(false);
-      const label = this.add
-        .bitmapText(width - 16, y, FONT, '0')
-        .setOrigin(1, 0)
-        .setTint(hex(PAL.white))
+      const label = new Label(this, width - 16, y, '0', { color: PAL.white, originX: 1 })
         .setScrollFactor(0)
         .setVisible(false);
       this.resourceRows.set(id, { icon, label });
@@ -126,10 +118,10 @@ export class HUDScene extends Phaser.Scene {
 
   private toast(text: string, color: string = PAL.cream): void {
     const { width, height } = BAL.view;
-    const label = this.add
-      .bitmapText(Math.round(width / 2), height - 34, FONT, text)
-      .setOrigin(0.5, 0)
-      .setTint(hex(color))
+    const label = new Label(this, Math.round(width / 2), height - 34, text, {
+      color,
+      originX: 0.5,
+    })
       .setScrollFactor(0)
       .setDepth(100);
 
@@ -137,7 +129,7 @@ export class HUDScene extends Phaser.Scene {
     this.toasts.push(label);
 
     this.tweens.add({
-      targets: label,
+      targets: label.target,
       alpha: 0,
       delay: 1700,
       duration: 400,
@@ -176,11 +168,11 @@ export class HUDScene extends Phaser.Scene {
         : hud.phaseName;
       this.clock.setText(text);
       const urgent = hud.phaseName === 'NIGHTFALL' || hud.phaseName === 'NIGHT';
-      this.clock.setTint(hex(urgent ? PAL.gold : PAL.cyan));
+      this.clock.setTint(urgent ? PAL.gold : PAL.cyan);
       this.drawClockArc(width);
     }
 
-    this.weaponLabel.setText(hud.weaponName).setTint(hex(hud.weaponColor));
+    this.weaponLabel.setText(hud.weaponName).setTint(hud.weaponColor);
     for (const pip of this.dashPips) {
       pip.setFillStyle(hex(hud.dashCharge >= 1 ? PAL.cyan : PAL.greyDark));
       pip.scaleX = hud.dashCharge >= 1 ? 1 : Math.max(0.08, hud.dashCharge);

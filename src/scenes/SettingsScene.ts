@@ -51,7 +51,7 @@ export class SettingsScene extends Phaser.Scene {
     let y = 42;
     this.rows.forEach((row, i) => {
       const label = this.add.bitmapText(40, y, FONT, row.label).setTint(hex(PAL.white));
-      this.add.bitmapText(40, y + 9, FONT, row.hint).setTint(hex(PAL.greyDark));
+      this.add.bitmapText(40, y + 9, FONT, row.hint).setTint(hex(PAL.uiMuted));
       const value = this.add
         .bitmapText(width - 44, y, FONT, row.get())
         .setOrigin(1, 0)
@@ -101,7 +101,7 @@ export class SettingsScene extends Phaser.Scene {
     this.add.bitmapText(40, y + 6, FONT, 'YOUR CAMP').setTint(hex(PAL.gold));
     this.add
       .bitmapText(40, y + 16, FONT, 'Keep a copy, or move it to another computer.')
-      .setTint(hex(PAL.greyDark));
+      .setTint(hex(PAL.uiMuted));
 
     this.status = this.add
       .bitmapText(40, y + 42, FONT, '')

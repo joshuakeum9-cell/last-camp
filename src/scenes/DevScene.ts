@@ -27,7 +27,7 @@ export class DevScene extends Phaser.Scene {
     this.add.bitmapText(8, 6, FONT, 'DEVELOPER').setTint(hex(PAL.green)).setScale(1.5);
     this.add
       .bitmapText(8, 20, FONT, 'Local only. Nothing here is ever sent anywhere.')
-      .setTint(hex(PAL.greyDark));
+      .setTint(hex(PAL.uiMuted));
 
     this.buildState();
     this.buildAnalytics();

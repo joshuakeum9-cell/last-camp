@@ -18,6 +18,7 @@ import { hex, PAL } from '../art/palette';
 import { FONT } from '../art/PixelFont';
 import { Rng } from '../core/Rng';
 import { hud, resetHud } from '../core/HudState';
+import { Label } from '../ui/Label';
 import { NPCMira } from '../entities/NPCMira';
 import { Dialogue } from '../ui/Dialogue';
 import { TouchControls } from '../ui/TouchControls';
@@ -46,7 +47,7 @@ export class CampScene extends Phaser.Scene {
   private campLayer!: Phaser.GameObjects.Container;
   private lightLayer!: Phaser.GameObjects.Container;
   private stations: Station[] = [];
-  private prompt!: Phaser.GameObjects.BitmapText;
+  private prompt!: Label;
   private dialogue!: Dialogue;
   private touch!: TouchControls;
   private mira: NPCMira | null = null;
@@ -80,10 +81,11 @@ export class CampScene extends Phaser.Scene {
 
     this.buildAmbient();
     this.dialogue = new Dialogue(this);
-    this.prompt = this.add
-      .bitmapText(0, 0, FONT, '')
-      .setOrigin(0.5, 1)
-      .setTint(hex(PAL.gold))
+    this.prompt = new Label(this, 0, 0, '', {
+      color: PAL.gold,
+      originX: 0.5,
+      originY: 1,
+    })
       .setDepth(7500)
       .setVisible(false);
 
@@ -295,17 +297,17 @@ export class CampScene extends Phaser.Scene {
 
     const { width } = BAL.view;
     const text = lines.join('\n');
-    const label = this.add
-      .bitmapText(Math.round(width / 2), 40, FONT, text)
-      .setOrigin(0.5, 0)
-      .setTint(hex(PAL.cream))
-      .setCenterAlign()
+    const label = new Label(this, Math.round(width / 2), 40, text, {
+      color: PAL.cream,
+      originX: 0.5,
+      align: 'center',
+    })
       .setScrollFactor(0)
       .setDepth(7600)
       .setAlpha(0);
 
     this.tweens.add({
-      targets: label,
+      targets: label.target,
       alpha: 1,
       duration: 600,
       hold: 3200,

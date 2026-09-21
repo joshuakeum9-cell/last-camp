@@ -35,8 +35,14 @@ export const PAL = {
   blood: '#ff2b55',
   green: '#3ff07f',
   greenDark: '#12a855',
-  grey: '#8fa2c9',
+  grey: '#a8b8dc',
   greyDark: '#46538a',
+
+  // --- interface text ------------------------------------------------------
+  /** Secondary interface text. Readable on navy, unlike the art greys. */
+  uiDim: '#93a4cf',
+  /** Hints and captions. The quietest thing that is still legible. */
+  uiMuted: '#7b8cba',
   steel: '#cfe0ff',
 
   // --- rarity ------------------------------------------------------------

@@ -38,6 +38,7 @@ import { CAMP_KEYS } from '../art/sprites/camp';
 import { hex, mix, PAL } from '../art/palette';
 import { FONT } from '../art/PixelFont';
 import { hud } from '../core/HudState';
+import { Label } from '../ui/Label';
 import { Rng, hashString, subSeed } from '../core/Rng';
 import { ENEMIES, type EnemyId } from '../data/enemies';
 import { RESOURCES } from '../data/resources';
@@ -90,7 +91,7 @@ export class WorldScene extends Phaser.Scene {
   private ambient!: Phaser.GameObjects.Rectangle;
   private frostVignette!: Phaser.GameObjects.Image;
   private currentArea: AreaDef | null = null;
-  private prompt!: Phaser.GameObjects.BitmapText;
+  private prompt!: Label;
   private pickups: Pickup[] = [];
   private bossMusicOn = false;
   private ambientTarget: string = PAL.blue;
@@ -460,10 +461,11 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private buildPrompt(): void {
-    this.prompt = this.add
-      .bitmapText(0, 0, FONT, '')
-      .setOrigin(0.5, 1)
-      .setTint(hex(PAL.gold))
+    this.prompt = new Label(this, 0, 0, '', {
+      color: PAL.gold,
+      originX: 0.5,
+      originY: 1,
+    })
       .setDepth(7500)
       .setVisible(false);
   }
@@ -681,17 +683,18 @@ export class WorldScene extends Phaser.Scene {
 
   private announce(name: string): void {
     const { width, height } = BAL.view;
-    const label = this.add
-      .bitmapText(Math.round(width / 2), Math.round(height / 2) - 30, FONT, name.toUpperCase())
-      .setOrigin(0.5)
-      .setScale(2)
-      .setTint(hex(PAL.white))
+    const label = new Label(this, Math.round(width / 2), Math.round(height / 2) - 30, name.toUpperCase(), {
+      color: PAL.white,
+      scale: 2,
+      originX: 0.5,
+      originY: 0.5,
+    })
       .setScrollFactor(0)
       .setDepth(7600)
       .setAlpha(0);
 
     this.tweens.add({
-      targets: label,
+      targets: label.target,
       alpha: 1,
       y: Math.round(height / 2) - 38,
       duration: 380,

@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { bus, Subscriptions } from '../core/EventBus';
 import { state } from '../core/GameState';
 import { BAL } from '../data/balance';
-import { FONT } from '../art/PixelFont';
+import { Label } from '../ui/Label';
 import { hex, PAL } from '../art/palette';
 import { FX } from '../art/sprites/fx';
 
@@ -83,17 +83,18 @@ export class Juice {
 
   /** A damage number that rises and fades at a world position. */
   floatNumber(x: number, y: number, value: number, kind: 'normal' | 'crit' | 'burn' = 'normal'): void {
-    const tint =
-      kind === 'crit' ? hex(PAL.gold) : kind === 'burn' ? hex(PAL.orange) : hex(PAL.white);
-    const label = this.scene.add
-      .bitmapText(Math.round(x), Math.round(y), FONT, String(Math.round(value)))
-      .setOrigin(0.5, 1)
-      .setTint(tint)
-      .setDepth(8000);
-    if (kind === 'crit') label.setScale(1.4);
+    const color = kind === 'crit' ? PAL.gold : kind === 'burn' ? PAL.orange : PAL.white;
+    const label = new Label(this.scene, Math.round(x), Math.round(y), String(Math.round(value)), {
+      color,
+      // A crit is worth the extra draw calls; a normal hit is not.
+      outline: kind === 'crit' ? 'full' : 'shadow',
+      scale: kind === 'crit' ? 1.4 : 1,
+      originX: 0.5,
+      originY: 1,
+    }).setDepth(8000);
 
     this.scene.tweens.add({
-      targets: label,
+      targets: label.target,
       y: y - (kind === 'crit' ? 22 : 16),
       alpha: 0,
       duration: kind === 'crit' ? 700 : 520,
@@ -104,14 +105,16 @@ export class Juice {
 
   /** A short word at a world position, used for picked-up resources and "PERFECT". */
   floatText(x: number, y: number, text: string, color: string = PAL.white, scale = 1): void {
-    const label = this.scene.add
-      .bitmapText(Math.round(x), Math.round(y), FONT, text)
-      .setOrigin(0.5, 1)
-      .setTint(hex(color))
-      .setScale(scale)
-      .setDepth(8000);
+    const label = new Label(this.scene, Math.round(x), Math.round(y), text, {
+      color,
+      outline: 'full',
+      scale,
+      originX: 0.5,
+      originY: 1,
+    }).setDepth(8000);
+
     this.scene.tweens.add({
-      targets: label,
+      targets: label.target,
       y: y - 18,
       alpha: 0,
       duration: 700,
