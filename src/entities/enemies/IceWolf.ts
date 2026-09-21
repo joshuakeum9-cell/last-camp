@@ -6,7 +6,7 @@ import type { EnemyBase, EnemyBehavior, EnemyHitbox, ToPlayer } from '../EnemyBa
  */
 export const iceWolfBehavior: EnemyBehavior = {
   steer(e: EnemyBase, to: ToPlayer) {
-    const speed = e.def.speed;
+    const speed = e.moveSpeed;
     const gap = to.dist - e.def.keepDistance;
 
     // Orbit: mostly sideways, with a little in or out to hold the ring.
@@ -47,7 +47,7 @@ export const iceWolfBehavior: EnemyBehavior = {
     }
     const dir = (e.sprite.getData('chargeDir') as { x: number; y: number }) ?? { x: to.dx, y: to.dy };
     // Decelerates into the slam, so the end of the charge reads as a commitment.
-    const speed = e.def.rushSpeed * (1 - t * 0.35);
+    const speed = e.rushSpeed * (1 - t * 0.35);
     e.body.setVelocity(dir.x * speed, dir.y * speed);
   },
 };

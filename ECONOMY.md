@@ -121,6 +121,24 @@ These are the invariants. If a change breaks one of them, the change is wrong.
 5. **The boss is beatable in two to four attempts** by someone who has learned the
    patterns. Its difficulty is pattern reading, not attrition.
 
+## Difficulty
+
+| | Enemy health | Enemy damage | Enemy speed | Cold rate | Death loss | Telegraph |
+|---|---|---|---|---|---|---|
+| Bearable | 0.85x | 0.65x | 0.85x | 0.7x | 0.6x | 1.25x |
+| Hard Winter | 1x | 1x | 1x | 1x | 1x | 1x |
+| Killing Cold | 1.25x | 1.45x | 1.12x | 1.35x | 1.3x | 0.85x |
+
+**Nothing in this table touches income.** Yields, upgrade costs, cache contents and
+drop rates are identical on all three. That is deliberate: if the easy setting also
+paid better, it would stop being a choice about how the game feels and become a choice
+about how fast you progress, and the five invariants above would only hold on one of
+them.
+
+Enemy health barely moves even on the hardest setting, for the same reason the boss
+does not gain health in phase two. The difficulty should come from the animals being
+harder to read and harder to survive, not from them taking longer to kill.
+
 ## Loot
 
 Cache rarity weights out of 1000, before Lucky Find:

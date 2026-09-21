@@ -3,6 +3,7 @@ import { state } from '../core/GameState';
 import { BAL } from '../data/balance';
 import { RESOURCES, emptyResources, type ResourceId } from '../data/resources';
 import { UPGRADES, type UpgradeId } from '../data/upgrades';
+import { activeDifficulty } from '../data/difficulty';
 
 /**
  * The rules for gathering and for what survives a bad day. Pure state: no display
@@ -97,7 +98,10 @@ export const ResourceSystem = {
     if (!run) return { banked, bonusNight, lost, untouched: false, keepFraction: 1 };
 
     const untouched = reason === 'return' && run.damageTaken === 0;
-    const keepFraction = reason === 'death' ? this.campEffects().deathKeep : 1;
+    // Difficulty scales how much of the loss actually bites, never what you earn.
+    const lossFraction =
+      (1 - this.campEffects().deathKeep) * activeDifficulty(state.settings.difficulty).deathLoss;
+    const keepFraction = reason === 'death' ? Math.max(0, Math.min(1, 1 - lossFraction)) : 1;
 
     for (const id of Object.keys(run.collected) as ResourceId[]) {
       const raw = run.collected[id] ?? 0;

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { bus } from '../core/EventBus';
 import { state } from '../core/GameState';
 import { BAL, dayScale } from '../data/balance';
+import { activeDifficulty } from '../data/difficulty';
 import type { EnemyDef, EnemyId } from '../data/enemies';
 import { ENEMY_SPRITE_KEY } from '../art/sprites/enemies';
 import { hex, PAL } from '../art/palette';
@@ -83,9 +84,10 @@ export class EnemyBase {
     this.id = `${def.id}-${Math.random().toString(36).slice(2, 9)}`;
 
     const scale = dayScale(state.day);
-    this.maxHp = Math.round(def.hp * scale.hp);
+    const diff = activeDifficulty(state.settings.difficulty);
+    this.maxHp = Math.max(1, Math.round(def.hp * scale.hp * diff.enemyHp));
     this.hp = this.maxHp;
-    this.damage = Math.round(def.damage * scale.damage);
+    this.damage = Math.max(1, Math.round(def.damage * scale.damage * diff.enemyDamage));
 
     this.shadow = scene.add
       .ellipse(x, y - 1, 16, 6, hex(PAL.blue))
@@ -134,6 +136,25 @@ export class EnemyBase {
 
   private get now(): number {
     return this.scene.time.now;
+  }
+
+  /**
+   * Behaviours ask the enemy how fast it moves rather than reading the data table, so
+   * difficulty and night speed apply everywhere without each behaviour knowing about
+   * either of them.
+   */
+  get moveSpeed(): number {
+    return this.def.speed * this.speedScale;
+  }
+
+  get rushSpeed(): number {
+    return this.def.rushSpeed * this.speedScale;
+  }
+
+  private get speedScale(): number {
+    const diff = activeDifficulty(state.settings.difficulty);
+    const night = state.run?.phase === 'night' ? BAL.day.nightEnemySpeed : 1;
+    return diff.enemySpeed * night;
   }
 
   // --- loop --------------------------------------------------------------
@@ -204,7 +225,8 @@ export class EnemyBase {
 
   private enter(next: EnemyState): void {
     this.state = next;
-    const longer = state.settings.longTelegraphs ? 1.3 : 1;
+    const longer =
+      (state.settings.longTelegraphs ? 1.3 : 1) * activeDifficulty(state.settings.difficulty).telegraph;
 
     switch (next) {
       case 'windup':
@@ -404,7 +426,11 @@ export class EnemyBase {
       });
     }
 
-    const life = this.def.windup * 1000 * (state.settings.longTelegraphs ? 1.3 : 1);
+    const life =
+      this.def.windup *
+      1000 *
+      (state.settings.longTelegraphs ? 1.3 : 1) *
+      activeDifficulty(state.settings.difficulty).telegraph;
     this.scene.tweens.add({
       targets: g,
       alpha: 0.35,

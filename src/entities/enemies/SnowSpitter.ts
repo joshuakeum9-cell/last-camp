@@ -10,7 +10,7 @@ import { bus } from '../../core/EventBus';
  */
 export const snowSpitterBehavior: EnemyBehavior = {
   steer(e: EnemyBase, to: ToPlayer) {
-    const speed = e.def.speed;
+    const speed = e.moveSpeed;
     const gap = to.dist - e.def.keepDistance;
     // Backs off when crowded, drifts closer when the player runs away.
     const pull = Math.max(-1, Math.min(1, gap / 40));

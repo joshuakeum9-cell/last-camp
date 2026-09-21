@@ -7,7 +7,8 @@ import { Bar } from '../ui/Bar';
 import { FONT } from '../art/PixelFont';
 import { Label } from '../ui/Label';
 import { hex, PAL } from '../art/palette';
-import { RESOURCES, RESOURCE_IDS, type ResourceId } from '../data/resources';
+import { RESOURCE_IDS, type ResourceId } from '../data/resources';
+import { RESOURCE_ICON } from '../art/sprites/icons';
 import { FX } from '../art/sprites/fx';
 
 /**
@@ -27,7 +28,7 @@ export class HUDScene extends Phaser.Scene {
   private dashPips: Phaser.GameObjects.Rectangle[] = [];
   private comboLabel!: Label;
   private compass!: Phaser.GameObjects.Image;
-  private resourceRows = new Map<ResourceId, { icon: Phaser.GameObjects.Rectangle; label: Label }>();
+  private resourceRows = new Map<ResourceId, { icon: Phaser.GameObjects.Image; label: Label }>();
   private toasts: Label[] = [];
 
   constructor() {
@@ -103,13 +104,13 @@ export class HUDScene extends Phaser.Scene {
   private buildResourceRows(): void {
     const { width } = BAL.view;
     RESOURCE_IDS.forEach((id, i) => {
-      const y = 6 + i * 9;
+      const y = 6 + i * 11;
       const icon = this.add
-        .rectangle(width - 8, y + 1, 5, 5, hex(RESOURCES[id].color))
+        .image(width - 6, y, RESOURCE_ICON[id])
         .setOrigin(1, 0)
         .setScrollFactor(0)
         .setVisible(false);
-      const label = new Label(this, width - 16, y, '0', { color: PAL.white, originX: 1 })
+      const label = new Label(this, width - 18, y + 1, '0', { color: PAL.white, originX: 1 })
         .setScrollFactor(0)
         .setVisible(false);
       this.resourceRows.set(id, { icon, label });
@@ -220,9 +221,9 @@ export class HUDScene extends Phaser.Scene {
       entry.icon.setVisible(show);
       entry.label.setVisible(show);
       if (!show) continue;
-      const y = 6 + row * 9;
-      entry.icon.y = y + 1;
-      entry.label.y = y;
+      const y = 6 + row * 11;
+      entry.icon.y = y;
+      entry.label.y = y + 1;
       entry.label.setText(String(amount));
       row++;
     }

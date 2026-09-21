@@ -10,6 +10,7 @@ import { type UpgradeId } from '../data/upgrades';
 import type { AreaId, GateId } from '../data/areas';
 import type { Rarity } from '../art/palette';
 import type { PhaseId } from '../data/balance';
+import type { DifficultyId } from '../data/difficulty';
 
 export const SAVE_VERSION = 1;
 
@@ -122,6 +123,7 @@ export interface GameState {
   };
 
   settings: {
+    difficulty: DifficultyId;
     music: number;
     sfx: number;
     shake: number;
@@ -180,6 +182,7 @@ export function newGameState(): GameState {
     },
     store: { owned: [], simulatedSpend: 0, adsUsed: {} },
     settings: {
+      difficulty: 'normal',
       music: BAL.audio.music,
       sfx: BAL.audio.sfx,
       shake: 1,

@@ -9,6 +9,7 @@ import { state } from '../core/GameState';
 import { FX } from '../art/sprites/fx';
 import { SCENERY_KEYS } from '../art/sprites/scenery';
 import { campfireSprite } from '../art/sprites/camp';
+import { DIFFICULTY_LIST, activeDifficulty } from '../data/difficulty';
 
 export class TitleScene extends Phaser.Scene {
   private weather!: Weather;
@@ -77,13 +78,13 @@ export class TitleScene extends Phaser.Scene {
     // --- title -----------------------------------------------------------
     const title = 'LAST CAMP';
     const t = this.add
-      .bitmapText(Math.round(width / 2), 44, FONT, title)
+      .bitmapText(Math.round(width / 2), 30, FONT, title)
       .setOrigin(0.5, 0)
       .setScale(4)
       .setTint(hex(PAL.white))
       .setDepth(600);
     this.add
-      .bitmapText(Math.round(width / 2) + 2, 46, FONT, title)
+      .bitmapText(Math.round(width / 2) + 2, 32, FONT, title)
       .setOrigin(0.5, 0)
       .setScale(4)
       .setTint(hex(PAL.blue))
@@ -91,7 +92,7 @@ export class TitleScene extends Phaser.Scene {
       .setAlpha(0.6);
     this.tweens.add({
       targets: t,
-      y: 42,
+      y: 28,
       duration: 2400,
       yoyo: true,
       repeat: -1,
@@ -99,7 +100,7 @@ export class TitleScene extends Phaser.Scene {
     });
 
     this.add
-      .bitmapText(Math.round(width / 2), 88, FONT, 'the winter did not stop')
+      .bitmapText(Math.round(width / 2), 74, FONT, 'the winter did not stop')
       .setOrigin(0.5, 0)
       .setTint(hex(PAL.ice))
       .setDepth(600);
@@ -108,7 +109,7 @@ export class TitleScene extends Phaser.Scene {
     const hasSave = SaveSystem.hasSave();
     const bw = 104;
     const bx = Math.round(width / 2 - bw / 2);
-    let by = 132;
+    let by = 92;
 
     if (hasSave) {
       new Button(
@@ -144,6 +145,8 @@ export class TitleScene extends Phaser.Scene {
       },
     ).setDepth(600);
 
+    this.buildDifficultyRow(by + 72);
+
     const hint = 'WASD move   J or click attack   SPACE dash   E interact';
     this.add
       .bitmapText(Math.round(width / 2), height - 16, FONT, hint)
@@ -161,6 +164,57 @@ export class TitleScene extends Phaser.Scene {
     void textWidth;
 
     this.input.keyboard?.once('keydown-ENTER', () => this.start());
+  }
+
+  /**
+   * Difficulty sits on the title rather than only in settings, because it is a choice
+   * about how the game should feel and the player should make it before the first day
+   * rather than discover it after a bad one. It can still be changed at any time.
+   */
+  private buildDifficultyRow(y: number): void {
+    const { width } = BAL.view;
+
+    this.add
+      .bitmapText(Math.round(width / 2), y - 11, FONT, 'HOW HARD IS THE WINTER?')
+      .setOrigin(0.5, 0)
+      .setTint(hex(PAL.uiDim))
+      .setDepth(600);
+
+    const bw = 78;
+    const gap = 5;
+    const total = DIFFICULTY_LIST.length * bw + (DIFFICULTY_LIST.length - 1) * gap;
+    let x = Math.round(width / 2 - total / 2);
+
+    for (const def of DIFFICULTY_LIST) {
+      const chosen = state.settings.difficulty === def.id;
+      new Button(
+        this,
+        x,
+        y,
+        {
+          width: bw,
+          height: 15,
+          text: def.name.toUpperCase(),
+          fill: chosen ? PAL.blueDark : PAL.deep,
+          fillHover: PAL.blueDark,
+          border: chosen ? PAL.cyan : PAL.greyDark,
+          textColor: chosen ? PAL.white : PAL.uiDim,
+        },
+        () => {
+          state.settings.difficulty = def.id;
+          SaveSystem.save();
+          this.weather.destroy();
+          this.scene.restart();
+        },
+      ).setDepth(600);
+      x += bw + gap;
+    }
+
+    this.add
+      .bitmapText(Math.round(width / 2), y + 18, FONT, activeDifficulty(state.settings.difficulty).desc)
+      .setOrigin(0.5, 0)
+      .setTint(hex(PAL.uiMuted))
+      .setDepth(600);
   }
 
   private start(): void {

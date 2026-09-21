@@ -7,7 +7,7 @@ import type { EnemyBase, EnemyBehavior, EnemyHitbox, ToPlayer } from '../EnemyBa
  */
 export const frozenWalkerBehavior: EnemyBehavior = {
   steer(e: EnemyBase, to: ToPlayer) {
-    return { vx: to.dx * e.def.speed, vy: to.dy * e.def.speed };
+    return { vx: to.dx * e.moveSpeed, vy: to.dy * e.moveSpeed };
   },
 
   shouldAttack(e: EnemyBase, to: ToPlayer) {

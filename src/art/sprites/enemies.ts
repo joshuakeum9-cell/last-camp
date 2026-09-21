@@ -16,6 +16,8 @@ const P: Record<string, string | null> = {
   t: '#161c3a',
   r: '#2b3358',
   R: '#4d5a8c',
+  L: '#5b6fa8',
+  N: '#3a4570',
   w: 'white',
   W: 'snow',
   c: 'cyan',
@@ -85,25 +87,35 @@ export const ratSprite: PixelSprite = {
 };
 
 // --- Ice Wolf: circles, then commits ------------------------------------
+//
+// It used to be white fur on white snow, which is why it read as an unfinished
+// blob. The body is now slate with a pale underbelly and a cyan eye, so the
+// silhouette carries at a distance and the accent colour marks the species.
 
 const WOLF_BODY = [
   '........................',
-  '.................oo..oo.',
-  '..............oooWWooWWo',
-  '.........ooooooWWWWWWWWo',
-  '....ooooWWWWWWWWWWWWWcWo',
-  '.oooWWWWWWWWWWWWWWWWWWWo',
-  'toWWWWWWWWffffWWWWWWWWo.',
-  'toWWWWffffffffffffWWWo..',
-  '.toWfffffffffffffffo....',
-  '..offffffffffffffo......',
+  '..................o..o..',
+  '.................oLooLo.',
+  '................oLLLLLo.',
+  'oo..............oLLLLLLo',
+  'oLo............oLLLcLLLo',
+  '.oLo...........oLLLLLLLo',
+  '..oLo.........oLLLLLLNNo',
+  '..oLLo.......oLLLLLNNNNo',
+  '...oLLooooooLLLLLLLNNNo.',
+  '..oLLLLLLLLLLLLLLLLLoo..',
+  '.oLLLLLLLLLLLLLLLLLLo...',
+  'oLLLLLLLLLLLLLLLLLLLo...',
+  'oWWWWWLLLLLLLLLWWWWWo...',
+  '.oWWWWWWWWWWWWWWWWWo....',
+  '..oWWWWWWWWWWWWWWWo.....',
 ];
 
-const WOLF_LEGS_A = ['..oo..oo......oo..oo....', '..o....o.......o....o...'];
-const WOLF_LEGS_B = ['...oo.oo.......oo.oo....', '...o...o........o...o...'];
-const WOLF_LEGS_C = ['.oo....oo....oo....oo...', '.o......o....o......o...'];
+const WOLF_LEGS_A = ['..oLLo..oLLo....oLLo....', '..oWWo..oWWo....oWWo....', '..o..o..o..o....o..o....'];
+const WOLF_LEGS_B = ['...oLLo..oLLo..oLLo.....', '...oWWo..oWWo..oWWo.....', '...o..o..o..o..o..o.....'];
+const WOLF_LEGS_C = ['.oLLo....oLLo.....oLLo..', '.oWWo....oWWo.....oWWo..', '.o..o....o..o.....o..o..'];
 
-const wolfStand = withLegs([...WOLF_BODY, '', ''], WOLF_LEGS_A);
+const wolfStand = withLegs([...WOLF_BODY, '', '', ''], WOLF_LEGS_A);
 
 export const wolfSprite: PixelSprite = {
   key: 'enemy-wolf',
@@ -112,26 +124,30 @@ export const wolfSprite: PixelSprite = {
   anims: {
     idle: [wolfStand, bob(wolfStand, 1)],
     run: [
-      withLegs([...WOLF_BODY, '', ''], WOLF_LEGS_A),
-      withLegs([...WOLF_BODY, '', ''], WOLF_LEGS_B),
-      withLegs([...WOLF_BODY, '', ''], WOLF_LEGS_C),
-      withLegs([...WOLF_BODY, '', ''], WOLF_LEGS_B),
+      withLegs([...WOLF_BODY, '', '', ''], WOLF_LEGS_A),
+      withLegs([...WOLF_BODY, '', '', ''], WOLF_LEGS_B),
+      withLegs([...WOLF_BODY, '', '', ''], WOLF_LEGS_C),
+      withLegs([...WOLF_BODY, '', '', ''], WOLF_LEGS_B),
     ],
-    // Crouches low before the charge: the tell is the silhouette, not just a colour.
+    // Crouches before the charge: the tell is the silhouette dropping, not a colour.
     windup: [
       [
         '........................',
         '........................',
         '........................',
-        '.................oo..oo.',
-        '..............oooWWooWWo',
-        '.........ooooooWWWWWWcWo',
-        '....ooooWWWWWWWWWWWWWWWo',
-        '.oooWWWWWWWWffffWWWWWWo.',
-        'toWWWWffffffffffffWWWo..',
-        'toWfffffffffffffffo.....',
-        '.offffffffffffffo.......',
-        '..oo.oo......oo.oo......',
+        '.................oo.....',
+        '................oLLo.oo.',
+        'o...............oLLLooLo',
+        'oo.............oLLLLLLLo',
+        '.oo...........oLLLLcLLLo',
+        '..oLoooooooooLLLLLLLLLNo',
+        '.oLLLLLLLLLLLLLLLLLLLLNo',
+        'oLLLLLLLLLLLLLLLLLLLLLoo',
+        'oWWWWLLLLLLLLLLLLLLWWo..',
+        '.oWWWWWWWWWWWWWWWWWWo...',
+        '..oWWWWWWWWWWWWWWWWo....',
+        '..oLLo..oLLo....oLLo....',
+        '..o..o..o..o....o..o....',
       ],
     ],
     attack: [wolfStand],

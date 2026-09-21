@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { bus } from '../core/EventBus';
 import { state } from '../core/GameState';
 import { BAL } from '../data/balance';
+import { activeDifficulty } from '../data/difficulty';
 import { PixelFactory, bob } from '../art/PixelFactory';
 import type { PixelSprite } from '../art/PixelFactory';
 import { hex, PAL } from '../art/palette';
@@ -132,9 +133,9 @@ export class BossWhiteMaw {
   readonly body: Phaser.Physics.Arcade.Body;
   readonly id = 'maw';
 
-  maxHp = 600;
-  hp = 600;
-  damage = 24;
+  maxHp: number;
+  hp: number;
+  damage: number;
   state: MawState = 'idle';
   hitbox: MawHitbox | null = null;
   phase2 = false;
@@ -157,6 +158,11 @@ export class BossWhiteMaw {
     private juice: Juice,
     private spawnRats: (x: number, y: number, count: number) => void,
   ) {
+    const diff = activeDifficulty(state.settings.difficulty);
+    this.maxHp = Math.round(600 * diff.enemyHp);
+    this.hp = this.maxHp;
+    this.damage = Math.round(24 * diff.enemyDamage);
+
     this.shadow = scene.add
       .ellipse(x, y - 2, 70, 22, hex(PAL.blue))
       .setAlpha(0.35)
@@ -256,7 +262,8 @@ export class BossWhiteMaw {
 
   private telegraphTime(): number {
     const base = this.pattern === 'charge' ? 800 : this.pattern === 'slam' ? 1000 : 700;
-    const scaled = this.phase2 ? base * 0.8 : base;
+    const scaled =
+      (this.phase2 ? base * 0.8 : base) * activeDifficulty(state.settings.difficulty).telegraph;
     return state.settings.longTelegraphs ? scaled * 1.3 : scaled;
   }
 

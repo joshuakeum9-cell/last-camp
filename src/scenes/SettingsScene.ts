@@ -5,6 +5,7 @@ import { state } from '../core/GameState';
 import { SaveSystem } from '../core/SaveSystem';
 import { Button } from '../ui/Button';
 import { SaveFile } from '../core/SaveFile';
+import { DIFFICULTY_IDS, activeDifficulty } from '../data/difficulty';
 import { FONT } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
 
@@ -48,7 +49,7 @@ export class SettingsScene extends Phaser.Scene {
     this.add.bitmapText(40, 22, FONT, 'SETTINGS').setScale(1.5).setTint(hex(PAL.gold));
 
     this.rows = this.buildRows();
-    let y = 42;
+    let y = 40;
     this.rows.forEach((row, i) => {
       const label = this.add.bitmapText(40, y, FONT, row.label).setTint(hex(PAL.white));
       this.add.bitmapText(40, y + 9, FONT, row.hint).setTint(hex(PAL.uiMuted));
@@ -73,7 +74,7 @@ export class SettingsScene extends Phaser.Scene {
 
       void label;
       void i;
-      y += 18;
+      y += 17;
     });
 
     this.buildSaveFileSection(y + 2);
@@ -180,6 +181,15 @@ export class SettingsScene extends Phaser.Scene {
     const step = (v: number) => (v >= 1 ? 0 : Math.round((v + 0.25) * 100) / 100);
 
     return [
+      {
+        label: 'Difficulty',
+        hint: activeDifficulty(s.difficulty).desc,
+        get: () => activeDifficulty(s.difficulty).name,
+        cycle: () => {
+          const i = DIFFICULTY_IDS.indexOf(s.difficulty);
+          s.difficulty = DIFFICULTY_IDS[(i + 1) % DIFFICULTY_IDS.length];
+        },
+      },
       {
         label: 'Music',
         hint: 'The wind bed and the boss loop.',

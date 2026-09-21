@@ -56,6 +56,21 @@ sit bottom right. The interact button only appears when there is something in re
 Everything is sized and placed to stay out of the top of the screen and out of the way
 of your thumbs. Phones held in portrait get a rotate prompt.
 
+## Difficulty
+
+Three settings, chosen on the title screen and changeable at any time.
+
+| | What changes |
+|---|---|
+| **Bearable** | Animals hit softer and move slower, the cold is patient, mistakes cost less |
+| **Hard Winter** | The winter as it was designed. Start here |
+| **Killing Cold** | Animals are faster and hit far harder, the cold does not wait, falling hurts |
+
+Difficulty changes how dangerous the wilderness is, never how much it gives you.
+Yields, costs and drop rates are identical across all three, so the pacing in
+`ECONOMY.md` holds whichever you pick and nobody is pushed toward the easy setting to
+make progress at a reasonable speed.
+
 ## Your camp is a file
 
 Open **Settings** from the title screen or the camp menu. At the bottom:

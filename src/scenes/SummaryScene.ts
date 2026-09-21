@@ -12,6 +12,7 @@ import { FONT, textWidth } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
 import { Button } from '../ui/Button';
 import { FX } from '../art/sprites/fx';
+import { RESOURCE_ICON } from '../art/sprites/icons';
 import { StorePrototype } from '../systems/StorePrototype';
 import { dailyChallenge } from '../systems/DailyChallengeSystem';
 
@@ -153,7 +154,14 @@ export class SummaryScene extends Phaser.Scene {
       any = true;
       const def = RESOURCES[id];
       const night = this.summary.bonusNight[id] ?? 0;
-      this.countUpLine(left, def.name, amount, def.color, night > 0 ? `night bounty +${night}` : null);
+      this.countUpLine(
+        left,
+        def.name,
+        amount,
+        def.color,
+        night > 0 ? `night bounty +${night}` : null,
+        RESOURCE_ICON[id],
+      );
     }
 
     if (!any) {
@@ -190,13 +198,23 @@ export class SummaryScene extends Phaser.Scene {
     }
   }
 
-  private countUpLine(x: number, label: string, value: number, color: string, note: string | null): void {
+  private countUpLine(
+    x: number,
+    label: string,
+    value: number,
+    color: string,
+    note: string | null,
+    iconKey?: string,
+  ): void {
     const y = this.lineY;
     this.lineY += 11;
     const delay = this.delay;
     this.delay += 130;
 
-    const icon = this.add.rectangle(x - 10, y + 2, 5, 5, hex(color)).setOrigin(0).setAlpha(0);
+    const icon = this.add
+      .image(x - 13, y - 1, iconKey ?? 'fx-dot2')
+      .setOrigin(0)
+      .setAlpha(0);
     const name = this.add.bitmapText(x, y, FONT, label).setTint(hex(PAL.white)).setAlpha(0);
     const amount = this.add
       .bitmapText(x + 168, y, FONT, '0')

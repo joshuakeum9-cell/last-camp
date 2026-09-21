@@ -7,7 +7,7 @@ import type { EnemyBase, EnemyBehavior, EnemyHitbox, ToPlayer } from '../EnemyBa
  */
 export const frostRatBehavior: EnemyBehavior = {
   steer(e: EnemyBase, to: ToPlayer) {
-    const speed = e.def.speed;
+    const speed = e.moveSpeed;
 
     // Below a third health it scatters for a moment. A fleeing rat is a free hit
     // for a player who notices.
@@ -45,7 +45,7 @@ export const frostRatBehavior: EnemyBehavior = {
   onAttackTick(e: EnemyBase, phase, t, to) {
     // A short lunge on the attack frame, so the bite has travel behind it.
     if (phase === 'attack' && t < 0.5) {
-      e.body.setVelocity(to.dx * e.def.rushSpeed, to.dy * e.def.rushSpeed);
+      e.body.setVelocity(to.dx * e.rushSpeed, to.dy * e.rushSpeed);
     }
   },
 };

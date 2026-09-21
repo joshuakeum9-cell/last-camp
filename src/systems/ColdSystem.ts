@@ -2,6 +2,7 @@ import { bus } from '../core/EventBus';
 import { state } from '../core/GameState';
 import { BAL } from '../data/balance';
 import { ResourceSystem } from './ResourceSystem';
+import { activeDifficulty } from '../data/difficulty';
 
 /**
  * The cold meter. It exists to create decision pressure, not constant frustration:
@@ -45,7 +46,8 @@ export class ColdSystem {
       rate = BAL.cold.shelterRate;
     } else {
       const resist = 1 - ResourceSystem.campEffects().coldResist;
-      rate = BAL.cold.baseRate * areaMult * phaseMult * resist;
+      const diff = activeDifficulty(state.settings.difficulty);
+      rate = BAL.cold.baseRate * areaMult * phaseMult * resist * diff.coldRate;
     }
 
     run.cold = Math.max(0, Math.min(BAL.cold.max, run.cold + rate * seconds));

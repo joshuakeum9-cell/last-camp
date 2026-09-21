@@ -19,6 +19,7 @@ import { StorePrototype } from '../systems/StorePrototype';
 import { OfflineSystem } from '../systems/OfflineSystem';
 import { dailyChallenge } from '../systems/DailyChallengeSystem';
 import { ACHIEVEMENT_LIST } from '../data/achievements';
+import { RESOURCE_ICON } from '../art/sprites/icons';
 
 type Tab = 'camp' | 'survivor' | 'weapons' | 'inventory' | 'goals' | 'store';
 
@@ -98,15 +99,15 @@ export class MenuScene extends Phaser.Scene {
 
   private buildResourceBar(): void {
     const { width } = BAL.view;
-    let x = width - 20;
+    let x = width - 22;
     for (const id of [...RESOURCE_IDS].reverse()) {
       const label = this.add
-        .bitmapText(x, 14, FONT, '0')
+        .bitmapText(x, 15, FONT, '0')
         .setOrigin(1, 0)
         .setTint(hex(RESOURCES[id].color));
       this.resourceLabels.set(id, label);
-      this.add.rectangle(x + 4, 15, 5, 5, hex(RESOURCES[id].color)).setOrigin(0);
-      x -= 42;
+      this.add.image(x + 14, 12, RESOURCE_ICON[id]).setOrigin(1, 0);
+      x -= 46;
     }
   }
 
