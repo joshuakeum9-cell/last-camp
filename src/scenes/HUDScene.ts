@@ -353,7 +353,10 @@ export class HUDScene extends Phaser.Scene {
       this.coldIcon.setTint(hex(PAL.cyan));
     }
 
-    this.dayLabel.setText(String(hud.day));
+    // In the world the number sits inside the dial; at camp there is no dial, so it
+    // says the whole thing.
+    this.dayLabel.setText(inWorld ? String(hud.day) : `DAY ${hud.day}`);
+    this.dayLabel.container.y = inWorld ? 13 : 6;
     this.hpText.setText(`${Math.max(0, Math.ceil(hud.hp))}/${Math.round(hud.maxHp)}`);
     this.coldText.setText(String(Math.round(hud.cold)));
     this.clock.setVisible(inWorld);

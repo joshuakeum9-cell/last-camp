@@ -116,10 +116,32 @@ export const playerSide: PixelSprite = {
   fpsOverride: { idle: 2, attack: 14 },
 };
 
-export const PLAYER_SPRITES = [playerDown, playerUp, playerSide];
+/**
+ * Outfits swap the parka's colours and nothing else, so the silhouette the player
+ * has learned to find on screen never changes.
+ */
+export const OUTFITS: Record<string, Record<string, string>> = {
+  default: {},
+  jacket: { c: 'woodDark', d: 'bark', h: 'orange' },
+  frost: { c: 'snow', d: 'ice', h: 'cyan' },
+};
+
+function outfitVariant(base: PixelSprite, outfit: string): PixelSprite {
+  const swaps = OUTFITS[outfit] ?? {};
+  return {
+    ...base,
+    key: outfit === 'default' ? base.key : `${base.key}-${outfit}`,
+    palette: { ...base.palette, ...swaps },
+  };
+}
+
+export const PLAYER_SPRITES: PixelSprite[] = Object.keys(OUTFITS).flatMap((outfit) =>
+  [playerDown, playerUp, playerSide].map((s) => outfitVariant(s, outfit)),
+);
 
 export type Facing = 'down' | 'up' | 'side';
 
-export function playerKeyFor(facing: Facing): string {
-  return facing === 'down' ? 'player-down' : facing === 'up' ? 'player-up' : 'player-side';
+export function playerKeyFor(facing: Facing, outfit = 'default'): string {
+  const base = facing === 'down' ? 'player-down' : facing === 'up' ? 'player-up' : 'player-side';
+  return outfit && outfit !== 'default' && OUTFITS[outfit] ? `${base}-${outfit}` : base;
 }

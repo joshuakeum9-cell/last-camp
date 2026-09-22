@@ -110,6 +110,27 @@ export const campfireSprite: PixelSprite = {
   anims: { burn: FIRE_FRAMES },
 };
 
+/** The same flames in the two colours the store and the achievements hand out. */
+export const FIRE_COLOURS: Record<string, { key: string; palette: Record<string, string | null>; glow: string }> = {
+  default: { key: 'campfire', palette: P, glow: 'orange' },
+  blue: { key: 'campfire-blue', palette: { ...P, e: 'blueDark', o: 'ice', y: 'cyan', w: 'white', r: 'blueDark', c: 'ice' }, glow: 'ice' },
+  gold: { key: 'campfire-gold', palette: { ...P, e: 'orange', o: 'gold', y: 'cream', w: 'white', r: 'orange', c: 'gold' }, glow: 'gold' },
+};
+
+export function fireVariants(): PixelSprite[] {
+  return Object.values(FIRE_COLOURS).map((v) => ({ ...campfireSprite, key: v.key, palette: v.palette }));
+}
+
+/** Texture key for the fire the player has chosen. */
+export function campfireKey(colour: string | undefined): string {
+  return (FIRE_COLOURS[colour ?? 'default'] ?? FIRE_COLOURS.default).key;
+}
+
+/** Palette name of the glow that goes with that fire. */
+export function fireGlowName(colour: string | undefined): string {
+  return (FIRE_COLOURS[colour ?? 'default'] ?? FIRE_COLOURS.default).glow;
+}
+
 /** Level 1: a tent that barely counts as one. The gaps are holes, and they show. */
 const TENT_BROKEN = [
   '...........rr...........',
@@ -607,7 +628,7 @@ export const CAMP_KEYS = {
 } as const;
 
 export function buildCampArt(scene: Phaser.Scene): void {
-  PixelFactory.build(scene, campfireSprite);
+  for (const variant of fireVariants()) PixelFactory.build(scene, variant);
   const make = (key: string, rows: string[]) => PixelFactory.makeTexture(scene, key, rows, P);
   make(CAMP_KEYS.tentBroken, TENT_BROKEN);
   make(CAMP_KEYS.tentPatched, TENT_PATCHED);

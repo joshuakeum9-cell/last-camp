@@ -10,7 +10,7 @@ import {
   type WeaponDef,
   type WeaponId,
 } from '../data/weapons';
-import { hex, RARITY_COLOR } from '../art/palette';
+import { hex, RARITY_COLOR, PAL } from '../art/palette';
 import { WFX } from '../art/sprites/weapons';
 import type { CombatSystem } from './CombatSystem';
 import type { Player } from '../entities/Player';
@@ -364,7 +364,7 @@ export class WeaponSystem {
       const blade = this.scene.add
         .image(cx, cy, WFX.arcWide)
         .setRotation(angle)
-        .setTint(hex(charged ? '#ffffff' : w.color))
+        .setTint(hex(charged ? '#ffffff' : skinColour(w.color)))
         .setDepth(this.player.sprite.y + 1)
         .setScale((reach * 2.1) / 64)
         .setBlendMode(Phaser.BlendModes.ADD);
@@ -400,7 +400,7 @@ export class WeaponSystem {
     const fx = this.scene.add
       .image(cx, cy, key)
       .setRotation(angle - 0.5)
-      .setTint(hex(charged ? '#ffffff' : w.color))
+      .setTint(hex(charged ? '#ffffff' : skinColour(w.color)))
       .setDepth(this.player.sprite.y + 1)
       .setScale((reach * 2.1) / size)
       .setBlendMode(Phaser.BlendModes.ADD);
@@ -505,4 +505,9 @@ export class WeaponSystem {
     this.chargeBarBack?.destroy();
     void MODIFIERS;
   }
+}
+
+/** The bone skin turns every swing pale, whatever the weapon's own colour. */
+function skinColour(colour: string): string {
+  return state.player.cosmetics.weaponSkin === 'bone' ? PAL.cream : colour;
 }

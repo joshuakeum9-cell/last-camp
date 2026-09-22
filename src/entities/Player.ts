@@ -226,10 +226,12 @@ export class Player {
     if (this.stepTimer < 210) return;
     this.stepTimer = 0;
 
+    const ember = state.player.cosmetics.trail === 'ember';
     const puff = this.scene.add
       .image(this.cx + Phaser.Math.Between(-2, 2), this.sprite.y - 1, FX.puff)
-      .setTint(hex(PAL.white))
-      .setAlpha(0.55)
+      .setTint(hex(ember ? PAL.orange : PAL.white))
+      .setBlendMode(ember ? Phaser.BlendModes.ADD : Phaser.BlendModes.NORMAL)
+      .setAlpha(ember ? 0.8 : 0.55)
       .setDepth(this.sprite.y - 2);
     this.scene.tweens.add({
       targets: puff,
@@ -278,7 +280,7 @@ export class Player {
 
   /** Swap texture and animation together, so changing direction never shows a wrong frame. */
   play(anim: 'idle' | 'walk' | 'attack'): void {
-    const key = playerKeyFor(this.facing);
+    const key = playerKeyFor(this.facing, state.player.cosmetics.outfit);
     const full = `${key}_${anim}`;
     if (this.sprite.texture.key !== key) {
       this.sprite.setTexture(key);

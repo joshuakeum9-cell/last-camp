@@ -8,7 +8,7 @@ import { SaveSystem } from '../core/SaveSystem';
 import { state } from '../core/GameState';
 import { FX } from '../art/sprites/fx';
 import { SCENERY_KEYS } from '../art/sprites/scenery';
-import { campfireSprite } from '../art/sprites/camp';
+import { campfireKey } from '../art/sprites/camp';
 import { DIFFICULTY_LIST, activeDifficulty } from '../data/difficulty';
 
 export class TitleScene extends Phaser.Scene {
@@ -68,10 +68,10 @@ export class TitleScene extends Phaser.Scene {
       ease: 'Sine.easeInOut',
     });
     this.add
-      .sprite(74, height - 36, campfireSprite.key)
+      .sprite(74, height - 36, campfireKey(state.player.cosmetics.fireColor))
       .setOrigin(0.5, 1)
       .setScale(2)
-      .play(`${campfireSprite.key}_burn`);
+      .play(`${campfireKey(state.player.cosmetics.fireColor)}_burn`);
 
     this.weather = new Weather(this, 500);
 

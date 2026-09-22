@@ -14,7 +14,7 @@ import { SOLID_TILES, TILE, TILE_SIZE } from '../art/sprites/tiles';
 import { TilesetBuilder, applyTransitions } from '../art/sprites/transitions';
 import { isSolidIndex } from '../systems/MapGen';
 import { SCENERY_KEYS } from '../art/sprites/scenery';
-import { campfireSprite, PORTAL_FRAME_KEYS } from '../art/sprites/camp';
+import { campfireKey, fireGlowName, PORTAL_FRAME_KEYS } from '../art/sprites/camp';
 import { FX } from '../art/sprites/fx';
 import { hex, PAL } from '../art/palette';
 import { FONT } from '../art/PixelFont';
@@ -227,7 +227,7 @@ export class CampScene extends Phaser.Scene {
     for (const light of CampSystem.lightSources()) {
       const glow = this.add
         .image(light.tx * TILE_SIZE + 8, light.ty * TILE_SIZE, FX.glowLarge)
-        .setTint(hex(PAL.orange))
+        .setTint(hex((PAL as Record<string, string>)[fireGlowName(state.player.cosmetics.fireColor)] ?? PAL.orange))
         .setBlendMode(Phaser.BlendModes.ADD)
         .setAlpha(light.intensity)
         .setScale(light.radius / 80)
@@ -272,14 +272,15 @@ export class CampScene extends Phaser.Scene {
 
     let obj: Phaser.GameObjects.Image | Phaser.GameObjects.Sprite;
     if (p.key === 'campfire') {
-      obj = this.add.sprite(x, y, campfireSprite.key).play(`${campfireSprite.key}_burn`);
+      const fireKey = campfireKey(state.player.cosmetics.fireColor);
+      obj = this.add.sprite(x, y, fireKey).play(`${fireKey}_burn`);
       const embers = this.add.particles(x, y - 6, FX.dot1, {
         speedY: { min: -34, max: -14 },
         speedX: { min: -9, max: 9 },
         lifespan: { min: 900, max: 1700 },
         scale: { min: 0.8, max: 1.6 },
         alpha: { start: 0.9, end: 0 },
-        tint: [hex(PAL.gold), hex(PAL.orange), hex(PAL.ember)],
+        tint: emberTints(state.player.cosmetics.fireColor),
         frequency: 160,
         blendMode: Phaser.BlendModes.ADD,
       });
@@ -732,3 +733,10 @@ const STATION_LABEL: Record<StationId, string> = {
   mira: 'Talk to Mira',
   supplydrop: 'Open supply drop',
 };
+
+/** Ember particle colours for a fire of the chosen colour. */
+function emberTints(colour: string | undefined): number[] {
+  if (colour === 'blue') return [hex(PAL.cyan), hex(PAL.ice), hex(PAL.blueDark)];
+  if (colour === 'gold') return [hex(PAL.cream), hex(PAL.gold), hex(PAL.orange)];
+  return [hex(PAL.gold), hex(PAL.orange), hex(PAL.ember)];
+}

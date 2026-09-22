@@ -40,7 +40,7 @@ import { TilesetBuilder, applyTransitions } from '../art/sprites/transitions';
 import { isSolidIndex } from '../systems/MapGen';
 import { SCENERY_KEYS } from '../art/sprites/scenery';
 import { FX } from '../art/sprites/fx';
-import { CAMP_KEYS, campfireSprite } from '../art/sprites/camp';
+import { CAMP_KEYS, campfireKey } from '../art/sprites/camp';
 import { hex, mix, PAL } from '../art/palette';
 import { FONT } from '../art/PixelFont';
 import { hud } from '../core/HudState';
@@ -513,11 +513,11 @@ export class WorldScene extends Phaser.Scene {
     spot.lit = true;
 
     const fire = this.add
-      .sprite(spot.x, spot.y + 4, campfireSprite.key)
+      .sprite(spot.x, spot.y + 4, campfireKey(state.player.cosmetics.fireColor))
       .setOrigin(0.5, 1)
       .setScale(1.1)
       .setDepth(spot.y + 4);
-    fire.play(`${campfireSprite.key}_burn`);
+    fire.play(`${campfireKey(state.player.cosmetics.fireColor)}_burn`);
     const glow = this.add
       .image(spot.x, spot.y - 4, 'fx-glow-lg')
       .setTint(hex(PAL.orange))
