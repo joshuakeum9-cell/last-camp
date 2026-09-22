@@ -104,11 +104,13 @@ export class TitleScene extends Phaser.Scene {
         Math.round(width / 2),
         74,
         FONT,
-        state.story.ending === 'shutdown'
-          ? 'the winter stopped'
-          : state.story.ending === 'kept'
-            ? 'the fire is still lit'
-            : 'the winter did not stop',
+        (state.meta.winters ?? 0) > 0 && !state.story.ending
+          ? `winter ${(state.meta.winters ?? 0) + 1}. it came back`
+          : state.story.ending === 'shutdown'
+            ? 'the winter stopped'
+            : state.story.ending === 'kept'
+              ? 'the fire is still lit'
+              : 'the winter did not stop',
       )
       .setOrigin(0.5, 0)
       .setTint(hex(PAL.ice))
@@ -164,6 +166,22 @@ export class TitleScene extends Phaser.Scene {
         this.scene.start('Settings', { returnTo: 'Title' });
       },
     ).setDepth(600);
+
+    // After the tower: the winter can be played again, harder, with everything
+    // learned kept. It sits beside Settings so it never crowds a first-timer.
+    if (state.story.ending) {
+      new Button(
+        this,
+        bx + bw + 8,
+        by + 26,
+        { width: 96, height: 20, text: 'WINTER AGAIN', fill: PAL.deep, border: PAL.cyan, textColor: PAL.white },
+        () => {
+          SaveSystem.newWinter();
+          this.weather.destroy();
+          this.scene.start('Controls', { next: 'Camp', first: true });
+        },
+      ).setDepth(600);
+    }
 
     this.buildDifficultyRow(by + 72);
 

@@ -1,6 +1,7 @@
 import {
   SAVE_VERSION,
   newGameState,
+  newWinterState,
   setState,
   snapshot,
   state,
@@ -84,6 +85,12 @@ export const SaveSystem = {
       /* ignore */
     }
     setState(newGameState());
+  },
+
+  /** Start again after the tower, keeping what the survivor learned and earned. */
+  newWinter(): void {
+    setState(newWinterState(state));
+    this.save();
   },
 
   exportJson(): string {

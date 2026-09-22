@@ -30,7 +30,7 @@ export const WINTER_MOD_IDS = Object.keys(WINTER_MODS) as WinterModId[];
 export const WINTER_UNLOCK_DAY = 6;
 
 export function winterUnlocked(): boolean {
-  return state.day >= WINTER_UNLOCK_DAY || state.story.ending !== null;
+  return state.day >= WINTER_UNLOCK_DAY || state.story.ending !== null || (state.meta.winters ?? 0) > 0;
 }
 
 export function winterOn(id: WinterModId): boolean {

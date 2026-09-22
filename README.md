@@ -127,6 +127,13 @@ has something to say about every place the first time she sees it. Nothing hunts
   haul: bigger packs, deeper dark, hungrier cold, sharper teeth, no map. Each pays a
   flat bonus on everything gathered while it is on.
 
+## Winter again
+
+After the tower, the title screen offers WINTER AGAIN. The valley resets and the
+survivor does not: achievements, titles, cosmetics, the bestiary, the streak and the
+settings carry over, Deeper Winter is open from the first morning, and the title screen
+counts the winters.
+
 ## Titles
 
 Achievements give titles. The first one you earn is worn automatically, and the SURVIVOR

@@ -156,6 +156,8 @@ export interface GameState {
     lastVisit: string;
     streak: number;
     bestStreak: number;
+    /** How many winters have been played through to the tower. */
+    winters: number;
   };
 
   settings: {
@@ -228,7 +230,7 @@ export function newGameState(): GameState {
     },
     store: { owned: [], simulatedSpend: 0, adsUsed: {} },
     winter: {},
-    meta: { lastVisit: '', streak: 0, bestStreak: 0 },
+    meta: { lastVisit: '', streak: 0, bestStreak: 0, winters: 0 },
     settings: {
       difficulty: 'normal',
       music: BAL.audio.music,
@@ -269,6 +271,27 @@ export function newRunState(seed: number, maxHp: number, storm: boolean, event =
  * The single live state object. Systems read and write this directly; it is replaced
  * wholesale only by SaveSystem on load or by starting a new camp.
  */
+/**
+ * A new winter after the tower: the valley resets, the survivor does not. What
+ * carries over is what was learned and earned: achievements, titles, cosmetics,
+ * the bestiary, the streak, the settings, and the best day. Deeper Winter is
+ * open from the first morning.
+ */
+export function newWinterState(prev: GameState): GameState {
+  const next = newGameState();
+  next.achievements = { ...prev.achievements };
+  next.store = { ...prev.store, owned: [...prev.store.owned] };
+  next.player.cosmetics = { ...prev.player.cosmetics };
+  next.stats.enemiesSeen = [...prev.stats.enemiesSeen];
+  next.stats.enemiesKilled = { ...prev.stats.enemiesKilled };
+  next.stats.bestDay = prev.stats.bestDay;
+  next.stats.deaths = 0;
+  next.settings = { ...prev.settings };
+  next.meta = { ...prev.meta, winters: (prev.meta.winters ?? 0) + 1 };
+  next.story.hints = [...prev.story.hints];
+  return next;
+}
+
 export let state: GameState = newGameState();
 
 export function setState(next: GameState): void {
