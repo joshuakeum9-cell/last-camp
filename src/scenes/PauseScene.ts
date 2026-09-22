@@ -6,6 +6,7 @@ import { FONT } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
 import { makeFrame } from '../ui/Frame';
 import { FocusNav } from '../ui/Focus';
+import { PACT } from '../data/pacts';
 
 /**
  * The pause menu, over a frozen expedition. Resume, settings, or save and leave
@@ -22,7 +23,7 @@ export class PauseScene extends Phaser.Scene {
     this.scene.pause('World');
 
     this.add.rectangle(0, 0, width, height, hex(PAL.black)).setOrigin(0).setAlpha(0.72);
-    makeFrame(this, Math.round(width / 2) - 160, 40, 320, 176, { edge: PAL.gold, alpha: 0.95 });
+    makeFrame(this, Math.round(width / 2) - 160, 40, 320, PACT.def() ? 206 : 176, { edge: PAL.gold, alpha: 0.95 });
     this.add
       .bitmapText(Math.round(width / 2), 52, FONT, 'PAUSED')
       .setOrigin(0.5, 0)
@@ -81,8 +82,25 @@ export class PauseScene extends Phaser.Scene {
     ));
     this.nav = new FocusNav(this, buttons, { onBack: () => this.resumeWorld() });
 
+    // What was taken this morning, because four hours later nobody remembers.
+    const pact = PACT.def();
+    if (pact) {
+      this.add
+        .bitmapText(Math.round(width / 2), by + 28, FONT, `Today you took ${pact.name}`)
+        .setOrigin(0.5, 0)
+        .setTint(hex(PAL.gold));
+      this.add
+        .bitmapText(Math.round(width / 2), by + 38, FONT, pact.boon)
+        .setOrigin(0.5, 0)
+        .setTint(hex(PAL.teal));
+      this.add
+        .bitmapText(Math.round(width / 2), by + 47, FONT, pact.cost)
+        .setOrigin(0.5, 0)
+        .setTint(hex(PAL.blood));
+    }
+
     this.add
-      .bitmapText(Math.round(width / 2), by + 30, FONT, 'The day is saved. Continue picks it up right here.')
+      .bitmapText(Math.round(width / 2), by + (pact ? 60 : 30), FONT, 'The day is saved. Continue picks it up right here.')
       .setOrigin(0.5, 0)
       .setTint(hex(PAL.uiMuted));
 

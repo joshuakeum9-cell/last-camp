@@ -126,7 +126,7 @@ export class SummaryScene extends Phaser.Scene {
     this.delay = 260;
     this.buildResourceLines();
     this.buildEventLines();
-    this.buildNextUp();
+    this.buildNextUp(died ? 62 : 50);
 
     const cont = new Button(
       this,
@@ -335,13 +335,14 @@ export class SummaryScene extends Phaser.Scene {
    * The part that makes the player want another day: what they can buy right now,
    * and the one thing they are closest to.
    */
-  private buildNextUp(): void {
+  /** `top` drops the panel clear of the two lines a death puts across the screen. */
+  private buildNextUp(top = 50): void {
     const x = 250;
     const { height } = BAL.view;
 
-    makeFrame(this, x - 10, 50, 200, height - 86, { fill: PAL.deep, alpha: 0.3, edge: PAL.blueDark });
+    makeFrame(this, x - 10, top, 200, height - 36 - top, { fill: PAL.deep, alpha: 0.3, edge: PAL.blueDark });
     this.add
-      .bitmapText(x, 56, FONT, 'WHAT CAN YOU UPGRADE?')
+      .bitmapText(x, top + 6, FONT, 'WHAT CAN YOU UPGRADE?')
       .setTint(hex(PAL.gold));
 
     const affordable: Array<{ name: string; cost: Partial<Record<ResourceId, number>> }> = [];
@@ -375,7 +376,7 @@ export class SummaryScene extends Phaser.Scene {
       }
     }
 
-    let y = 70;
+    let y = top + 20;
     if (affordable.length === 0) {
       this.add.bitmapText(x, y, FONT, 'Nothing yet. Keep going.').setTint(hex(PAL.grey));
       y += 14;

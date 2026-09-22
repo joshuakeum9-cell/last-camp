@@ -1904,8 +1904,16 @@ export class WorldScene extends Phaser.Scene {
       spitter: 'a Snow Spitter',
     };
     const def = ENEMIES[source as EnemyId];
-    const who = names[source] ?? (def ? `${/^[aeiou]/i.test(def.name) ? 'an' : 'a'} ${def.name}` : 'something out there');
-    const where = this.currentArea ? `in the ${this.currentArea.name}` : 'out there';
+    const who = names[source] ?? (def ? `${/^[aeiou]/i.test(def.name) ? 'an' : 'a'} ${def.name}` : 'something you did not see');
+    // Places take different prepositions, and two of the names carry their own
+    // 'the', so the line is built rather than pasted together.
+    const at = new Set(['gate', 'cabin', 'towerpass']);
+    const on = new Set(['road', 'lake']);
+    const area = this.currentArea;
+    const preposition = area ? (at.has(area.id) ? 'at' : on.has(area.id) ? 'on' : 'in') : '';
+    const where = area
+      ? `${preposition} ${/^the /i.test(area.name) ? '' : 'the '}${area.name.replace(/^The /, 'the ')}`
+      : 'out there';
     const when = this.clock.isNight ? 'after dark' : this.clock.phase === 'evening' ? 'in the evening' : 'in daylight';
     return `Killed by ${who} ${where}, ${when}.`;
   }
