@@ -189,6 +189,16 @@ export class WorldScene extends Phaser.Scene {
 
     this.subs.add(bus.on('settings:changed', () => this.touch.refreshSettings()));
     this.subs.add(bus.on('player:died', () => this.endDay('death')));
+    this.subs.add(bus.on('hud:pause', () => this.openPause()));
+    // Anything buffered while paused (the ESC that closed the menu) is dropped.
+    this.events.on('resume', () => this.input$.flush());
+
+    if (state.day === 1) {
+      this.time.delayedCall(1500, () => this.hint('gather', 'Hit trees for wood. Bushes give food.'));
+      this.time.delayedCall(9000, () =>
+        this.hint('return', 'Be back at the camp zone before dark. Follow the orange dot.'),
+      );
+    }
     this.subs.add(
       bus.on('hud:slot', ({ slot }) => {
         if (this.ending || this.dialogue.isOpen) return;
@@ -543,6 +553,10 @@ export class WorldScene extends Phaser.Scene {
 
     this.player.update(dt, input);
     this.weapons.update(dt, input);
+    if (input.menuPressed) {
+      this.openPause();
+      return;
+    }
     if (input.swapPressed) this.weapons.swap();
     if (input.slotPressed) this.weapons.select(input.slotPressed);
     if (input.eatPressed) this.eat();
@@ -559,6 +573,9 @@ export class WorldScene extends Phaser.Scene {
     this.updateClockAndCold(dt);
     this.updateInteraction(input.interactPressed);
     this.updateHud();
+    if (this.player.hp < this.player.maxHp * 0.6 && (state.run?.collected.food ?? 0) > 0) {
+      this.hint('eat', 'Hurt? F eats food. On touch, tap the food slot.');
+    }
     this.touch.update(this.canInteract, !!state.player.equipped[1], (state.run?.collected.food ?? 0) > 0);
 
     this.weather.update(dt, this.currentArea?.id === 'lake' ? 0.5 : 0.18);
@@ -593,6 +610,21 @@ export class WorldScene extends Phaser.Scene {
    * Eat one food from the run's haul. This is the answer to being hurt out in the
    * open: it costs something you were going to bank, so it is a real trade.
    */
+  /** A one-time toast, remembered in the save so it never nags. */
+  private hint(id: string, text: string): void {
+    if (state.story.hints.includes(id)) return;
+    state.story.hints.push(id);
+    bus.emit('juice:toast', { text, color: PAL.cyan });
+  }
+
+  private openPause(): void {
+    if (this.ending || this.dialogue.isOpen) return;
+    if (this.scene.isActive('Pause')) return;
+    this.input$.flush();
+    this.scene.launch('Pause');
+    this.scene.bringToTop('Pause');
+  }
+
   private eat(): void {
     const run = state.run;
     if (!run) return;

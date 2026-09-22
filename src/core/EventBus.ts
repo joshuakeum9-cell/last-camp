@@ -65,6 +65,8 @@ export interface GameEvents {
   'settings:changed': { key: string };
   /** A hotbar slot was tapped or clicked: 0 and 1 are weapons, 2 is food. */
   'hud:slot': { slot: number };
+  /** The pause button on the HUD was tapped. */
+  'hud:pause': Record<string, never>;
 }
 
 export type EventName = keyof GameEvents;

@@ -93,6 +93,8 @@ export interface GameState {
     miraAssignedAt: number | null;
     /** Morning report shown for this day already. */
     reportSeenDay: number;
+    /** One-time hints already shown, by id. */
+    hints: string[];
   };
 
   bosses: {
@@ -176,6 +178,7 @@ export function newGameState(): GameState {
       miraAssignment: null,
       miraAssignedAt: null,
       reportSeenDay: 0,
+      hints: [],
     },
     bosses: { alphaDefeated: false, mawDefeated: false, mawAttempts: 0 },
     challenge: { id: '', dayIssued: 0, progress: 0, claimed: false, source: 'local' },

@@ -41,6 +41,8 @@ export class HUDScene extends Phaser.Scene {
   private toasts: Label[] = [];
   private resourcePanel!: Phaser.GameObjects.Rectangle;
   private statusPanel!: Phaser.GameObjects.Rectangle;
+  private pauseButton!: Phaser.GameObjects.Rectangle;
+  private pauseGlyph!: Phaser.GameObjects.BitmapText;
 
   constructor() {
     super('HUD');
@@ -122,6 +124,25 @@ export class HUDScene extends Phaser.Scene {
       .setTint(hex(PAL.orange))
       .setScrollFactor(0)
       .setVisible(false);
+
+    // Pause, top right corner. Small, because the keyboard has ESC, but always
+    // there for a thumb.
+    this.pauseButton = this.add
+      .rectangle(width - 4, 4, 14, 12, hex(PAL.black))
+      .setOrigin(1, 0)
+      .setAlpha(0.6)
+      .setStrokeStyle(1, hex(PAL.blueDark), 0.9)
+      .setScrollFactor(0)
+      .setInteractive({ useHandCursor: true });
+    this.pauseGlyph = this.add
+      .bitmapText(width - 11, 6, FONT, 'II')
+      .setOrigin(0.5, 0)
+      .setTint(hex(PAL.grey))
+      .setScrollFactor(0);
+    this.pauseButton.on('pointerdown', () => {
+      this.input.stopPropagation();
+      bus.emit('hud:pause', {});
+    });
 
     this.buildResourceRows();
 
@@ -313,6 +334,8 @@ export class HUDScene extends Phaser.Scene {
     this.comboLabel.setVisible(hud.comboCount >= 3);
     if (hud.comboCount >= 3) this.comboLabel.setText(`x${hud.comboCount}`);
 
+    this.pauseButton.setVisible(inWorld);
+    this.pauseGlyph.setVisible(inWorld);
     this.compass.setVisible(inWorld && hud.homeAngle !== null);
     if (hud.homeAngle !== null) {
       this.compass.setPosition(
