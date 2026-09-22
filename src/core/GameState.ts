@@ -135,6 +135,10 @@ export interface GameState {
     enemiesKilled: Record<string, number>;
     /** Enemy ids that have come for the player at least once, for the bestiary. */
     enemiesSeen: string[];
+    fishCaught: number;
+    tradesMade: number;
+    pitsLit: number;
+    elitesKilled: number;
     resourcesCollected: number;
     deaths: number;
     daysSurvived: number;
@@ -224,6 +228,10 @@ export function newGameState(): GameState {
     stats: {
       enemiesKilled: {},
       enemiesSeen: [],
+      fishCaught: 0,
+      tradesMade: 0,
+      pitsLit: 0,
+      elitesKilled: 0,
       resourcesCollected: 0,
       deaths: 0,
       daysSurvived: 0,

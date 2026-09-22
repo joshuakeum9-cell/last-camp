@@ -690,6 +690,7 @@ export class WorldScene extends Phaser.Scene {
       LootSystem.takeWeapon(weapon);
       this.onWeaponFound(WEAPONS[offer.weapon].name, 'uncommon');
     }
+    state.stats.tradesMade++;
     bus.emit('audio:play', { cue: 'upgrade' });
     bus.emit('juice:toast', { text: 'Done. She does not shake hands.', color: PAL.gold });
     // One of each per visit: the stock is a sled, not a shop.
@@ -773,6 +774,7 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     const night = this.clock.bountyActive;
+    state.stats.fishCaught++;
     const food = Phaser.Math.Between(BAL.fishing.food[0], BAL.fishing.food[1]);
     ResourceSystem.collect('food', food, night);
     let text = `A fish. +${food} food.`;
@@ -809,6 +811,7 @@ export class WorldScene extends Phaser.Scene {
     }
     run.collected.wood -= cost;
     spot.lit = true;
+    state.stats.pitsLit++;
 
     const fire = this.add
       .sprite(spot.x, spot.y + 4, campfireKey(state.player.cosmetics.fireColor))
@@ -1146,6 +1149,7 @@ export class WorldScene extends Phaser.Scene {
     this.updateArea();
     this.updateClockAndCold(dt);
     this.updateInteraction(input.interactPressed);
+    this.player.ground = this.currentArea?.ground ?? 'snow';
     this.updateHud();
     if (this.player.hp < this.player.maxHp * 0.6 && (state.run?.collected.food ?? 0) > 0) {
       this.hint('eat', 'Hurt? F eats food. On touch, tap the food slot.');
@@ -1244,6 +1248,7 @@ export class WorldScene extends Phaser.Scene {
     const rng = new Rng(hashString(`${type}:${Math.round(x)}:${Math.round(y)}`));
     // An elite always pays: a crystal, some scrap, and now and then a kit.
     if (elite) {
+      state.stats.elitesKilled++;
       this.pickups.push(new Pickup(this, 'crystal', 1, x - 6, y));
       this.pickups.push(new Pickup(this, 'scrap', 3, x + 6, y));
       if (rng.chance(0.25)) this.pickups.push(new Pickup(this, 'medical', 1, x, y - 6));

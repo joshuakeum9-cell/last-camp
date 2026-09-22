@@ -61,6 +61,10 @@ export class AchievementSystem {
   /** Counting achievements, checked when anything relevant happens. */
   check(): void {
     if (state.stats.resourcesCollected >= 100) this.unlock('scavenger');
+    if (state.stats.fishCaught >= 10) this.unlock('angler');
+    if (state.stats.tradesMade >= 5) this.unlock('haggler');
+    if (state.stats.pitsLit >= 5) this.unlock('firelighter');
+    if (state.stats.elitesKilled >= 5) this.unlock('bigGame');
     if ((state.stats.enemiesKilled.wolf ?? 0) >= 10) this.unlock('packHunter');
     if (UpgradeSystem.ownedCount() >= 5) this.unlock('prepared');
     if (state.story.notesFound.length >= NOTE_LIST.length) this.unlock('wholeStory');

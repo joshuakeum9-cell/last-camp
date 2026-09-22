@@ -8,7 +8,7 @@ import { SaveSystem } from '../core/SaveSystem';
 import { state } from '../core/GameState';
 import { FX } from '../art/sprites/fx';
 import { SCENERY_KEYS } from '../art/sprites/scenery';
-import { campfireKey } from '../art/sprites/camp';
+import { campfireKey, CAMP_KEYS } from '../art/sprites/camp';
 import { DIFFICULTY_LIST, activeDifficulty } from '../data/difficulty';
 
 export class TitleScene extends Phaser.Scene {
@@ -72,6 +72,20 @@ export class TitleScene extends Phaser.Scene {
       .setOrigin(0.5, 1)
       .setScale(2)
       .play(`${campfireKey(state.player.cosmetics.fireColor)}_burn`);
+
+    // Your camp, on the title. A torn tent for a first night, a patched one once
+    // it has been stitched, a cabin once there are walls. Progress before pressing anything.
+    if (SaveSystem.hasSave()) {
+      const level = state.camp.level ?? 1;
+      const key = level >= 4 ? CAMP_KEYS.cabin : level >= 2 ? CAMP_KEYS.tentPatched : CAMP_KEYS.tentBroken;
+      this.add
+        .image(122, height - 36, key)
+        .setOrigin(0.5, 1)
+        .setScale(level >= 4 ? 1.4 : 1.8)
+        .setTint(hex(PAL.navy))
+        .setAlpha(0.9)
+        .setDepth(2);
+    }
 
     this.weather = new Weather(this, 500);
 

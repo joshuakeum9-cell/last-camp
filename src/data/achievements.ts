@@ -10,6 +10,10 @@ export const ACHIEVEMENT_IDS = [
   'theHollowStag',
   'theOneWhoStayed',
   'theTower',
+  'angler',
+  'haggler',
+  'firelighter',
+  'bigGame',
   'notEmpty',
   'wholeStory',
 ] as const;
@@ -28,6 +32,10 @@ export const TITLES: Record<string, string> = {
   stagbreaker: 'the Stagbreaker',
   lightkeeper: 'the Lightkeeper',
   climber: 'the Climber',
+  angler: 'the Angler',
+  haggler: 'the Haggler',
+  firelighter: 'the Firelighter',
+  biggame: 'the Big Game Hunter',
   archivist: 'the Archivist',
 };
 
@@ -106,6 +114,30 @@ export const ACHIEVEMENTS: Record<AchievementId, AchievementDef> = {
     name: 'Two Hundred Steps',
     desc: 'Climb the tower and decide what the valley is for.',
     reward: { kind: 'title', value: 'climber', label: 'Title: Climber' },
+  },
+  angler: {
+    id: 'angler',
+    name: 'Something Under the Ice',
+    desc: 'Pull ten fish out of the lake.',
+    reward: { kind: 'title', value: 'angler', label: 'Title: Angler' },
+  },
+  haggler: {
+    id: 'haggler',
+    name: 'She Does Not Shake Hands',
+    desc: 'Trade with the sled five times.',
+    reward: { kind: 'title', value: 'haggler', label: 'Title: Haggler' },
+  },
+  firelighter: {
+    id: 'firelighter',
+    name: 'Warm Spots',
+    desc: 'Light five fire pits out in the valley.',
+    reward: { kind: 'title', value: 'firelighter', label: 'Title: Firelighter' },
+  },
+  bigGame: {
+    id: 'bigGame',
+    name: 'The Big Ones',
+    desc: 'Kill five elites.',
+    reward: { kind: 'title', value: 'biggame', label: 'Title: Big Game Hunter' },
   },
   notEmpty: {
     id: 'notEmpty',

@@ -88,6 +88,9 @@ export class Player {
     return state.player.perks.quickstep > 0 ? BAL.dash.cooldownQuickStep : BAL.dash.cooldown;
   }
 
+  /** What is underfoot, set by the scene: snow, ice, road, camp. Changes the step sound. */
+  ground = 'snow';
+
   /** 0 when ready, up to 1 right after dashing. Drives the HUD pip. */
   get dashCharge(): number {
     const remaining = this.dashReadyAt - this.scene.time.now;
@@ -241,7 +244,8 @@ export class Player {
       onComplete: () => puff.destroy(),
     });
     // A touch of pitch variation, so a long walk does not turn into a metronome.
-    bus.emit('audio:play', { cue: 'step', volume: 0.85, rate: 0.9 + Math.random() * 0.25 });
+    const base = this.ground === 'ice' ? 1.35 : this.ground === 'road' ? 0.75 : this.ground === 'deep' ? 0.85 : 1;
+    bus.emit('audio:play', { cue: 'step', volume: this.ground === 'ice' ? 0.7 : 0.85, rate: base * (0.9 + Math.random() * 0.25) });
   }
 
   private updateFacing(input: InputState): void {
