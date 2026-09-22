@@ -128,6 +128,7 @@ export class CampScene extends Phaser.Scene {
     if (!this.scene.isActive('HUD')) this.scene.launch('HUD');
     this.scene.bringToTop('HUD');
 
+    bus.emit('audio:music', { cue: 'camp' });
     this.showMorningReport();
     this.greetReturn();
     this.events.once('shutdown', () => this.cleanup());

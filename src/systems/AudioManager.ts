@@ -130,26 +130,31 @@ export class AudioManager {
     }
     if (!cue) return;
 
-    const pattern = cue === 'boss' ? BOSS_PATTERN : NIGHT_PATTERN;
-    const beatMs = cue === 'boss' ? 545 : 900;
+    const track = TRACKS[cue] ?? TRACKS.night;
     let step = 0;
-    const tick = () => {
-      const note = pattern[step % pattern.length];
-      step++;
-      if (note <= 0) return;
+    const voice = (note: number, type: OscillatorType, gainTo: number, seconds: number) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = cue === 'boss' ? 'sawtooth' : 'sine';
+      osc.type = type;
       osc.frequency.value = note;
       gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(cue === 'boss' ? 0.09 : 0.05, ctx.currentTime + 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + beatMs / 1000);
+      gain.gain.exponentialRampToValueAtTime(gainTo, ctx.currentTime + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + seconds);
       osc.connect(gain).connect(this.musicGain);
       osc.start();
-      osc.stop(ctx.currentTime + beatMs / 1000 + 0.05);
+      osc.stop(ctx.currentTime + seconds + 0.05);
+    };
+    const tick = () => {
+      const i = step++;
+      const note = track.lead[i % track.lead.length];
+      if (note > 0) voice(note, track.type, track.gain, track.beatMs / 1000);
+      if (track.bass) {
+        const low = track.bass[i % track.bass.length];
+        if (low > 0) voice(low, 'triangle', track.gain * 0.8, (track.beatMs / 1000) * 1.8);
+      }
     };
     tick();
-    this.musicTimer = window.setInterval(tick, beatMs);
+    this.musicTimer = window.setInterval(tick, track.beatMs);
   }
 
   get isRunning(): boolean {
@@ -239,8 +244,44 @@ function crunch(
   src.stop(now + opts.dur + 0.05);
 }
 
-const NIGHT_PATTERN = [110, 0, 98, 0, 87, 0, 98, 0];
-const BOSS_PATTERN = [73, 73, 87, 73, 98, 73, 87, 65];
+interface Track {
+  lead: number[];
+  bass?: number[];
+  beatMs: number;
+  type: OscillatorType;
+  gain: number;
+}
+
+/**
+ * Every piece of music, as note patterns the synth plays. None of it is meant to
+ * be hummed; it is meant to tell you where you are with your eyes shut. Camp is
+ * warm and slow, day is sparse bells, night is the low three-note worry, the boss
+ * is the saw, the ending is a drone that resolves.
+ */
+const TRACKS: Record<string, Track> = {
+  camp: {
+    lead: [220, 0, 262, 0, 330, 0, 294, 0, 262, 0, 220, 0, 196, 0, 0, 0],
+    bass: [110, 0, 0, 0, 0, 0, 0, 0, 98, 0, 0, 0, 0, 0, 0, 0],
+    beatMs: 700,
+    type: 'triangle',
+    gain: 0.035,
+  },
+  day: {
+    lead: [0, 0, 0, 0, 392, 0, 0, 0, 0, 0, 0, 0, 349, 0, 0, 0, 0, 0, 0, 0, 330, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    beatMs: 800,
+    type: 'sine',
+    gain: 0.03,
+  },
+  night: { lead: [110, 0, 98, 0, 87, 0, 98, 0], beatMs: 900, type: 'sine', gain: 0.05 },
+  boss: { lead: [73, 73, 87, 73, 98, 73, 87, 65], beatMs: 545, type: 'sawtooth', gain: 0.09 },
+  ending: {
+    lead: [55, 0, 0, 0, 65, 0, 0, 0, 49, 0, 0, 0, 55, 0, 0, 0],
+    bass: [0, 0, 330, 0, 0, 0, 392, 0, 0, 0, 294, 0, 0, 0, 330, 0],
+    beatMs: 1100,
+    type: 'sine',
+    gain: 0.06,
+  },
+};
 
 const CUES: Record<string, CueFn> = {
   /** Snow underfoot: a short bright crunch over a soft body thump. */
@@ -317,6 +358,18 @@ const CUES: Record<string, CueFn> = {
       blip(c, o, n, { freq: f, dur: 0.4, type: 'triangle', gain: 0.07 * p.volume, delay: i * 0.02 });
     }
   },
+  'sting-whiteout': (c, o, n, p) => blip(c, o, n, { freq: 260, to: 130, dur: 1.2, type: 'sine', gain: 0.08 * p.volume }),
+  'sting-wolfmoon': (c, o, n, p) => {
+    blip(c, o, n, { freq: 180, to: 420, dur: 0.9, type: 'sawtooth', gain: 0.07 * p.volume });
+    blip(c, o, n + 0.5, { freq: 200, to: 460, dur: 0.9, type: 'sawtooth', gain: 0.05 * p.volume });
+  },
+  'sting-richvein': (c, o, n, p) => {
+    for (const [i, f] of [523, 659, 784, 1047].entries()) {
+      blip(c, o, n + i * 0.09, { freq: f, dur: 0.35, type: 'sine', gain: 0.05 * p.volume });
+    }
+  },
+  'sting-blizzard': (c, o, n, p) => thump(c, o, n, { dur: 1.0, gain: 0.16 * p.volume, cutoff: 700 }),
+  'sting-stillair': (c, o, n, p) => blip(c, o, n, { freq: 880, dur: 1.4, type: 'sine', gain: 0.04 * p.volume }),
   portal: (c, o, n, p) => {
     blip(c, o, n, { freq: 180, to: 720, dur: 0.55, type: 'triangle', gain: 0.09 * p.volume });
     blip(c, o, n + 0.08, { freq: 360, to: 1440, dur: 0.45, type: 'sine', gain: 0.05 * p.volume });

@@ -223,6 +223,7 @@ export class WorldScene extends Phaser.Scene {
     this.setupCamera();
 
     this.weather.setStorm(state.run.storm);
+    bus.emit('audio:music', { cue: this.clock.isNight ? 'night' : 'day' });
     const event = activeEvent(state.run.event);
     if (event.id === 'whiteout') {
       this.time.delayedCall(4000, () => {
@@ -240,6 +241,7 @@ export class WorldScene extends Phaser.Scene {
     if (event.id !== 'clear' && state.run.timeSec < 1) {
       this.time.delayedCall(700, () => {
         this.announce(event.name);
+        bus.emit('audio:play', { cue: `sting-${event.id}` });
         bus.emit('juice:toast', { text: event.report, color: '#2fd8ff' });
       });
     }
@@ -1084,7 +1086,7 @@ export class WorldScene extends Phaser.Scene {
       bus.emit('audio:music', { cue: 'boss' });
     } else if (!boss && this.bossMusicOn) {
       this.bossMusicOn = false;
-      bus.emit('audio:music', { cue: null });
+      bus.emit('audio:music', { cue: this.clock.isNight ? 'night' : 'day' });
     }
   }
 

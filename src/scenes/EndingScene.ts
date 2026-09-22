@@ -158,7 +158,7 @@ export class EndingScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-SPACE', () => this.advance());
     this.input.keyboard?.on('keydown-ENTER', () => this.advance());
 
-    bus.emit('audio:music', { cue: null });
+    bus.emit('audio:music', { cue: 'ending' });
     this.cameras.main.fadeIn(900, 0, 0, 0);
     this.events.once('shutdown', () => this.weather.destroy());
   }

@@ -57,6 +57,7 @@ export class SummaryScene extends Phaser.Scene {
   create(): void {
     const { width, height } = BAL.view;
     const died = this.summary.reason === 'death';
+    bus.emit('audio:music', { cue: null });
 
     this.add.rectangle(0, 0, width, height, hex(PAL.navy)).setOrigin(0).setAlpha(0.97);
     this.add
