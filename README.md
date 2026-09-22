@@ -44,15 +44,19 @@ accounts and no network calls.
 | `Q` or left mouse | Attack. Hold to charge |
 | `Space` | Dash. Invulnerable while dashing |
 | `E` | Interact, read, open, advance dialogue |
-| `R` | Swap weapon, once you have the Weapon Rack |
-| `Esc` | Close a menu |
+| `F` | Eat food to heal out in the field |
+| `1` `2` or `R` | Pick a weapon slot, or swap, once you have the Weapon Rack |
+| `M` | The map of everything found so far |
+| `Esc` | Pause out in the field, or close a menu |
 | Settings | Download or restore your camp as a file |
 | `` ` `` | Developer screen |
 
 **Touch**
 
-A stick appears wherever you first touch the left half of the screen. Attack and dash
-sit bottom right. The interact button only appears when there is something in reach.
+A stick appears wherever you first touch the left half of the screen. Attack, dash and
+eat sit bottom right, and the hotbar moves to bottom centre so a thumb can tap a slot:
+weapon slots select, the food slot eats. The interact button only appears when there is
+something in reach. The II button top right pauses; tapping the compass opens the map.
 Everything is sized and placed to stay out of the top of the screen and out of the way
 of your thumbs. Phones held in portrait get a rotate prompt.
 

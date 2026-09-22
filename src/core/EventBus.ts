@@ -67,6 +67,8 @@ export interface GameEvents {
   'hud:slot': { slot: number };
   /** The pause button on the HUD was tapped. */
   'hud:pause': Record<string, never>;
+  /** The compass on the HUD was tapped: open the map. */
+  'hud:map': Record<string, never>;
 }
 
 export type EventName = keyof GameEvents;

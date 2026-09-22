@@ -17,6 +17,7 @@ export interface InputState {
   eatPressed: boolean;
   slotPressed: 0 | 1 | 2;
   menuPressed: boolean;
+  mapPressed: boolean;
 }
 
 /** What TouchControls writes into each frame. Phase 8 fills this in; keyboard works alone. */
@@ -71,13 +72,14 @@ export class InputSystem {
     eatPressed: false,
     slotPressed: 0,
     menuPressed: false,
+    mapPressed: false,
   };
 
   constructor(private scene: Phaser.Scene) {
     const kb = scene.input.keyboard;
     if (kb) {
       this.keys = kb.addKeys(
-        'W,A,S,D,UP,LEFT,DOWN,RIGHT,SPACE,E,Q,R,F,ONE,TWO,THREE,ESC,SHIFT',
+        'W,A,S,D,UP,LEFT,DOWN,RIGHT,SPACE,E,Q,R,F,M,ONE,TWO,THREE,ESC,SHIFT',
       ) as Record<string, Phaser.Input.Keyboard.Key>;
       // Stop the browser scrolling the page on space and arrows.
       kb.addCapture(['SPACE', 'UP', 'DOWN', 'LEFT', 'RIGHT']);
@@ -90,6 +92,7 @@ export class InputSystem {
       kb.on('keydown-ONE', () => this.press('slot1'));
       kb.on('keydown-TWO', () => this.press('slot2'));
       kb.on('keydown-ESC', () => this.press('menu'));
+      kb.on('keydown-M', () => this.press('map'));
     } else {
       this.keys = {};
     }
@@ -197,6 +200,7 @@ export class InputSystem {
     o.eatPressed = this.take('eat');
     o.slotPressed = this.take('slot1') ? 1 : this.take('slot2') ? 2 : 0;
     o.menuPressed = this.take('menu');
+    o.mapPressed = this.take('map');
     o.attackHeld = touchInput.active ? touchInput.attackHeld : this.pointerDown || down(k.Q);
 
     return o;

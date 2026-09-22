@@ -42,6 +42,7 @@ import { FONT } from '../art/PixelFont';
 import { hud } from '../core/HudState';
 import { Label } from '../ui/Label';
 import { Prompt } from '../ui/Prompt';
+import { WorldMap } from '../ui/WorldMap';
 import { Rng, hashString, subSeed } from '../core/Rng';
 import { ENEMIES, type EnemyId } from '../data/enemies';
 import { RESOURCES } from '../data/resources';
@@ -105,6 +106,7 @@ export class WorldScene extends Phaser.Scene {
   private frostVignette!: Phaser.GameObjects.Image;
   private currentArea: AreaDef | null = null;
   private prompt!: Prompt;
+  private worldMap!: WorldMap;
   private pickups: Pickup[] = [];
   private bossMusicOn = false;
   private ambientTarget: string = PAL.blue;
@@ -190,6 +192,8 @@ export class WorldScene extends Phaser.Scene {
     this.subs.add(bus.on('settings:changed', () => this.touch.refreshSettings()));
     this.subs.add(bus.on('player:died', () => this.endDay('death')));
     this.subs.add(bus.on('hud:pause', () => this.openPause()));
+    this.worldMap = new WorldMap(this);
+    this.subs.add(bus.on('hud:map', () => this.worldMap.toggle()));
     // Anything buffered while paused (the ESC that closed the menu) is dropped.
     this.events.on('resume', () => this.input$.flush());
 
@@ -554,9 +558,12 @@ export class WorldScene extends Phaser.Scene {
     this.player.update(dt, input);
     this.weapons.update(dt, input);
     if (input.menuPressed) {
-      this.openPause();
+      if (this.worldMap.visible) this.worldMap.hide();
+      else this.openPause();
       return;
     }
+    if (input.mapPressed) this.worldMap.toggle();
+    this.worldMap.update(this.player.cx, this.player.cy);
     if (input.swapPressed) this.weapons.swap();
     if (input.slotPressed) this.weapons.select(input.slotPressed);
     if (input.eatPressed) this.eat();
@@ -943,6 +950,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private cleanup(): void {
+    this.worldMap?.destroy();
     this.subs.dispose();
     for (const p of this.pickups) p.destroy();
     this.pickups = [];

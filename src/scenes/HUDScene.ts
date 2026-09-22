@@ -42,6 +42,7 @@ export class HUDScene extends Phaser.Scene {
   private resourcePanel!: Phaser.GameObjects.Rectangle;
   private statusPanel!: Phaser.GameObjects.Rectangle;
   private pauseButton!: Phaser.GameObjects.Rectangle;
+  private compassHit!: Phaser.GameObjects.Rectangle;
   private pauseGlyph!: Phaser.GameObjects.BitmapText;
 
   constructor() {
@@ -119,6 +120,16 @@ export class HUDScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setVisible(false);
 
+    // A generous invisible hit area round the compass: tapping it opens the map.
+    this.compassHit = this.add
+      .rectangle(width - 20, 28, 28, 28, hex(PAL.black))
+      .setAlpha(0.001)
+      .setScrollFactor(0)
+      .setInteractive({ useHandCursor: true });
+    this.compassHit.on('pointerdown', () => {
+      this.input.stopPropagation();
+      bus.emit('hud:map', {});
+    });
     this.compass = this.add
       .image(width - 20, 28, FX.dot3)
       .setTint(hex(PAL.orange))
@@ -335,6 +346,7 @@ export class HUDScene extends Phaser.Scene {
     if (hud.comboCount >= 3) this.comboLabel.setText(`x${hud.comboCount}`);
 
     this.pauseButton.setVisible(inWorld);
+    this.compassHit.setVisible(inWorld);
     this.pauseGlyph.setVisible(inWorld);
     this.compass.setVisible(inWorld && hud.homeAngle !== null);
     if (hud.homeAngle !== null) {
