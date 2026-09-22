@@ -30,6 +30,12 @@ export const OBJECTIVES: ObjectiveDef[] = [
   },
   { id: 'mira', text: 'Cut Mira loose in the cabin', done: () => state.story.miraRescued },
   {
+    id: 'pup',
+    text: 'Take in the pup at the cabin',
+    done: () => state.story.pupFound,
+    available: () => state.bosses.alphaDefeated && state.story.miraRescued,
+  },
+  {
     id: 'snowbank',
     text: 'Break through the snowbank past the lake',
     done: () => state.map.openedGates.includes('bossSnowbank'),

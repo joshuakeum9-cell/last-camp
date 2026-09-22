@@ -98,6 +98,9 @@ export interface GameState {
     miraAssignment: 'wood' | 'food' | 'scrap' | null;
     /** Mira comes out with the player instead of working the camp. */
     miraFollows: boolean;
+    /** The alpha's pup has been taken in, and whether it comes along. */
+    pupFound: boolean;
+    pupFollows: boolean;
     miraAssignedAt: number | null;
     /** Morning report shown for this day already. */
     reportSeenDay: number;
@@ -217,6 +220,8 @@ export function newGameState(): GameState {
       miraRescued: false,
       miraAssignment: null,
       miraFollows: false,
+      pupFound: false,
+      pupFollows: true,
       miraAssignedAt: null,
       reportSeenDay: 0,
       hints: [],

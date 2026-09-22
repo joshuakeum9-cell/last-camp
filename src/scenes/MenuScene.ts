@@ -606,6 +606,24 @@ export class MenuScene extends Phaser.Scene {
         },
       });
 
+      if (state.story.pupFound) {
+        const pupOn = state.story.pupFollows;
+        rows.push({
+          title: pupOn ? 'The pup comes with you' : '  Bring the pup',
+          effect: pupOn ? 'It bites what comes close and nothing can hurt it. Click to leave it by the fire.' : 'It bites what comes close and nothing can hurt it.',
+          cost: '',
+          ownedLabel: 'WITH YOU',
+          icon: { key: 'enemy-wolf', scale: 0.7 },
+          state: pupOn ? 'owned' : 'affordable',
+          onClick: () => {
+            state.story.pupFollows = !pupOn;
+            bus.emit('audio:play', { cue: 'swap' });
+            SaveSystem.save();
+            this.refresh();
+          },
+        });
+      }
+
       for (const job of ['wood', 'food', 'scrap'] as const) {
         if (OfflineSystem.job === job) continue;
         rows.push({

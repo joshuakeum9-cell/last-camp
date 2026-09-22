@@ -15,6 +15,7 @@ export type StationId =
   | 'watchtower'
   | 'signaltable'
   | 'mira'
+  | 'pup'
   | 'supplydrop';
 
 export interface CampPlacement {

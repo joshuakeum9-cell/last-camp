@@ -24,6 +24,7 @@ import { Label } from '../ui/Label';
 import { Prompt } from '../ui/Prompt';
 import { drawFrame } from '../ui/Frame';
 import { NPCMira } from '../entities/NPCMira';
+import { Pup } from '../entities/Pup';
 import { Dialogue } from '../ui/Dialogue';
 import { TouchControls } from '../ui/TouchControls';
 import { MIRA, NOTE_LIST } from '../data/story';
@@ -58,6 +59,7 @@ export class CampScene extends Phaser.Scene {
   private dialogue!: Dialogue;
   private touch!: TouchControls;
   private mira: NPCMira | null = null;
+  private pup: Pup | null = null;
   private cold = 0;
   private fireX = 15 * TILE_SIZE + 8;
   private fireY = 12 * TILE_SIZE;
@@ -245,6 +247,14 @@ export class CampScene extends Phaser.Scene {
         repeat: -1,
         ease: 'Sine.easeInOut',
       });
+    }
+
+    // The pup sleeps by the fire.
+    this.pup?.destroy();
+    this.pup = null;
+    if (state.story.pupFound) {
+      this.pup = new Pup(this, 17 * TILE_SIZE + 4, 13 * TILE_SIZE + 6, null);
+      this.stations.push({ id: 'pup', x: this.pup.cx, y: this.pup.cy, radius: 22, label: STATION_LABEL.pup });
     }
 
     // Mira lives here once she is out of the cabin. The camp stops being empty.
@@ -501,6 +511,11 @@ export class CampScene extends Phaser.Scene {
 
       case 'board':
         this.showJournal();
+        break;
+
+      case 'pup':
+        this.juice.floatText(this.player.cx, this.player.sprite.y - 24, 'It leans into your hand.', PAL.cream);
+        bus.emit('audio:play', { cue: 'warm', volume: 0.6 });
         break;
 
       case 'mira':
@@ -819,6 +834,7 @@ const STATION_LABEL: Record<StationId, string> = {
   watchtower: 'Climb the tower',
   signaltable: 'Work the radio',
   mira: 'Talk to Mira',
+  pup: 'Pet the pup',
   supplydrop: 'Open supply drop',
 };
 

@@ -28,6 +28,7 @@ import { BossHollowStag } from '../entities/BossHollowStag';
 import { BossRanger } from '../entities/BossRanger';
 import { MiraCompanion } from '../entities/MiraCompanion';
 import { Trader } from '../entities/Trader';
+import { Pup } from '../entities/Pup';
 import { traderToday, type TradeOffer } from '../data/trader';
 import type { Boss } from '../entities/Boss';
 import { Dialogue } from '../ui/Dialogue';
@@ -155,6 +156,8 @@ export class WorldScene extends Phaser.Scene {
   private pack: { x: number; y: number; sprite: Phaser.GameObjects.Image; glow: Phaser.GameObjects.Image } | null = null;
   private companion: MiraCompanion | null = null;
   private trader: Trader | null = null;
+  private pup: Pup | null = null;
+  private strayPup: Pup | null = null;
   private tradePanel: { objects: Phaser.GameObjects.GameObject[]; offers: TradeOffer[] } | null = null;
   private tradeOverride: TradeOffer[] | null = null;
   private towerX = 0;
@@ -203,6 +206,8 @@ export class WorldScene extends Phaser.Scene {
     this.pack = null;
     this.trader = null;
     this.tradePanel = null;
+    this.pup = null;
+    this.strayPup = null;
     this.currentArea = null;
     this.canInteract = false;
     this.warmSpots = [];
@@ -1020,6 +1025,14 @@ export class WorldScene extends Phaser.Scene {
     this.scheduleAirdrop();
     this.placeDeathPack();
 
+    // The alpha's pup: left at the cabin once the alpha is dead, and with you
+    // ever after if you take it in.
+    if (state.bosses.alphaDefeated && !state.story.pupFound) {
+      this.strayPup = new Pup(this, 66 * TILE_SIZE, 24 * TILE_SIZE + TILE_SIZE, null);
+    } else if (state.story.pupFound && state.story.pupFollows) {
+      this.pup = new Pup(this, this.player.cx + 16, this.player.sprite.y + 2, this.juice);
+    }
+
     // Some days the trader's sled is on the road.
     const stock = traderToday(state.day, state.run?.event);
     if (stock) {
@@ -1211,6 +1224,7 @@ export class WorldScene extends Phaser.Scene {
     this.updateFishing(dt);
     this.updatePickups(dt);
     this.companion?.update(dt, this.player.cx, this.player.cy, input.moving, this.currentArea?.id ?? null);
+    this.pup?.update(dt, this.player.cx, this.player.cy, this.enemyManager.enemies);
     this.updateArea();
     this.updateClockAndCold(dt);
     this.updateInteraction(input.interactPressed);
@@ -1650,6 +1664,21 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
+    if (this.strayPup && this.strayPup.inRange(this.player.cx, this.player.cy)) {
+      this.showPrompt('Take the pup');
+      if (pressed) {
+        state.story.pupFound = true;
+        state.story.pupFollows = true;
+        this.strayPup.destroy();
+        this.strayPup = null;
+        this.pup = new Pup(this, this.player.cx + 16, this.player.sprite.y + 2, this.juice);
+        bus.emit('audio:play', { cue: 'rescue' });
+        bus.emit('juice:toast', { text: 'A wolf pup, the alpha\u2019s. It follows without being asked.', color: PAL.cream });
+        SaveSystem.save();
+      }
+      return;
+    }
+
     if (this.trader && this.trader.inRange(this.player.cx, this.player.cy)) {
       this.showPrompt('Trade');
       if (pressed) this.openTrade();
@@ -1864,6 +1893,8 @@ export class WorldScene extends Phaser.Scene {
     this.mira?.destroy();
     this.companion?.destroy();
     this.trader?.destroy();
+    this.pup?.destroy();
+    this.strayPup?.destroy();
     this.closeTrade();
     for (const boss of this.bosses) boss.destroy();
     this.bosses = [];
