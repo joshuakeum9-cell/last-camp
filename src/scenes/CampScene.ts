@@ -28,6 +28,7 @@ import { Dialogue } from '../ui/Dialogue';
 import { TouchControls } from '../ui/TouchControls';
 import { MIRA, NOTE_LIST } from '../data/story';
 import { pactHand, type PactId } from '../data/pacts';
+import { sightingForDay } from '../data/sightings';
 import type { ResourceId } from '../data/resources';
 import { eventForDay } from '../data/events';
 import { traderToday } from '../data/trader';
@@ -436,6 +437,8 @@ export class CampScene extends Phaser.Scene {
     if (state.stats.deaths > 0 && state.day > 1) {
       lines.push('Your hands still do not work properly.');
     }
+    // The day's one marked place, named before the player decides where to go.
+    if (state.day > 1) lines.push(sightingForDay(state.day, state.stats.deaths).report);
     if (traderToday(state.day, event.id)) lines.push('Sled tracks on the road. The trader is out today.');
     if (state.map.discoveredAreas.includes('road') && !state.story.miraRescued) {
       lines.push('Something was howling out past the road last night.');

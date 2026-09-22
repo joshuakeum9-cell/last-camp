@@ -43,6 +43,14 @@ export interface RunState {
   /** The pact taken this morning, and whether its one-off has been spent. */
   pact: string | null;
   pactUsed: boolean;
+  /** Today's sighting has been dealt with. */
+  sightingDone: boolean;
+  /** Things hunt you from less far, from the snare. */
+  calm: boolean;
+  /** The cold climbs slower, from the dead traveller's coat. */
+  coat: boolean;
+  /** Caches are on the map, from the mast left running. */
+  mast: boolean;
   hp: number;
   cold: number;
   collected: Record<ResourceId, number>;
@@ -279,6 +287,10 @@ export function newRunState(seed: number, maxHp: number, storm: boolean, event =
     rematch: null,
     pact: null,
     pactUsed: false,
+    sightingDone: false,
+    calm: false,
+    coat: false,
+    mast: false,
     hp: maxHp,
     cold: 0,
     collected: emptyResources(),

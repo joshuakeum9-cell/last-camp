@@ -193,7 +193,10 @@ export class EnemyBase {
       case 'idle': {
         this.body.setVelocity(0, 0);
         // In a whiteout they cannot see you from as far either.
-        const sight = (activeEvent(state.run?.event).id === 'whiteout' ? 0.6 : 1) * PACT.aggroMult();
+        const sight =
+          (activeEvent(state.run?.event).id === 'whiteout' ? 0.6 : 1) *
+          PACT.aggroMult() *
+          (state.run?.calm ? 0.55 : 1);
         if (dist < this.def.aggroRange * sight) this.enter('chase');
         break;
       }

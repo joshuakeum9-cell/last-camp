@@ -50,7 +50,8 @@ export class DayNightSystem {
       (state.run?.storm ? BAL.day.stormMult : 1) *
       activeEvent(state.run?.event).coldMult *
       WINTER.coldMult() *
-      PACT.coldMult()
+      PACT.coldMult() *
+      (state.run?.coat ? 0.7 : 1)
     );
   }
 

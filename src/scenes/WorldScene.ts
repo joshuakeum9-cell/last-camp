@@ -55,6 +55,8 @@ import { drawFrame } from '../ui/Frame';
 import { WEAPONS, type WeaponId } from '../data/weapons';
 import { activeEvent } from '../data/events';
 import { PACT, PACTS, type PactId } from '../data/pacts';
+import { sightingForDay, type SightingDef, type SightingEffect } from '../data/sightings';
+import { ChoiceList } from '../ui/ChoiceList';
 import { litFires } from '../systems/EnemyManager';
 import { WINTER, winterActiveCount, winterLootMult } from '../data/winter';
 import { Rng, hashString, subSeed } from '../core/Rng';
@@ -67,6 +69,7 @@ import {
   areaAtTile,
   rectContains,
   type AreaDef,
+  type AreaId,
 } from '../data/areas';
 
 const PROP_TEXTURE: Record<string, string> = {
@@ -176,6 +179,9 @@ export class WorldScene extends Phaser.Scene {
   private warmSpots: WarmSpot[] = [];
   private fishHoles: FishHole[] = [];
   private signposts: Array<{ x: number; y: number }> = [];
+  /** Today's one place worth walking to, and the list it opens. */
+  private sighting: { def: SightingDef; x: number; y: number; sprite: Phaser.GameObjects.Image; glow: Phaser.GameObjects.Image } | null = null;
+  private sightingList: ChoiceList | null = null;
   private fishing: Fishing | null = null;
   private decorLights: Array<{ x: number; y: number; radius: number }> = [];
   private iceHazards = new Set<string>();
@@ -214,6 +220,8 @@ export class WorldScene extends Phaser.Scene {
     this.warmSpots = [];
     this.fishHoles = [];
     this.signposts = [];
+    this.sighting = null;
+    this.sightingList = null;
     this.fishing = null;
     this.decorLights = [];
     this.iceHazards = new Set();
@@ -551,6 +559,104 @@ export class WorldScene extends Phaser.Scene {
       if (d.kind === 'signpost') this.signposts.push({ x, y: y - 6 });
       if (d.kind === 'iceCrack') this.iceHazards.add(`${d.tx},${d.ty}`);
     }
+  }
+
+  /**
+   * Today's sighting: one marked place, always a walk away, with one question at
+   * the end of it. Seeded from the day, so the morning report named it before the
+   * player left camp.
+   */
+  private placeSighting(): void {
+    // Day one is the tutorial day and has enough in it already.
+    if (state.run?.sightingDone || state.day < 2) return;
+    const def = sightingForDay(state.day, state.stats.deaths);
+    const rng = new Rng(hashString(`sightingspot:${state.day}:${state.stats.deaths}`));
+    const open = state.map.discoveredAreas.filter((id) => id !== 'gate');
+    const spawnX = WORLD_SPAWN.x * TILE_SIZE;
+    const spawnY = WORLD_SPAWN.y * TILE_SIZE;
+    let spot: { x: number; y: number } | null = null;
+    for (let attempt = 0; attempt < 12 && !spot; attempt++) {
+      const areaId = open.length ? open[rng.int(0, open.length - 1)] : 'forest';
+      const candidate = this.enemyManager.findOpenTile(areaId as AreaId, rng);
+      // Far enough that finding it is the day's walk, not a detour.
+      if (candidate && Math.hypot(candidate.x - spawnX, candidate.y - spawnY) > 260) spot = candidate;
+    }
+    if (!spot) return;
+
+    const key = SCENERY_KEYS[def.sprite];
+    const sprite = this.add.image(spot.x, spot.y + 6, key).setOrigin(0.5, 1).setScale(1.2).setDepth(spot.y + 6);
+    const glow = this.add
+      .image(spot.x, spot.y - 4, FX.glowMed)
+      .setTint(hex(PAL.cyan))
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setAlpha(0.3)
+      .setScale(0.8)
+      .setDepth(spot.y + 5);
+    this.tweens.add({ targets: glow, alpha: 0.6, duration: 1200, yoyo: true, repeat: -1 });
+    this.decorLights.push({ x: spot.x, y: spot.y - 4, radius: 50 });
+    this.sighting = { def, x: spot.x, y: spot.y, sprite, glow };
+  }
+
+  /** What the player picked, turned into the day. */
+  private applySighting(effect: SightingEffect): void {
+    const run = state.run;
+    const night = this.clock.bountyActive;
+    if (effect.resources) {
+      for (const [id, n] of Object.entries(effect.resources)) {
+        if (n) ResourceSystem.collect(id as ResourceId, n, night);
+      }
+    }
+    if (effect.heal) this.player.heal(effect.heal, 'fire');
+    if (effect.warm && run) run.cold = 0;
+    if (effect.calm && run) run.calm = true;
+    if (effect.coat && run) run.coat = true;
+    if (effect.mast && run) run.mast = true;
+    if (effect.weapon) {
+      const bases: WeaponId[] = ['knife', 'spear', 'bow'];
+      const rng = new Rng(hashString(`sightingweapon:${state.day}`));
+      const weapon = LootSystem.makeWeapon(bases[rng.int(0, bases.length - 1)], 'uncommon', rng);
+      LootSystem.takeWeapon(weapon);
+      this.onWeaponFound(WEAPONS[weapon.base as WeaponId].name, 'uncommon');
+    }
+    if (effect.wakes) {
+      const rng = new Rng(hashString(`sightingwake:${state.day}`));
+      for (let i = 0; i < 5; i++) {
+        this.enemyManager.spawn(
+          i === 0 ? 'wolf' : 'rat',
+          this.player.cx + rng.range(-70, 70),
+          this.player.cy + rng.range(-60, 60),
+        );
+      }
+      this.cameras.main.shake(260, 0.008);
+    }
+    if (run) run.sightingDone = true;
+    if (this.sighting) {
+      this.juice.sparks(this.sighting.x, this.sighting.y, PAL.cyan, 12, 100);
+      this.sighting.sprite.destroy();
+      this.sighting.glow.destroy();
+      this.sighting = null;
+    }
+    bus.emit('audio:play', { cue: 'cache' });
+    bus.emit('juice:toast', { text: effect.line, color: PAL.cream });
+  }
+
+  private openSighting(): void {
+    const s = this.sighting;
+    if (!s || this.sightingList) return;
+    this.dialogue.show(s.def.lines, s.def.name, () => {
+      this.sightingList = new ChoiceList(this, {
+        title: s.def.name.toUpperCase(),
+        edge: PAL.cyan,
+        width: 284,
+        rows: s.def.choices.map((c) => ({ label: c.label, boon: c.boon, cost: c.cost })),
+        onPick: (i) => {
+          const choice = s.def.choices[i];
+          this.sightingList?.destroy();
+          this.sightingList = null;
+          if (choice) this.applySighting(choice.effect);
+        },
+      });
+    });
   }
 
   /** The pack from the last death, lying where you fell, from the next day on. */
@@ -1028,6 +1134,7 @@ export class WorldScene extends Phaser.Scene {
     // change plans halfway through.
     this.scheduleAirdrop();
     this.placeDeathPack();
+    this.placeSighting();
 
     // The alpha's pup: left at the cabin once the alpha is dead, and with you
     // ever after if you take it in.
@@ -1216,7 +1323,8 @@ export class WorldScene extends Phaser.Scene {
     if (input.mapPressed && WINTER.mapHidden()) bus.emit('juice:toast', { text: 'No map this winter.', color: PAL.grey });
     this.worldMap.update(this.player.cx, this.player.cy, hud.marks);
     if (input.swapPressed) this.weapons.swap();
-    if (input.slotPressed && this.tradePanel) this.acceptTrade(input.slotPressed - 1);
+    if (input.slotPressed && this.sightingList) this.sightingList.handle(input.slotPressed, false);
+    else if (input.slotPressed && this.tradePanel) this.acceptTrade(input.slotPressed - 1);
     else if (input.slotPressed === 1 || input.slotPressed === 2) this.weapons.select(input.slotPressed);
     if (input.eatPressed) this.eat();
 
@@ -1505,6 +1613,9 @@ export class WorldScene extends Phaser.Scene {
       ...(this.pack ? [{ x: this.pack.x, y: this.pack.y, color: PAL.cream }] : []),
       ...this.caches.filter((c) => c.def.id.startsWith('drop-') && !c.isOpen).map((c) => ({ x: c.sprite.x, y: c.sprite.y, color: PAL.gold })),
       ...(this.trader ? [{ x: this.trader.cx, y: this.trader.cy, color: PAL.gold }] : []),
+      ...(this.sighting ? [{ x: this.sighting.x, y: this.sighting.y, color: PAL.cyan }] : []),
+      // The mast puts every cache in the valley on the map for the rest of the day.
+      ...(state.run?.mast ? this.caches.filter((c) => !c.isOpen).map((c) => ({ x: c.sprite.x, y: c.sprite.y, color: PAL.gold })) : []),
     ];
     hud.bossName = boss ? boss.name : null;
     hud.bossHp = boss ? boss.hp : 0;
@@ -1673,6 +1784,11 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
+    if (this.sightingList) {
+      this.prompt.hide();
+      return;
+    }
+
     if (this.tradePanel) {
       this.prompt.hide();
       if (pressed) this.closeTrade();
@@ -1698,6 +1814,12 @@ export class WorldScene extends Phaser.Scene {
     if (this.trader && this.trader.inRange(this.player.cx, this.player.cy)) {
       this.showPrompt('Trade');
       if (pressed) this.openTrade();
+      return;
+    }
+
+    if (this.sighting && Math.hypot(this.sighting.x - this.player.cx, this.sighting.y - this.player.cy) < 26) {
+      this.showPrompt('Look');
+      if (pressed) this.openSighting();
       return;
     }
 
@@ -1933,6 +2055,8 @@ export class WorldScene extends Phaser.Scene {
     this.notes = [];
     this.mira?.destroy();
     this.companion?.destroy();
+    this.sightingList?.destroy();
+    this.sightingList = null;
     this.trader?.destroy();
     this.pup?.destroy();
     this.strayPup?.destroy();

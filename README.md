@@ -69,6 +69,14 @@ Nothing else about the day is yours to choose, so this is the place where the pl
 made. The hand is seeded from the day, so it is the same hand whether you look now or
 after a restart, and a different one tomorrow.
 
+## The thing worth walking to
+
+From day two, one place in the valley is marked on your map before you leave, and the
+morning report says what was seen there. It is always a long walk. When you get there it
+asks one question with two answers and no right one: cut the wolf out of the snare or
+put it down, sit at the stranger's fire or carry the wood home, leave the mast running
+so every cache shows on your map or strip it for scrap. One a day, five to find.
+
 ## Every day is different
 
 Each morning the report names the day: a whiteout, a wolf moon, a rich vein of crystal,
