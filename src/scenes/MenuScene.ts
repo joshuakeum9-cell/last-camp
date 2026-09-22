@@ -550,6 +550,26 @@ export class MenuScene extends Phaser.Scene {
         });
       }
 
+      const follows = state.story.miraFollows;
+      rows.push({
+        title: follows ? 'Mira comes with you' : '  Bring Mira along',
+        effect: follows
+          ? 'She follows, picks up what falls, and carries a lantern. Click to leave her at camp.'
+          : 'She follows you out, picks up what falls near her, and carries a lantern.',
+        cost: '',
+        ownedLabel: 'WITH YOU',
+        icon: { key: 'npc-mira' },
+        state: follows ? 'owned' : 'affordable',
+        onClick: () => {
+          state.story.miraFollows = !follows;
+          if (!follows) OfflineSystem.assign(null);
+          if (!follows) state.story.miraFollows = true;
+          bus.emit('audio:play', { cue: 'swap' });
+          SaveSystem.save();
+          this.refresh();
+        },
+      });
+
       for (const job of ['wood', 'food', 'scrap'] as const) {
         if (OfflineSystem.job === job) continue;
         rows.push({

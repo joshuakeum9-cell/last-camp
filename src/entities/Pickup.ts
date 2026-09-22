@@ -72,6 +72,14 @@ export class Pickup {
   }
 
   /** Returns true once it has been taken, so the caller can drop it from its list. */
+  get x(): number {
+    return this.sprite.x;
+  }
+
+  get y(): number {
+    return this.sprite.y;
+  }
+
   update(dt: number, playerX: number, playerY: number, juice: Juice): boolean {
     if (this.collected) return true;
     const seconds = dt / 1000;

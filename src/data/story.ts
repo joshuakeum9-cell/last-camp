@@ -140,6 +140,8 @@ export const MIRA = {
     'Noise, and under the noise, nothing.',
     'Mira taps the dial. Something between here and there is still in the way, she says.',
   ],
+  /** When she is coming along. */
+  follows: 'I am coming with you today. Do not walk faster than I can.',
   /** After the tower. */
   afterEnding: {
     shutdown: 'The rain woke me up. I had forgotten what it sounded like on a tarp.',

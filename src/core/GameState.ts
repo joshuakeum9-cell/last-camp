@@ -92,6 +92,8 @@ export interface GameState {
     notesFound: string[];
     miraRescued: boolean;
     miraAssignment: 'wood' | 'food' | 'scrap' | null;
+    /** Mira comes out with the player instead of working the camp. */
+    miraFollows: boolean;
     miraAssignedAt: number | null;
     /** Morning report shown for this day already. */
     reportSeenDay: number;
@@ -203,6 +205,7 @@ export function newGameState(): GameState {
       notesFound: [],
       miraRescued: false,
       miraAssignment: null,
+      miraFollows: false,
       miraAssignedAt: null,
       reportSeenDay: 0,
       hints: [],

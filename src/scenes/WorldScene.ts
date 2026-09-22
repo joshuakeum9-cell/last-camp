@@ -26,6 +26,7 @@ import { NPCMira } from '../entities/NPCMira';
 import { BossWhiteMaw } from '../entities/BossWhiteMaw';
 import { BossHollowStag } from '../entities/BossHollowStag';
 import { BossRanger } from '../entities/BossRanger';
+import { MiraCompanion } from '../entities/MiraCompanion';
 import type { Boss } from '../entities/Boss';
 import { Dialogue } from '../ui/Dialogue';
 import { TouchControls } from '../ui/TouchControls';
@@ -129,6 +130,7 @@ export class WorldScene extends Phaser.Scene {
   private mira: NPCMira | null = null;
   private bosses: Boss[] = [];
   private ranger: BossRanger | null = null;
+  private companion: MiraCompanion | null = null;
   private towerX = 0;
   private towerY = 0;
   private subs = new Subscriptions();
@@ -168,6 +170,7 @@ export class WorldScene extends Phaser.Scene {
     this.mira = null;
     this.bosses = [];
     this.ranger = null;
+    this.companion = null;
     this.currentArea = null;
     this.canInteract = false;
     this.warmSpots = [];
@@ -657,6 +660,8 @@ export class WorldScene extends Phaser.Scene {
 
     if (!state.story.miraRescued) {
       this.mira = new NPCMira(this, 64 * TILE_SIZE, 22 * TILE_SIZE, 'field');
+    } else if (state.story.miraFollows) {
+      this.companion = new MiraCompanion(this, this.player.cx - 18, this.player.sprite.y + 2);
     }
 
     if (!state.bosses.mawDefeated) {
@@ -828,6 +833,7 @@ export class WorldScene extends Phaser.Scene {
     this.enemyManager.setNight(this.clock.isNight, this.player.cx, this.player.cy);
 
     this.updatePickups(dt);
+    this.companion?.update(dt, this.player.cx, this.player.cy, input.moving, this.currentArea?.id ?? null);
     this.updateArea();
     this.updateClockAndCold(dt);
     this.updateInteraction(input.interactPressed);
@@ -947,6 +953,7 @@ export class WorldScene extends Phaser.Scene {
     }
     const lantern = this.ranger?.light;
     if (lantern) lights.push(lantern);
+    if (this.companion) lights.push(this.companion.light);
 
     // Home always shows, so the way back is never guesswork.
     lights.push({
@@ -1091,10 +1098,17 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private updatePickups(dt: number): void {
+    const m = this.companion;
     for (let i = this.pickups.length - 1; i >= 0; i--) {
-      if (this.pickups[i].update(dt, this.player.cx, this.player.cy, this.juice)) {
-        this.pickups.splice(i, 1);
-      }
+      const p = this.pickups[i];
+      // Mira gathers too: anything closer to her than to you comes to her instead.
+      const toMira = m ? Math.hypot(p.x - m.cx, p.y - m.cy) : Infinity;
+      const toYou = Math.hypot(p.x - this.player.cx, p.y - this.player.cy);
+      const done =
+        m && toMira < toYou && toMira < BAL.combat.magnetRadius
+          ? p.update(dt, m.cx, m.cy, this.juice)
+          : p.update(dt, this.player.cx, this.player.cy, this.juice);
+      if (done) this.pickups.splice(i, 1);
     }
   }
 
@@ -1316,6 +1330,7 @@ export class WorldScene extends Phaser.Scene {
     this.caches = [];
     this.notes = [];
     this.mira?.destroy();
+    this.companion?.destroy();
     for (const boss of this.bosses) boss.destroy();
     this.bosses = [];
     this.dialogue?.close();

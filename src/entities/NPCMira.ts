@@ -41,8 +41,12 @@ const MIRA_BODY = [
 ];
 
 const LEGS = ['....obb..bbo....', '....obb..bbo....', '....obb..bbo....', '.....oo..oo.....'];
+const LEGS_A = ['....obb..bbo....', '...obb....bbo...', '...obb....bbo...', '....oo....oo....'];
+const LEGS_B = ['....obb..bbo....', '.....obbbbo.....', '.....obbbbo.....', '......oooo......'];
 
 const standing = [...MIRA_BODY.slice(0, MIRA_BODY.length), ...LEGS];
+const stepA = [...MIRA_BODY, ...LEGS_A];
+const stepB = [...MIRA_BODY, ...LEGS_B];
 
 export const miraSprite: PixelSprite = {
   key: 'npc-mira',
@@ -50,6 +54,7 @@ export const miraSprite: PixelSprite = {
   palette: P,
   anims: {
     idle: [standing, bob(standing, 1)],
+    walk: [stepA, standing, stepB, standing],
     /** Bound and slumped, before the player cuts her loose. */
     bound: [
       [
@@ -77,7 +82,7 @@ export const miraSprite: PixelSprite = {
       ],
     ],
   },
-  fpsOverride: { idle: 2 },
+  fpsOverride: { idle: 2, walk: 8 },
 };
 
 export function buildMiraArt(scene: Phaser.Scene): void {
@@ -168,7 +173,9 @@ export class NPCMira {
       lines.push(...MIRA.rangerTell);
     }
     if (state.camp.upgrades.signaltable) lines.push(MIRA.signal);
-    if (state.story.miraAssignment) {
+    if (state.story.miraFollows) {
+      lines.push(MIRA.follows);
+    } else if (state.story.miraAssignment) {
       lines.push(MIRA.assignments[state.story.miraAssignment]);
     }
     return lines;

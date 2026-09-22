@@ -96,6 +96,13 @@ and at the top there is a switch and a choice: end the winter, or keep the camp 
 and only the camp. The save remembers which, the title screen changes, and Mira has
 something to say about it either way. You can keep playing afterwards.
 
+## Mira comes along
+
+Once rescued, Mira can work the camp while the game is closed or come out with you.
+The GOALS tab has the choice. In the field she follows a few steps behind, picks up
+whatever falls nearer to her than to you, carries a lantern that helps after dark, and
+has something to say about every place the first time she sees it. Nothing hunts her.
+
 ## Reasons to come back
 
 - **Tomorrow, teased.** The end-of-day summary names tomorrow's event and challenge.

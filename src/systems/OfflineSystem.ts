@@ -17,6 +17,8 @@ const JOB_RESOURCE: Record<Job, ResourceId> = {
  */
 export const OfflineSystem = {
   assign(job: Job | null): void {
+    // She cannot both come along and work the camp.
+    if (job) state.story.miraFollows = false;
     state.story.miraAssignment = job;
     state.story.miraAssignedAt = job ? Date.now() : null;
     if (job) bus.emit('npc:assigned', { job });
