@@ -127,6 +127,24 @@ export const MIRA = {
     'They did come back. Not as people. He kept me there so they would have a reason to.',
     'He still comes to the cabin every night to check the rope. I have seen the lantern from here.',
   ],
+  /** Said at the radio once everything in the valley is dead and it answers. */
+  radioAnswer: [
+    'You work the dial for an hour before anything but noise comes back.',
+    'Then, underneath the noise, the tower. Not a voice. A pattern, repeating.',
+    'Mira writes it down twice before she will say it out loud.',
+    'It is counting. It has been counting since the first clear morning, and it is nearly done.',
+    'She looks at the ridge for a long time. Then: the stair is on the outside. I checked, years ago.',
+  ],
+  /** Said at the radio before the valley is clear. */
+  radioNotYet: [
+    'Noise, and under the noise, nothing.',
+    'Mira taps the dial. Something between here and there is still in the way, she says.',
+  ],
+  /** After the tower. */
+  afterEnding: {
+    shutdown: 'The rain woke me up. I had forgotten what it sounded like on a tarp.',
+    kept: 'You have not said what was up there. I have not asked. The fire is still lit.',
+  },
   /** After the ranger is dead. */
   afterRanger: [
     'No lantern tonight. I looked for an hour.',

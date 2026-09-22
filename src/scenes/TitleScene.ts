@@ -100,7 +100,16 @@ export class TitleScene extends Phaser.Scene {
     });
 
     this.add
-      .bitmapText(Math.round(width / 2), 74, FONT, 'the winter did not stop')
+      .bitmapText(
+        Math.round(width / 2),
+        74,
+        FONT,
+        state.story.ending === 'shutdown'
+          ? 'the winter stopped'
+          : state.story.ending === 'kept'
+            ? 'the fire is still lit'
+            : 'the winter did not stop',
+      )
       .setOrigin(0.5, 0)
       .setTint(hex(PAL.ice))
       .setDepth(600);

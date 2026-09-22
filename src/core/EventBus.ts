@@ -48,6 +48,8 @@ export interface GameEvents {
 
   'boss:attempted': { id: string };
   'boss:defeated': { id: string };
+  /** The tower was climbed and a choice was made. */
+  'story:ended': { ending: 'shutdown' | 'kept' };
 
   'challenge:progress': { id: string; progress: number; done: boolean };
   'achievement:unlocked': { id: string };

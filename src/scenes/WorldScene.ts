@@ -39,6 +39,7 @@ import { SOLID_TILES, TILE_SIZE } from '../art/sprites/tiles';
 import { TilesetBuilder, applyTransitions } from '../art/sprites/transitions';
 import { isSolidIndex } from '../systems/MapGen';
 import { SCENERY_KEYS } from '../art/sprites/scenery';
+import { FX } from '../art/sprites/fx';
 import { CAMP_KEYS, campfireSprite } from '../art/sprites/camp';
 import { hex, mix, PAL } from '../art/palette';
 import { FONT } from '../art/PixelFont';
@@ -127,6 +128,8 @@ export class WorldScene extends Phaser.Scene {
   private mira: NPCMira | null = null;
   private bosses: Boss[] = [];
   private ranger: BossRanger | null = null;
+  private towerX = 0;
+  private towerY = 0;
   private subs = new Subscriptions();
 
   private mapData!: WorldMapData;
@@ -664,6 +667,8 @@ export class WorldScene extends Phaser.Scene {
       this.physics.add.collider(maw.sprite, this.layer);
     }
 
+    this.buildTower();
+
     // The second boss paces the tower pass, past the ice the gate breaks through.
     if (!state.bosses.stagDefeated) {
       const stag = new BossHollowStag(this, 92 * TILE_SIZE, 20 * TILE_SIZE, this.player, this.juice);
@@ -686,6 +691,51 @@ export class WorldScene extends Phaser.Scene {
     }
     this.combat.bosses = this.bosses;
     this.bossMusicOn = false;
+  }
+
+  /**
+   * The tower itself, at the top of the pass. It is on the horizon from day one and
+   * it is a place you can stand under from day one; the stair only opens once the
+   * radio has answered.
+   */
+  private buildTower(): void {
+    const x = 93 * TILE_SIZE + 8;
+    const y = 10 * TILE_SIZE + TILE_SIZE;
+    this.towerX = x;
+    this.towerY = y - 20;
+
+    this.add.ellipse(x, y - 2, 54, 16, hex(PAL.blue)).setAlpha(0.3).setDepth(y - 2);
+    this.add.image(x, y, SCENERY_KEYS.tower).setOrigin(0.5, 1).setScale(4).setDepth(y);
+
+    const blink = this.add.rectangle(x, y - 42, 3, 3, hex(PAL.blood)).setDepth(y + 1);
+    this.tweens.add({ targets: blink, alpha: 0, duration: 340, yoyo: true, repeat: -1, repeatDelay: 1500 });
+
+    const glow = this.add
+      .image(x, y - 26, FX.glowMed)
+      .setTint(hex(PAL.cyan))
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setAlpha(0.22)
+      .setDepth(y - 1);
+    this.tweens.add({
+      targets: glow,
+      alpha: 0.4,
+      duration: 1800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
+  private climbTower(): void {
+    if (this.ending) return;
+    this.ending = true;
+    SaveSystem.save();
+    bus.emit('audio:play', { cue: 'discover' });
+    this.cameras.main.fadeOut(700, 0, 0, 0);
+    this.time.delayedCall(760, () => {
+      this.scene.stop('HUD');
+      this.scene.start('Ending');
+    });
   }
 
   private onWeaponFound(name: string, rarity: string): void {
@@ -1160,6 +1210,16 @@ export class WorldScene extends Phaser.Scene {
         const flavour = cache.open();
         if (flavour) bus.emit('juice:toast', { text: flavour, color: '#fff3ce' });
       }
+      return;
+    }
+
+    if (
+      state.story.towerOpen &&
+      !state.story.ending &&
+      Math.hypot(this.towerX - this.player.cx, this.towerY - this.player.cy) < 34
+    ) {
+      this.showPrompt('Climb the tower');
+      if (pressed) this.climbTower();
       return;
     }
 

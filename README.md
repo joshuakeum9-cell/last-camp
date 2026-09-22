@@ -88,6 +88,14 @@ exists to teach and how many you have killed. Unmet things are a row of question
 Each boss drops the one weapon nothing else does: the Survivor Hammer from the Maw, the
 Hollow Antler from the Stag.
 
+## The end of it
+
+Build the Signal Table, kill all three of the valley's bosses, then work the radio at
+camp. The tower answers. After that the tower at the top of the pass can be climbed,
+and at the top there is a switch and a choice: end the winter, or keep the camp warm
+and only the camp. The save remembers which, the title screen changes, and Mira has
+something to say about it either way. You can keep playing afterwards.
+
 ## Difficulty
 
 Three settings, chosen on the title screen and changeable at any time.

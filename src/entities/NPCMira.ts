@@ -159,6 +159,7 @@ export class NPCMira {
 
     const lines: string[] = [];
     lines.push(MIRA.greeting[Math.min(MIRA.greeting.length - 1, state.camp.level - 1)]);
+    if (state.story.ending) lines.push(MIRA.afterEnding[state.story.ending]);
     if (state.bosses.mawDefeated) lines.push(...MIRA.afterBoss);
     if (state.bosses.rangerDefeated) {
       lines.push(...MIRA.afterRanger);

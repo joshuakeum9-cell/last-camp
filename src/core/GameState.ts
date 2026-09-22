@@ -99,6 +99,12 @@ export interface GameState {
     hints: string[];
     /** Mira has told the player about the ranger, so he is out there at night. */
     rangerTold: boolean;
+    /** The radio has answered: the tower can be climbed. */
+    towerOpen: boolean;
+    /** Which ending was taken, or null while the story is still open. */
+    ending: 'shutdown' | 'kept' | null;
+    /** The day the tower was climbed. */
+    finishedOnDay: number;
   };
 
   bosses: {
@@ -190,6 +196,9 @@ export function newGameState(): GameState {
       reportSeenDay: 0,
       hints: [],
       rangerTold: false,
+      towerOpen: false,
+      ending: null,
+      finishedOnDay: 0,
     },
     bosses: { alphaDefeated: false, mawDefeated: false, mawAttempts: 0, stagDefeated: false, stagAttempts: 0, rangerDefeated: false, rangerAttempts: 0 },
     challenge: { id: '', dayIssued: 0, progress: 0, claimed: false, source: 'local' },

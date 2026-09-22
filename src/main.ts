@@ -10,6 +10,7 @@ import { SummaryScene } from './scenes/SummaryScene';
 import { MenuScene } from './scenes/MenuScene';
 import { PauseScene } from './scenes/PauseScene';
 import { ControlsScene } from './scenes/ControlsScene';
+import { EndingScene } from './scenes/EndingScene';
 import { SettingsScene } from './scenes/SettingsScene';
 import { DevScene } from './scenes/DevScene';
 import { SaveSystem } from './core/SaveSystem';
@@ -57,6 +58,7 @@ const config: Phaser.Types.Core.GameConfig = {
     SettingsScene,
     PauseScene,
     ControlsScene,
+    EndingScene,
     HUDScene,
     DevScene,
   ],

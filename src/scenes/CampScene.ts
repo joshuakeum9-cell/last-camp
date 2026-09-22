@@ -25,7 +25,7 @@ import { Prompt } from '../ui/Prompt';
 import { NPCMira } from '../entities/NPCMira';
 import { Dialogue } from '../ui/Dialogue';
 import { TouchControls } from '../ui/TouchControls';
-import { NOTE_LIST } from '../data/story';
+import { MIRA, NOTE_LIST } from '../data/story';
 import { eventForDay } from '../data/events';
 
 interface Station {
@@ -478,8 +478,11 @@ export class CampScene extends Phaser.Scene {
 
       case 'shelter':
       case 'watchtower':
-      case 'signaltable':
         this.openMenu('camp');
+        break;
+
+      case 'signaltable':
+        this.workTheRadio();
         break;
 
       case 'board':
@@ -496,6 +499,36 @@ export class CampScene extends Phaser.Scene {
       default:
         this.openMenu('camp');
     }
+  }
+
+  /**
+   * The radio. It answers once the valley is clear, which is what opens the tower.
+   * Before that it is noise, and the upgrade screen is still one press away.
+   */
+  private workTheRadio(): void {
+    const clear =
+      state.bosses.mawDefeated && state.bosses.stagDefeated && state.bosses.rangerDefeated;
+
+    if (state.story.ending) {
+      this.dialogue.show(['The set is quiet now. Mira leaves it on anyway.'], 'The Radio');
+      return;
+    }
+    if (state.story.towerOpen) {
+      this.dialogue.show(
+        ['The pattern is still repeating. The stair is still on the outside of the tower.'],
+        'The Radio',
+      );
+      return;
+    }
+    if (!clear) {
+      this.dialogue.show(MIRA.radioNotYet, 'The Radio');
+      return;
+    }
+
+    state.story.towerOpen = true;
+    SaveSystem.save();
+    bus.emit('audio:play', { cue: 'discover' });
+    this.dialogue.show(MIRA.radioAnswer, 'The Radio');
   }
 
   /** The journal: what has been found, and how much has not. */

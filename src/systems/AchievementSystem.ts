@@ -17,6 +17,7 @@ export class AchievementSystem {
     this.subs.add(bus.on('camp:upgrade', () => this.check()));
     this.subs.add(bus.on('secret:found', () => this.unlock('curious')));
     this.subs.add(bus.on('npc:rescued', () => this.unlock('notEmpty')));
+    this.subs.add(bus.on('story:ended', () => this.unlock('theTower')));
     this.subs.add(
       bus.on('boss:defeated', ({ id }) =>
         this.unlock(id === 'stag' ? 'theHollowStag' : id === 'ranger' ? 'theOneWhoStayed' : 'theWhiteMaw'),
