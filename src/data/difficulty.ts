@@ -31,7 +31,7 @@ export const DIFFICULTIES: Record<DifficultyId, DifficultyDef> = {
   easy: {
     id: 'easy',
     name: 'Bearable',
-    desc: 'Animals hit softer and move slower. The cold is patient. Mistakes cost less.',
+    desc: 'Softer hits, slower animals, a patient cold.',
     enemyHp: 0.8,
     enemyDamage: 0.5,
     enemySpeed: 0.82,
@@ -55,7 +55,7 @@ export const DIFFICULTIES: Record<DifficultyId, DifficultyDef> = {
   hard: {
     id: 'hard',
     name: 'Killing Cold',
-    desc: 'Animals are faster and hit far harder. The cold does not wait. Falling hurts.',
+    desc: 'Faster, harder animals. The cold does not wait.',
     enemyHp: 1.2,
     enemyDamage: 1.25,
     enemySpeed: 1.1,

@@ -214,7 +214,7 @@ export class SettingsScene extends Phaser.Scene {
       },
       {
         label: 'Reduce flashing',
-        hint: 'Replaces white flashes with a coloured outline. No information is lost.',
+        hint: 'Coloured outlines instead of white flashes.',
         get: () => (s.flashReduction ? 'on' : 'off'),
         cycle: () => {
           s.flashReduction = !s.flashReduction;
