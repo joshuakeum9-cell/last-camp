@@ -279,7 +279,7 @@ export class HUDScene extends Phaser.Scene {
 
   private toast(text: string, color: string = PAL.cream): void {
     const { width, height } = BAL.view;
-    const label = new Label(this, Math.round(width / 2), height - 34, text, {
+    const label = new Label(this, Math.round(width / 2), height - 58, text, {
       color,
       originX: 0.5,
     })

@@ -279,6 +279,131 @@ const OLD_FIRE = [
   '.ssssssss.',
 ];
 
+/** A road lamp. Lit at night: the road is the one place with light of its own. */
+const LAMP_POST = [
+  '.yyyy.',
+  '.ywwy.',
+  '.yyyy.',
+  '..rr..',
+  '..rr..',
+  '..rr..',
+  '..rr..',
+  '..rr..',
+  '..rr..',
+  '..rr..',
+  '..rr..',
+  '..rr..',
+  '..rr..',
+  '.rrrr.',
+  '.ssss.',
+];
+
+const STUMP = [
+  '..nnnnnn..',
+  '.nTTnnTTn.',
+  '.nTnnnnTn.',
+  '.tttttttt.',
+  '.tTttttTt.',
+  '.tttttttt.',
+  '..ssssss..',
+];
+
+const SKULL = [
+  '..wwww..',
+  '.wwwwww.',
+  '.wrwwrw.',
+  '.wwwwww.',
+  '..wwww..',
+  '..w.w.w.',
+  '..hhhh..',
+];
+
+/** Thin ice. Flat, and the one piece of scenery that does something when stood on. */
+const ICE_CRACK = [
+  '........dw..........',
+  '.......d.dw.........',
+  '......d...dw........',
+  '.....d.....ddw......',
+  '....dd.......dw.....',
+  '...d..........ddw...',
+  '..d....dd.......dw..',
+  '.d....d..dw......dw.',
+  '......d...dw........',
+  '.......d...dw.......',
+  '........d...........',
+  '........dw..........',
+];
+
+const REEDS = [
+  '..n....n..',
+  '..n.n..n..',
+  '.nn.n.nn..',
+  '.n..n.n...',
+  '.n.nn.n.n.',
+  '..nn..n.n.',
+  '..n...nn..',
+  '..n...n...',
+  '..n...n...',
+  '..n...n...',
+  '.ssssssss.',
+];
+
+/** Mushrooms that glow. The hollow under the ice is lit by these and nothing else. */
+const GLOW_SHROOM = [
+  '..cccc..',
+  '.cCCCCc.',
+  'cCCwwCCc',
+  '.cCCCCc.',
+  '...ss...',
+  '...ss...',
+  '..ssss..',
+  '..hhhh..',
+];
+
+const FENCE = [
+  '.n.........n..',
+  '.nnnnnnnnnnnn.',
+  '.n.........n..',
+  '.n.........n..',
+  '.nnnnnnnnnnnn.',
+  '.n.........n..',
+  '.n.........n..',
+  '.n.........n..',
+  '.ssssssssssss.',
+];
+
+const TYRE = [
+  '..rrrrrr..',
+  '.rr....rr.',
+  'rr.RRRR.rr',
+  'rr.R..R.rr',
+  'rr.RRRR.rr',
+  '.rr....rr.',
+  '..rrrrrr..',
+];
+
+const CLAW_MARKS = [
+  'e...e...e...',
+  '.e...e...e..',
+  '..e...e...e.',
+  '...e...e...e',
+  '....e...e...',
+];
+
+const ROCK_SPIRE = [
+  '....RR....',
+  '...RRRr...',
+  '...RRRr...',
+  '..RRRRrr..',
+  '..RRRrrr..',
+  '.RRRRrrrr.',
+  '.RRRrrrrr.',
+  '.RRRrrrrr.',
+  'RRRRrrrrrr',
+  'RRRrrrrrrr',
+  '.ssssssss.',
+];
+
 export const SCENERY_KEYS = {
   pine: 'sc-pine',
   pineSmall: 'sc-pine-small',
@@ -298,6 +423,16 @@ export const SCENERY_KEYS = {
   bones: 'sc-bones',
   signpost: 'sc-signpost',
   oldFire: 'sc-old-fire',
+  lampPost: 'sc-lamp-post',
+  stump: 'sc-stump',
+  skull: 'sc-skull',
+  iceCrack: 'sc-ice-crack',
+  reeds: 'sc-reeds',
+  glowShroom: 'sc-glow-shroom',
+  fence: 'sc-fence',
+  tyre: 'sc-tyre',
+  clawMarks: 'sc-claw-marks',
+  rockSpire: 'sc-rock-spire',
 } as const;
 
 export function buildScenery(scene: Phaser.Scene): void {
@@ -320,4 +455,14 @@ export function buildScenery(scene: Phaser.Scene): void {
   make(SCENERY_KEYS.bones, BONES);
   make(SCENERY_KEYS.signpost, SIGNPOST);
   make(SCENERY_KEYS.oldFire, OLD_FIRE);
+  make(SCENERY_KEYS.lampPost, LAMP_POST);
+  make(SCENERY_KEYS.stump, STUMP);
+  make(SCENERY_KEYS.skull, SKULL);
+  make(SCENERY_KEYS.iceCrack, ICE_CRACK);
+  make(SCENERY_KEYS.reeds, REEDS);
+  make(SCENERY_KEYS.glowShroom, GLOW_SHROOM);
+  make(SCENERY_KEYS.fence, FENCE);
+  make(SCENERY_KEYS.tyre, TYRE);
+  make(SCENERY_KEYS.clawMarks, CLAW_MARKS);
+  make(SCENERY_KEYS.rockSpire, ROCK_SPIRE);
 }

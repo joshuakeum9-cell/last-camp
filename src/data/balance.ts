@@ -135,6 +135,19 @@ export const BAL = {
     /** Cold is capped at this on waking, so the fire has less to undo. */
     wakeColdMax: 40,
   },
+  /** Old fire pits out in the world. Two wood lights one for the rest of the day. */
+  warmSpot: {
+    woodCost: 2,
+    /** Within this the cold drains as if at the camp fire. */
+    radius: 52,
+    lightRadius: 84,
+  },
+  /** Thin ice on the lake. Stand on a crack too long and it goes. */
+  thinIce: {
+    breakAfterMs: 650,
+    coldSpike: 22,
+    cooldownMs: 2500,
+  },
   eat: {
     /** Seconds between bites, so a stack of food cannot be inhaled mid-fight. */
     cooldown: 1.2,

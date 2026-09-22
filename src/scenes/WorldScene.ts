@@ -31,12 +31,12 @@ import { RARITY_COLOR } from '../art/palette';
 import { ResourceSystem } from '../systems/ResourceSystem';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
 import { audio } from '../systems/AudioManager';
-import { generateWorld, SOLID_PROPS, type PropKind, type WorldMapData } from '../systems/MapGen';
+import { generateWorld, SOLID_PROPS, type DecorKind, type PropKind, type WorldMapData } from '../systems/MapGen';
 import { SOLID_TILES, TILE_SIZE } from '../art/sprites/tiles';
 import { TilesetBuilder, applyTransitions } from '../art/sprites/transitions';
 import { isSolidIndex } from '../systems/MapGen';
 import { SCENERY_KEYS } from '../art/sprites/scenery';
-import { CAMP_KEYS } from '../art/sprites/camp';
+import { CAMP_KEYS, campfireSprite } from '../art/sprites/camp';
 import { hex, mix, PAL } from '../art/palette';
 import { FONT } from '../art/PixelFont';
 import { hud } from '../core/HudState';
@@ -76,7 +76,30 @@ const DECOR_TEXTURE: Record<string, string> = {
   bones: SCENERY_KEYS.bones,
   signpost: SCENERY_KEYS.signpost,
   oldFire: SCENERY_KEYS.oldFire,
+  lampPost: SCENERY_KEYS.lampPost,
+  stump: SCENERY_KEYS.stump,
+  skull: SCENERY_KEYS.skull,
+  iceCrack: SCENERY_KEYS.iceCrack,
+  reeds: SCENERY_KEYS.reeds,
+  glowShroom: SCENERY_KEYS.glowShroom,
+  fence: SCENERY_KEYS.fence,
+  tyre: SCENERY_KEYS.tyre,
+  clawMarks: SCENERY_KEYS.clawMarks,
+  rockSpire: SCENERY_KEYS.rockSpire,
 };
+
+/** Decor that lies on the ground and sorts under everything that walks. */
+const FLAT_DECOR: DecorKind[] = ['grassTuft', 'bones', 'oldFire', 'iceCrack', 'clawMarks'];
+/** Decor you cannot walk through, with the width of its footprint. */
+const SOLID_DECOR: Partial<Record<DecorKind, number>> = { rockSpire: 10, fence: 14, lampPost: 5, stump: 9 };
+/** Decor that is lit once the sun has gone. */
+const LIT_DECOR: Partial<Record<DecorKind, number>> = { lampPost: 54, glowShroom: 30 };
+
+interface WarmSpot {
+  x: number;
+  y: number;
+  lit: boolean;
+}
 
 /** The expedition. Explore, collect, fight, and decide when to turn for home. */
 export class WorldScene extends Phaser.Scene {
@@ -108,6 +131,11 @@ export class WorldScene extends Phaser.Scene {
   private prompt!: Prompt;
   private worldMap!: WorldMap;
   private pickups: Pickup[] = [];
+  private warmSpots: WarmSpot[] = [];
+  private decorLights: Array<{ x: number; y: number; radius: number }> = [];
+  private iceHazards = new Set<string>();
+  private iceTimer = 0;
+  private iceCooldownUntil = 0;
   private bossMusicOn = false;
   private ambientTarget: string = PAL.blue;
   private ambientCurrent: string = PAL.blue;
@@ -131,6 +159,11 @@ export class WorldScene extends Phaser.Scene {
     this.boss = null;
     this.currentArea = null;
     this.canInteract = false;
+    this.warmSpots = [];
+    this.decorLights = [];
+    this.iceHazards = new Set();
+    this.iceTimer = 0;
+    this.iceCooldownUntil = 0;
 
     this.mapData = generateWorld(seed);
     this.buildTilemap();
@@ -359,7 +392,7 @@ export class WorldScene extends Phaser.Scene {
       }
     }
 
-    this.drawDecor(rng);
+    this.drawDecor(rng, solids);
     this.physics.add.collider(this.player.sprite, solids);
     this.scatterBreakables(seed, addPickup);
 
@@ -370,17 +403,22 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  /** Scenery with no gameplay attached. It exists so the place feels inhabited. */
-  private drawDecor(rng: Rng): void {
+  /**
+   * Scenery. Most of it is only there so the place feels inhabited, but some of it
+   * does something: fire pits can be lit, lamps and mushrooms glow at night, thin
+   * ice gives way, and the bigger things block the way.
+   */
+  private drawDecor(rng: Rng, solids: Phaser.Physics.Arcade.StaticGroup): void {
     for (const d of this.mapData.decor) {
       const key = DECOR_TEXTURE[d.kind];
       if (!key) continue;
       const x = d.tx * TILE_SIZE + TILE_SIZE / 2;
       const y = d.ty * TILE_SIZE + TILE_SIZE;
-      const scale = rng.range(0.9, 1.3);
+      const fixedScale = d.kind === 'lampPost' || d.kind === 'fence' || d.kind === 'iceCrack';
+      const scale = fixedScale ? 1.2 : rng.range(0.9, 1.3);
 
       // Flat things sit under the player; standing things sort with everything else.
-      const flat = d.kind === 'grassTuft' || d.kind === 'bones' || d.kind === 'oldFire';
+      const flat = FLAT_DECOR.includes(d.kind);
       if (!flat) {
         this.add
           .ellipse(x, y - 1, Math.round(16 * scale), Math.round(5 * scale), hex(PAL.blue))
@@ -388,13 +426,123 @@ export class WorldScene extends Phaser.Scene {
           .setDepth(y - 2);
       }
 
-      this.add
+      const img = this.add
         .image(x, y, key)
         .setOrigin(0.5, 1)
         .setScale(scale)
-        .setFlipX(rng.chance(0.5))
+        .setFlipX(!fixedScale && rng.chance(0.5))
         .setDepth(flat ? 2 : y);
+
+      const solidW = SOLID_DECOR[d.kind];
+      if (solidW) {
+        const blocker = solids.create(x, y - 3, 'fx-dot1') as Phaser.Physics.Arcade.Sprite;
+        blocker.setVisible(false).setOrigin(0.5, 0.5);
+        const body = blocker.body as Phaser.Physics.Arcade.StaticBody;
+        const w = Math.round(solidW * scale);
+        body.setSize(w, 6);
+        body.position.set(x - w / 2, y - 6);
+        body.updateCenter();
+      }
+
+      const lit = LIT_DECOR[d.kind];
+      if (lit) {
+        const top = y - img.displayHeight + 4;
+        this.decorLights.push({ x, y: d.kind === 'lampPost' ? top : y - 3, radius: lit });
+        const glow = this.add
+          .image(x, d.kind === 'lampPost' ? top : y - 3, 'fx-glow-md')
+          .setTint(hex(d.kind === 'lampPost' ? PAL.gold : PAL.cyan))
+          .setBlendMode(Phaser.BlendModes.ADD)
+          .setAlpha(d.kind === 'lampPost' ? 0.3 : 0.4)
+          .setScale(d.kind === 'lampPost' ? 0.9 : 0.5)
+          .setDepth(y - 1);
+        this.tweens.add({
+          targets: glow,
+          alpha: glow.alpha * 1.5,
+          duration: 900 + rng.int(0, 600),
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+        });
+      }
+
+      if (d.kind === 'oldFire') this.warmSpots.push({ x, y: y - 4, lit: false });
+      if (d.kind === 'iceCrack') this.iceHazards.add(`${d.tx},${d.ty}`);
     }
+  }
+
+  /** Two wood, and an old fire pit is a fire again for the rest of the day. */
+  private lightWarmSpot(spot: WarmSpot): void {
+    const run = state.run;
+    if (!run) return;
+    const cost = BAL.warmSpot.woodCost;
+    if ((run.collected.wood ?? 0) < cost) {
+      bus.emit('juice:toast', { text: `Needs ${cost} wood.`, color: PAL.grey });
+      bus.emit('audio:play', { cue: 'empty' });
+      return;
+    }
+    run.collected.wood -= cost;
+    spot.lit = true;
+
+    const fire = this.add
+      .sprite(spot.x, spot.y + 4, campfireSprite.key)
+      .setOrigin(0.5, 1)
+      .setScale(1.1)
+      .setDepth(spot.y + 4);
+    fire.play(`${campfireSprite.key}_burn`);
+    const glow = this.add
+      .image(spot.x, spot.y - 4, 'fx-glow-lg')
+      .setTint(hex(PAL.orange))
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setAlpha(0.35)
+      .setScale(0.8)
+      .setDepth(spot.y - 1);
+    this.tweens.add({
+      targets: glow,
+      alpha: 0.5,
+      scale: 0.9,
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+    this.juice.sparks(spot.x, spot.y - 4, PAL.gold, 14, 120);
+    bus.emit('audio:play', { cue: 'warm' });
+    bus.emit('juice:toast', { text: 'The fire takes. Warm here until dark.', color: PAL.gold });
+    this.hint('warmspot', 'Cold drains off beside any lit fire.');
+  }
+
+  private nearLitFire(): boolean {
+    const r = BAL.warmSpot.radius;
+    for (const s of this.warmSpots) {
+      if (!s.lit) continue;
+      if (Math.hypot(s.x - this.player.cx, s.y - this.player.cy) < r) return true;
+    }
+    return false;
+  }
+
+  /** Thin ice: linger on a crack and it gives, and the water is very cold. */
+  private updateThinIce(dt: number): void {
+    if (this.iceHazards.size === 0 || !state.run) return;
+    const tx = Math.floor(this.player.cx / TILE_SIZE);
+    const ty = Math.floor(this.player.cy / TILE_SIZE);
+    const onCrack = this.iceHazards.has(`${tx},${ty}`) && this.time.now > this.iceCooldownUntil;
+
+    if (!onCrack) {
+      this.iceTimer = Math.max(0, this.iceTimer - dt * 2);
+      return;
+    }
+    this.iceTimer += dt;
+    if (this.iceTimer < BAL.thinIce.breakAfterMs) return;
+
+    this.iceTimer = 0;
+    this.iceCooldownUntil = this.time.now + BAL.thinIce.cooldownMs;
+    state.run.cold = Math.min(BAL.cold.max, state.run.cold + BAL.thinIce.coldSpike);
+    this.juice.ring(this.player.cx, this.player.cy, PAL.ice, 34, 320);
+    this.juice.sparks(this.player.cx, this.player.cy, PAL.cyan, 12, 110);
+    this.juice.floatText(this.player.cx, this.player.sprite.y - 24, 'THE ICE GIVES', PAL.ice);
+    bus.emit('juice:shake', { intensity: 0.006, ms: 180 });
+    bus.emit('audio:play', { cue: 'smash' });
+    this.hint('thinice', 'Cracked ice breaks if you stand on it. Keep moving.');
   }
 
   /** Crates and ice chunks, for the small constant drumbeat of feedback. */
@@ -691,6 +839,10 @@ export class WorldScene extends Phaser.Scene {
     const lights: Array<{ x: number; y: number; radius: number }> = [];
     const carried = ResourceSystem.campEffects().playerLightMult;
     lights.push({ x: this.player.cx, y: this.player.cy, radius: 66 * carried });
+    for (const l of this.decorLights) lights.push(l);
+    for (const s of this.warmSpots) {
+      if (s.lit) lights.push({ x: s.x, y: s.y, radius: BAL.warmSpot.lightRadius });
+    }
 
     // Home always shows, so the way back is never guesswork.
     lights.push({
@@ -771,8 +923,9 @@ export class WorldScene extends Phaser.Scene {
       dt,
       area?.coldMult ?? 1,
       this.clock.coldMultiplier,
-      nearHome ? 'fire' : 'none',
+      nearHome || this.nearLitFire() ? 'fire' : 'none',
     );
+    this.updateThinIce(dt);
     if (damage > 0) this.player.hp = Math.max(0, this.player.hp - damage);
     if (this.player.hp <= 0 && !this.ending) this.endDay('death');
 
@@ -888,6 +1041,14 @@ export class WorldScene extends Phaser.Scene {
         const flavour = cache.open();
         if (flavour) bus.emit('juice:toast', { text: flavour, color: '#fff3ce' });
       }
+      return;
+    }
+
+    for (const spot of this.warmSpots) {
+      if (spot.lit) continue;
+      if (Math.hypot(spot.x - this.player.cx, spot.y - this.player.cy) > 22) continue;
+      this.showPrompt(`Light fire (${BAL.warmSpot.woodCost} wood)`);
+      if (pressed) this.lightWarmSpot(spot);
       return;
     }
 

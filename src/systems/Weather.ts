@@ -13,6 +13,10 @@ export class Weather {
   private wind!: Phaser.GameObjects.Particles.ParticleEmitter;
   private fog: Phaser.GameObjects.TileSprite[] = [];
   private storm = false;
+  /** Bands of light on clear nights. Alpha follows the dark. */
+  private aurora: Phaser.GameObjects.Image[] = [];
+  private auroraT = 0;
+  private darkness = 0;
   private windX = -18;
 
   constructor(
@@ -101,8 +105,37 @@ export class Weather {
     }
   }
 
+  private buildAurora(): void {
+    const { width } = BAL.view;
+    const colours = [PAL.green, PAL.teal, PAL.violet];
+    for (let i = 0; i < 3; i++) {
+      const band = this.scene.add
+        .image(width * (0.25 + i * 0.25), 30 + i * 14, FX.glowLarge)
+        .setTint(hex(colours[i]))
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setScale(3.4 - i * 0.4, 0.55 + i * 0.1)
+        .setAlpha(0)
+        .setScrollFactor(0)
+        .setDepth(this.depth - 3);
+      this.aurora.push(band);
+    }
+  }
+
   /** Called each frame by the scene. `darkness` comes from DayNightSystem. */
   update(dt: number, fogAmount: number): void {
+    if (this.aurora.length === 0) this.buildAurora();
+    this.auroraT += dt / 1000;
+    const { width } = BAL.view;
+    const strength = this.storm ? 0 : Math.max(0, (this.darkness - 0.45) / 0.55);
+    this.aurora.forEach((band, i) => {
+      const drift = Math.sin(this.auroraT * (0.11 + i * 0.05) + i * 2.1);
+      band.x = width * (0.25 + i * 0.25) + drift * 46;
+      band.y = 30 + i * 14 + Math.cos(this.auroraT * (0.17 + i * 0.04) + i) * 6;
+      band.scaleX = 3.2 - i * 0.4 + Math.sin(this.auroraT * 0.23 + i) * 0.4;
+      const target = strength * (0.22 - i * 0.04) * (0.8 + 0.2 * Math.sin(this.auroraT * 0.7 + i * 1.3));
+      band.setAlpha(Phaser.Math.Linear(band.alpha, target, 0.03));
+    });
+
     this.fog[0].tilePositionX += (this.windX * 0.6 * dt) / 1000;
     this.fog[1].tilePositionX += (this.windX * 1.4 * dt) / 1000;
     this.fog[1].tilePositionY += (4 * dt) / 1000;
@@ -125,6 +158,7 @@ export class Weather {
 
   /** Heavier snow at night, so the dark also looks colder. */
   setNight(amount: number): void {
+    this.darkness = amount;
     this.near.frequency = this.storm ? 24 : Math.round(60 - 22 * amount);
     this.far.setParticleTint(hex(amount > 0.4 ? PAL.ice : PAL.cyan));
   }
@@ -137,6 +171,8 @@ export class Weather {
   }
 
   destroy(): void {
+    for (const b of this.aurora) b.destroy();
+    this.aurora.length = 0;
     this.far.destroy();
     this.near.destroy();
     this.wind.destroy();

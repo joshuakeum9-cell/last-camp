@@ -31,7 +31,33 @@ export type DecorKind =
   | 'grassTuft'
   | 'bones'
   | 'signpost'
-  | 'oldFire';
+  | 'oldFire'
+  | 'lampPost'
+  | 'stump'
+  | 'skull'
+  | 'iceCrack'
+  | 'reeds'
+  | 'glowShroom'
+  | 'fence'
+  | 'tyre'
+  | 'clawMarks'
+  | 'rockSpire';
+
+/**
+ * What turns up in each area. This is most of what makes the areas feel like
+ * different places rather than different palettes: a road has lamps and tyres, a
+ * lake has reeds and thin ice, the den has what the Maw left behind.
+ */
+const DECOR_TABLE: Record<AreaId, DecorKind[]> = {
+  gate: ['grassTuft', 'snowMound', 'stump'],
+  forest: ['fallenLog', 'stump', 'deadShrub', 'grassTuft', 'snowMound', 'oldFire', 'stump', 'fallenLog'],
+  road: ['signpost', 'lampPost', 'tyre', 'bones', 'snowMound', 'oldFire', 'deadShrub', 'lampPost', 'tyre'],
+  cabin: ['fence', 'stump', 'fallenLog', 'oldFire', 'snowMound', 'grassTuft', 'fence'],
+  lake: ['iceCrack', 'reeds', 'snowMound', 'bones', 'iceCrack', 'reeds', 'iceCrack'],
+  secret: ['glowShroom', 'glowShroom', 'bones', 'snowMound', 'glowShroom'],
+  bossden: ['skull', 'bones', 'clawMarks', 'snowMound', 'oldFire', 'skull', 'clawMarks'],
+  towerpass: ['rockSpire', 'snowMound', 'bones', 'signpost', 'oldFire', 'rockSpire'],
+};
 
 /** Scenery that is only there to look at. Nothing blocks, nothing can be harvested. */
 export interface DecorPlacement {
@@ -182,18 +208,9 @@ function placeDecor(tiles: number[][], seed: number, props: PropPlacement[]): De
     const rng = new Rng(subSeed(seed, `decor:${area.id}`));
     const tilesInArea = (area.rect.x1 - area.rect.x0) * (area.rect.y1 - area.rect.y0);
 
-    // What turns up depends on where you are, which is most of what makes the
-    // areas feel like different places rather than different palettes.
-    const table: DecorKind[] =
-      area.ground === 'road'
-        ? ['signpost', 'bones', 'snowMound', 'deadShrub', 'grassTuft', 'oldFire']
-        : area.ground === 'ice'
-          ? ['snowMound', 'bones', 'grassTuft', 'snowMound']
-          : area.ground === 'deep'
-            ? ['bones', 'snowMound', 'deadShrub', 'oldFire']
-            : ['fallenLog', 'deadShrub', 'grassTuft', 'snowMound', 'grassTuft', 'oldFire'];
+    const table = DECOR_TABLE[area.id];
 
-    const count = Math.round((tilesInArea / 100) * 5.5);
+    const count = Math.round((tilesInArea / 100) * 7);
     for (let i = 0; i < count; i++) {
       const tx = rng.int(area.rect.x0 + 1, area.rect.x1 - 2);
       const ty = rng.int(area.rect.y0 + 1, area.rect.y1 - 2);
