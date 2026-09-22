@@ -621,6 +621,22 @@ export class MenuScene extends Phaser.Scene {
       });
     }
 
+    // The record. Numbers people come back to check, the way Stardew keeps them.
+    const kills = Object.values(state.stats.enemiesKilled).reduce((a, b) => a + b, 0);
+    const record: Array<[string, string]> = [
+      ['Days survived', String(state.stats.daysSurvived)],
+      ['Best day reached', String(state.stats.bestDay)],
+      ['Things killed', String(kills)],
+      ['Resources gathered', String(state.stats.resourcesCollected)],
+      ['Deaths', String(state.stats.deaths)],
+      ['Days in a row', `${state.meta.streak} (best ${state.meta.bestStreak})`],
+      ['Winters', String((state.meta.winters ?? 0) + 1)],
+    ];
+    const line = (from: number, to: number) => record.slice(from, to).map(([k, v]) => `${k}: ${v}`).join('    ');
+    rows.push({ title: 'The record', effect: line(0, 3), cost: '', state: 'blocked' });
+    rows.push({ title: '', effect: line(3, 5), cost: '', state: 'blocked' });
+    rows.push({ title: '', effect: line(5, 7), cost: '', state: 'blocked' });
+
     for (const a of ACHIEVEMENT_LIST) {
       const got = state.achievements[a.id] != null;
       rows.push({

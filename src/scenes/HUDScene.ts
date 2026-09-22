@@ -6,7 +6,7 @@ import { bus, Subscriptions } from '../core/EventBus';
 import { Bar } from '../ui/Bar';
 import { FONT } from '../art/PixelFont';
 import { Label } from '../ui/Label';
-import { hex, PAL } from '../art/palette';
+import { hex, PAL, RARITY_COLOR } from '../art/palette';
 import { RESOURCE_IDS, type ResourceId } from '../data/resources';
 import { RESOURCE_ICON } from '../art/sprites/icons';
 import { WEAPON_ICON_KEY } from '../art/sprites/weapons';
@@ -34,6 +34,7 @@ export class HUDScene extends Phaser.Scene {
   private weaponLabel!: Label;
   private dashPips: Phaser.GameObjects.Rectangle[] = [];
   private hotbar: Array<{
+    ring: Phaser.GameObjects.Rectangle;
     frame: Phaser.GameObjects.Rectangle;
     icon: Phaser.GameObjects.Image;
     count: Label;
@@ -57,6 +58,7 @@ export class HUDScene extends Phaser.Scene {
   private minimap!: Minimap;
   private objective!: Label;
   private objectiveTag!: Phaser.GameObjects.BitmapText;
+  private hurtWash!: Phaser.GameObjects.Image;
 
   constructor() {
     super('HUD');
@@ -198,6 +200,30 @@ export class HUDScene extends Phaser.Scene {
       bus.emit('hud:pause', {});
     });
 
+    // A red wash that breathes when health is low. It is the warning every game
+    // in this space gives, and the one players say they miss most when it is gone.
+    if (!this.textures.exists('ui-vignette')) {
+      // Clear in the middle, red at the edges: a proper vignette, drawn once.
+      const vw = 240;
+      const vh = 135;
+      const tex = this.textures.createCanvas('ui-vignette', vw, vh);
+      if (tex) {
+        const ctx = tex.getContext();
+        const grad = ctx.createRadialGradient(vw / 2, vh / 2, vh * 0.35, vw / 2, vh / 2, vw * 0.62);
+        grad.addColorStop(0, 'rgba(255,43,85,0)');
+        grad.addColorStop(1, 'rgba(255,43,85,1)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, vw, vh);
+        tex.refresh();
+      }
+    }
+    this.hurtWash = this.add
+      .image(Math.round(width / 2), Math.round(BAL.view.height / 2), 'ui-vignette')
+      .setScale(2)
+      .setAlpha(0)
+      .setScrollFactor(0)
+      .setDepth(-1);
+
     // The one line that says what to do next. Under the meters, where the eye
     // already goes; gold tag, plain words.
     this.objectiveTag = this.add
@@ -243,6 +269,14 @@ export class HUDScene extends Phaser.Scene {
     const keys = ['1', '2', 'F'];
     for (let i = 0; i < count; i++) {
       const x = x0 + i * (size + gap);
+      // A gold ring round the active slot, outside the frame, so the frame itself
+      // can carry the weapon's rarity colour the way Diablo's slots do.
+      const ring = this.add
+        .rectangle(x - 2, y - 2, size + 4, size + 4)
+        .setOrigin(0)
+        .setStrokeStyle(2, hex(PAL.gold), 1)
+        .setScrollFactor(0)
+        .setVisible(false);
       const frame = this.add
         .rectangle(x, y, size, size, hex(PAL.navy))
         .setOrigin(0)
@@ -271,7 +305,7 @@ export class HUDScene extends Phaser.Scene {
         .bitmapText(x + 2, y + 1, FONT, keys[i])
         .setTint(hex(PAL.uiMuted))
         .setScrollFactor(0);
-      this.hotbar.push({ frame, icon, count: countLabel, key });
+      this.hotbar.push({ ring, frame, icon, count: countLabel, key });
     }
   }
 
@@ -283,24 +317,28 @@ export class HUDScene extends Phaser.Scene {
     const active = state.player.activeSlot ?? 0;
     const hasRack = ResourceSystem.campEffects().weaponSlots > 1;
 
+    const rarityOf = (w: { rarity: string } | undefined) =>
+      w && w.rarity !== 'common' ? (RARITY_COLOR as Record<string, string>)[w.rarity] ?? PAL.greyDark : PAL.greyDark;
+
     const w1 = find(equipped[0]);
     primary.icon.setVisible(!!w1);
     if (w1) primary.icon.setTexture(WEAPON_ICON_KEY[w1.base] ?? 'fx-dot1').setScale(1.6).setAlpha(1);
-    primary.frame.setStrokeStyle(1, hex(active === 0 ? PAL.gold : PAL.greyDark)).setAlpha(0.9);
+    primary.frame.setStrokeStyle(1, hex(rarityOf(w1))).setAlpha(0.9);
+    primary.ring.setVisible(active === 0);
     primary.count.setText('');
 
     const w2 = find(equipped[1]);
     secondary.icon.setVisible(!!w2);
     if (w2) secondary.icon.setTexture(WEAPON_ICON_KEY[w2.base] ?? 'fx-dot1').setScale(1.6).setAlpha(1);
-    secondary.frame
-      .setStrokeStyle(1, hex(active === 1 ? PAL.gold : PAL.greyDark))
-      .setAlpha(hasRack ? 0.9 : 0.45);
+    secondary.frame.setStrokeStyle(1, hex(rarityOf(w2))).setAlpha(hasRack ? 0.9 : 0.45);
+    secondary.ring.setVisible(active === 1 && hasRack);
     secondary.count.setText('');
 
     const foodCount = hud.context === 'world' ? (hud.carried.food ?? 0) : (state.camp.storage.food ?? 0);
     food.icon.setVisible(true).setTexture(RESOURCE_ICON.food).setScale(1.5).setAlpha(foodCount > 0 ? 1 : 0.35);
     food.count.setText(foodCount > 0 ? String(Math.min(99, foodCount)) : '');
     food.frame.setStrokeStyle(1, hex(foodCount > 0 ? PAL.green : PAL.greyDark));
+    food.ring.setVisible(false);
   }
 
   private buildResourceRows(): void {
@@ -355,6 +393,10 @@ export class HUDScene extends Phaser.Scene {
     this.hpBar.set(hud.hp / Math.max(1, hud.maxHp));
     this.hpBar.update(delta);
     this.hpBar.setFillColor(hud.hp / hud.maxHp < 0.3 ? PAL.ember : PAL.blood);
+    const low = hud.hp > 0 && hud.hp / hud.maxHp < 0.3;
+    const pulse = 0.5 + 0.5 * Math.sin(_time / 260);
+    this.hurtWash.setAlpha(low ? 0.35 + 0.3 * pulse : 0);
+    this.hpText.setTint(low && pulse > 0.5 ? PAL.ember : PAL.white);
 
     // Cold is shown at camp too now, because it drains off at the fire and the
     // player should be able to watch that happen.
