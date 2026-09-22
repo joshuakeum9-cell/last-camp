@@ -34,6 +34,9 @@ export interface HudState {
   bossMaxHp: number;
   /** Deeper Winter's No Map: the compass stays off too. */
   mapHidden: boolean;
+  /** The player's world position, for the minimap. */
+  playerX: number;
+  playerY: number;
 }
 
 export const hud: HudState = {
@@ -59,6 +62,8 @@ export const hud: HudState = {
   bossHp: 0,
   bossMaxHp: 1,
   mapHidden: false,
+  playerX: 0,
+  playerY: 0,
 };
 
 export function resetHud(): void {

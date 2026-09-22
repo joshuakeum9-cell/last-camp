@@ -15,6 +15,8 @@ import { FX } from '../art/sprites/fx';
 import { touchControlsWanted } from '../ui/TouchControls';
 import { makeFrame, drawFrame } from '../ui/Frame';
 import { PixelFactory } from '../art/PixelFactory';
+import { Minimap } from '../ui/Minimap';
+import { nextObjective } from '../data/objectives';
 
 /**
  * The overlay. During an expedition it shows only what the player must act on:
@@ -52,6 +54,9 @@ export class HUDScene extends Phaser.Scene {
   private bossBack!: Phaser.GameObjects.Rectangle;
   private bossFill!: Phaser.GameObjects.Rectangle;
   private bossLabel!: Label;
+  private minimap!: Minimap;
+  private objective!: Label;
+  private objectiveTag!: Phaser.GameObjects.BitmapText;
 
   constructor() {
     super('HUD');
@@ -160,7 +165,7 @@ export class HUDScene extends Phaser.Scene {
 
     // A generous invisible hit area round the compass: tapping it opens the map.
     this.compassHit = this.add
-      .rectangle(width - 20, 28, 28, 28, hex(PAL.black))
+      .rectangle(width - 86, 30, 28, 28, hex(PAL.black))
       .setAlpha(0.001)
       .setScrollFactor(0)
       .setInteractive({ useHandCursor: true });
@@ -169,7 +174,7 @@ export class HUDScene extends Phaser.Scene {
       bus.emit('hud:map', {});
     });
     this.compass = this.add
-      .image(width - 20, 28, FX.dot3)
+      .image(width - 86, 30, FX.dot3)
       .setTint(hex(PAL.orange))
       .setScrollFactor(0)
       .setVisible(false);
@@ -192,6 +197,17 @@ export class HUDScene extends Phaser.Scene {
       this.input.stopPropagation();
       bus.emit('hud:pause', {});
     });
+
+    // The one line that says what to do next. Under the meters, where the eye
+    // already goes; gold tag, plain words.
+    this.objectiveTag = this.add
+      .bitmapText(6, 34, FONT, 'NEXT')
+      .setTint(hex(PAL.gold))
+      .setScrollFactor(0);
+    this.objective = new Label(this, 32, 34, '', { color: PAL.cream, outline: 'shadow' }).setScrollFactor(0);
+
+    // Minimap, top right under the pause button, world only.
+    this.minimap = new Minimap(this, width - 72, 18);
 
     this.buildResourceRows();
 
@@ -392,12 +408,17 @@ export class HUDScene extends Phaser.Scene {
     }
     this.pauseButton.setVisible(inWorld);
     this.compassHit.setVisible(inWorld);
+    this.minimap.setVisible(inWorld && !hud.mapHidden);
+    this.minimap.update(hud.playerX, hud.playerY, _time);
+    const next = nextObjective();
+    this.objectiveTag.setVisible(next !== null);
+    this.objective.setText(next ? next.text : '');
     this.pauseGlyph.setVisible(inWorld);
     this.compass.setVisible(inWorld && hud.homeAngle !== null && !hud.mapHidden);
     if (hud.homeAngle !== null) {
       this.compass.setPosition(
-        width - 20 + Math.cos(hud.homeAngle) * 9,
-        28 + Math.sin(hud.homeAngle) * 9,
+        width - 86 + Math.cos(hud.homeAngle) * 9,
+        30 + Math.sin(hud.homeAngle) * 9,
       );
     }
 

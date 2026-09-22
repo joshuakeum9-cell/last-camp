@@ -1319,6 +1319,8 @@ export class WorldScene extends Phaser.Scene {
   private updateBossMusic(): void {
     const boss = this.nearBoss();
     hud.mapHidden = WINTER.mapHidden();
+    hud.playerX = this.player.cx;
+    hud.playerY = this.player.cy;
     hud.bossName = boss ? boss.name : null;
     hud.bossHp = boss ? boss.hp : 0;
     hud.bossMaxHp = boss ? boss.maxHp : 1;
