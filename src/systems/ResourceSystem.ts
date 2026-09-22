@@ -2,6 +2,7 @@ import { bus } from '../core/EventBus';
 import { state } from '../core/GameState';
 import { BAL } from '../data/balance';
 import { activeEvent } from '../data/events';
+import { winterLootMult } from '../data/winter';
 import { RESOURCES, emptyResources, type ResourceId } from '../data/resources';
 import { UPGRADES, type UpgradeId } from '../data/upgrades';
 import { activeDifficulty } from '../data/difficulty';
@@ -75,8 +76,9 @@ export const ResourceSystem = {
   /** Add to the current run's haul. Returns the amount actually granted. */
   collect(id: ResourceId, amount: number, night: boolean): number {
     const run = state.run;
-    const eventMult = run ? (activeEvent(run.event).yields[id] ?? 1) : 1;
-    const wanted = Math.max(1, Math.round(amount * this.yieldMultiplier() * eventMult));
+    const eventMult = run ? activeEvent(run.event).yields[id] ?? 1 : 1;
+    const winterMult = run ? winterLootMult() : 1;
+    const wanted = Math.max(1, Math.round(amount * this.yieldMultiplier() * eventMult * winterMult));
     // Capped at 999 in the pack and 999 in the store, so numbers stay readable and
     // there is a reason to go home and unload.
     const bag = run ? run.collected : state.camp.storage;

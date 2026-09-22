@@ -128,6 +128,13 @@ export class TitleScene extends Phaser.Scene {
         { width: bw, height: 20, text: `CONTINUE  DAY ${state.day}`, fill: PAL.rust, fillHover: PAL.ember, border: PAL.gold, textColor: PAL.cream },
         () => this.start(),
       ).setDepth(600);
+      if (state.meta.streak >= 2) {
+        this.add
+          .bitmapText(Math.round(width / 2) + bw / 2 + 6, by + 6, FONT, `${state.meta.streak} days running`)
+          .setOrigin(0, 0)
+          .setTint(hex(PAL.gold))
+          .setDepth(600);
+      }
       by += 26;
     }
 

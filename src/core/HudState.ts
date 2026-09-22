@@ -32,6 +32,8 @@ export interface HudState {
   bossName: string | null;
   bossHp: number;
   bossMaxHp: number;
+  /** Deeper Winter's No Map: the compass stays off too. */
+  mapHidden: boolean;
 }
 
 export const hud: HudState = {
@@ -56,6 +58,7 @@ export const hud: HudState = {
   bossName: null,
   bossHp: 0,
   bossMaxHp: 1,
+  mapHidden: false,
 };
 
 export function resetHud(): void {

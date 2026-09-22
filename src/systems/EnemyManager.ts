@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { state } from '../core/GameState';
 import { BAL, dayScale } from '../data/balance';
 import { activeEvent } from '../data/events';
+import { WINTER } from '../data/winter';
 import { AREA_LIST, type AreaId } from '../data/areas';
 import { AREA_SPAWNS, ENEMIES, SPAWN_DENSITY, type EnemyId } from '../data/enemies';
 import { EnemyBase, type EnemyBehavior } from '../entities/EnemyBase';
@@ -65,7 +66,8 @@ export class EnemyManager {
           (tiles / 100) *
             SPAWN_DENSITY *
             activeDifficulty(state.settings.difficulty).spawnRate *
-            activeEvent(state.run?.event).spawnMult,
+            activeEvent(state.run?.event).spawnMult *
+            WINTER.spawnMult(),
         ),
       );
 

@@ -96,6 +96,15 @@ and at the top there is a switch and a choice: end the winter, or keep the camp 
 and only the camp. The save remembers which, the title screen changes, and Mira has
 something to say about it either way. You can keep playing afterwards.
 
+## Reasons to come back
+
+- **Tomorrow, teased.** The end-of-day summary names tomorrow's event and challenge.
+- **Supplies by the fire.** The first time the game opens on a calendar day, Mira has
+  left supplies at camp, and they grow with the streak of days in a row.
+- **Deeper Winter.** From day 6 the GOALS tab has modifiers you switch on for a better
+  haul: bigger packs, deeper dark, hungrier cold, sharper teeth, no map. Each pays a
+  flat bonus on everything gathered while it is on.
+
 ## Titles
 
 Achievements give titles. The first one you earn is worn automatically, and the SURVIVOR

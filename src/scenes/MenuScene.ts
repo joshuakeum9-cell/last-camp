@@ -22,6 +22,7 @@ import { dailyChallenge } from '../systems/DailyChallengeSystem';
 import { ACHIEVEMENT_LIST, TITLES } from '../data/achievements';
 import { RESOURCE_ICON } from '../art/sprites/icons';
 import { ENEMIES, ENEMY_IDS } from '../data/enemies';
+import { WINTER_MODS, WINTER_MOD_IDS, WINTER_UNLOCK_DAY, winterLootMult, winterUnlocked } from '../data/winter';
 import { ENEMY_SPRITE_KEY } from '../art/sprites/enemies';
 import { CAMP_KEYS, campfireSprite } from '../art/sprites/camp';
 import { WEAPON_ICON_KEY } from '../art/sprites/weapons';
@@ -563,6 +564,41 @@ export class MenuScene extends Phaser.Scene {
           },
         });
       }
+    }
+
+    // Deeper Winter. Off by default, and nothing here is needed to see the end.
+    if (winterUnlocked()) {
+      const bonus = Math.round((winterLootMult() - 1) * 100);
+      rows.push({
+        title: bonus > 0 ? `Deeper Winter  +${bonus}% loot` : 'Deeper Winter',
+        effect: 'Make the valley meaner for a better haul. Switch any of these on.',
+        cost: '',
+        state: 'blocked',
+      });
+      for (const id of WINTER_MOD_IDS) {
+        const def = WINTER_MODS[id];
+        const on = !!state.winter[id];
+        rows.push({
+          title: `  ${def.name}`,
+          effect: `${def.desc}  +${Math.round(def.bonus * 100)}% loot.`,
+          cost: '',
+          ownedLabel: 'ON',
+          state: on ? 'owned' : 'affordable',
+          onClick: () => {
+            state.winter[id] = !on;
+            bus.emit('audio:play', { cue: on ? 'empty' : 'upgrade' });
+            SaveSystem.save();
+            this.refresh();
+          },
+        });
+      }
+    } else {
+      rows.push({
+        title: 'Deeper Winter',
+        effect: `Opens on day ${WINTER_UNLOCK_DAY}: modifiers that pay more for a harder valley.`,
+        cost: '',
+        state: 'blocked',
+      });
     }
 
     for (const a of ACHIEVEMENT_LIST) {

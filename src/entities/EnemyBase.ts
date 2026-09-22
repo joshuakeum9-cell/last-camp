@@ -8,6 +8,7 @@ import { ENEMY_SPRITE_KEY } from '../art/sprites/enemies';
 import { hex, PAL } from '../art/palette';
 import { Juice } from '../systems/Juice';
 import { FX } from '../art/sprites/fx';
+import { WINTER } from '../data/winter';
 
 export type EnemyState = 'idle' | 'chase' | 'windup' | 'attack' | 'recover' | 'hurt' | 'dead';
 
@@ -88,7 +89,7 @@ export class EnemyBase {
     const diff = activeDifficulty(state.settings.difficulty);
     this.maxHp = Math.max(1, Math.round(def.hp * scale.hp * diff.enemyHp));
     this.hp = this.maxHp;
-    this.damage = Math.max(1, Math.round(def.damage * scale.damage * diff.enemyDamage));
+    this.damage = Math.max(1, Math.round(def.damage * scale.damage * diff.enemyDamage * WINTER.damageMult()));
 
     this.shadow = scene.add
       .ellipse(x, y - 1, 16, 6, hex(PAL.blue))

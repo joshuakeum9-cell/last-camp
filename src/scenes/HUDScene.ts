@@ -390,7 +390,7 @@ export class HUDScene extends Phaser.Scene {
     this.pauseButton.setVisible(inWorld);
     this.compassHit.setVisible(inWorld);
     this.pauseGlyph.setVisible(inWorld);
-    this.compass.setVisible(inWorld && hud.homeAngle !== null);
+    this.compass.setVisible(inWorld && hud.homeAngle !== null && !hud.mapHidden);
     if (hud.homeAngle !== null) {
       this.compass.setPosition(
         width - 20 + Math.cos(hud.homeAngle) * 9,

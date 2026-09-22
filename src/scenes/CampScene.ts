@@ -26,6 +26,7 @@ import { NPCMira } from '../entities/NPCMira';
 import { Dialogue } from '../ui/Dialogue';
 import { TouchControls } from '../ui/TouchControls';
 import { MIRA, NOTE_LIST } from '../data/story';
+import type { ResourceId } from '../data/resources';
 import { eventForDay } from '../data/events';
 
 interface Station {
@@ -128,6 +129,7 @@ export class CampScene extends Phaser.Scene {
     this.scene.bringToTop('HUD');
 
     this.showMorningReport();
+    this.greetReturn();
     this.events.once('shutdown', () => this.cleanup());
   }
 
@@ -529,6 +531,45 @@ export class CampScene extends Phaser.Scene {
     SaveSystem.save();
     bus.emit('audio:play', { cue: 'discover' });
     this.dialogue.show(MIRA.radioAnswer, 'The Radio');
+  }
+
+  /**
+   * A real-day streak. The first time the game opens on a calendar day, Mira has
+   * left supplies by the fire, and they grow with the streak. It is the reason to
+   * come back tomorrow that every game people return to has some form of.
+   */
+  private greetReturn(): void {
+    const today = new Date().toISOString().slice(0, 10);
+    const meta = state.meta;
+    if (meta.lastVisit === today) return;
+
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    meta.streak = meta.lastVisit === yesterday ? meta.streak + 1 : 1;
+    meta.bestStreak = Math.max(meta.bestStreak, meta.streak);
+    meta.lastVisit = today;
+
+    const s = Math.min(meta.streak, 7);
+    const crate: Array<[ResourceId, number]> = [
+      ['wood', 4 + s * 2],
+      ['food', 2 + s],
+      ['scrap', 2 + s],
+    ];
+    if (s >= 3) crate.push(['crystal', Math.floor(s / 3)]);
+    if (s >= 5) crate.push(['medical', 1]);
+    for (const [id, n] of crate) {
+      state.camp.storage[id] = Math.min(BAL.resourceCap, (state.camp.storage[id] ?? 0) + n);
+    }
+    SaveSystem.save();
+
+    const line =
+      meta.streak === 1
+        ? 'Supplies by the fire. Somebody kept it going while you were gone.'
+        : `Day ${meta.streak} of coming back. Mira left more by the fire.`;
+    this.time.delayedCall(4200, () => {
+      bus.emit('juice:toast', { text: line, color: PAL.gold });
+      bus.emit('audio:play', { cue: 'cache' });
+      this.juice.sparks(this.fireX, this.fireY - 10, PAL.gold, 12, 90);
+    });
   }
 
   /** The journal: what has been found, and how much has not. */

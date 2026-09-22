@@ -145,6 +145,17 @@ export interface GameState {
     adsUsed: Record<string, number>;
   };
 
+  /** Deeper Winter modifiers switched on, see data/winter.ts. */
+  winter: Record<string, boolean>;
+
+  /** Real calendar days played, for the supply crate that greets a return. */
+  meta: {
+    /** YYYY-MM-DD of the last day the game was opened. */
+    lastVisit: string;
+    streak: number;
+    bestStreak: number;
+  };
+
   settings: {
     difficulty: DifficultyId;
     music: number;
@@ -213,6 +224,8 @@ export function newGameState(): GameState {
       bestDay: 0,
     },
     store: { owned: [], simulatedSpend: 0, adsUsed: {} },
+    winter: {},
+    meta: { lastVisit: '', streak: 0, bestStreak: 0 },
     settings: {
       difficulty: 'normal',
       music: BAL.audio.music,

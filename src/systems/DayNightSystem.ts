@@ -2,6 +2,7 @@ import { bus } from '../core/EventBus';
 import { state } from '../core/GameState';
 import { BAL, phaseAt, type PhaseId } from '../data/balance';
 import { activeEvent } from '../data/events';
+import { WINTER } from '../data/winter';
 
 /**
  * The day clock. It is the source of the game's only real pressure: light falls, the
@@ -46,7 +47,8 @@ export class DayNightSystem {
     return (
       phaseAt(this.timeSec).coldMult *
       (state.run?.storm ? BAL.day.stormMult : 1) *
-      activeEvent(state.run?.event).coldMult
+      activeEvent(state.run?.event).coldMult *
+      WINTER.coldMult()
     );
   }
 

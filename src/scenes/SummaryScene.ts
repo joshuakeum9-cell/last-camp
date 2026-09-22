@@ -4,6 +4,8 @@ import { bus } from '../core/EventBus';
 import { state } from '../core/GameState';
 import { TITLES } from '../data/achievements';
 import { makeFrame } from '../ui/Frame';
+import { eventForDay } from '../data/events';
+import { CHALLENGES, CHALLENGE_IDS } from '../data/challenges';
 import { renderCost } from '../ui/Panel';
 import { SaveSystem } from '../core/SaveSystem';
 import { ResourceSystem } from '../systems/ResourceSystem';
@@ -160,6 +162,19 @@ export class SummaryScene extends Phaser.Scene {
         .bitmapText(30, height - 40, FONT, `Challenge done: ${dailyChallenge.describe()}`)
         .setTint(hex(PAL.green));
     }
+
+    // Tomorrow, teased. The one thing that makes a player press Continue instead
+    // of closing the tab: knowing that the next day is a different day.
+    const tomorrow = this.summary.reason === 'death' ? state.day + 1 : state.day + 1;
+    const nextEvent = eventForDay(tomorrow, state.stats.deaths);
+    const nextChallenge = CHALLENGES[CHALLENGE_IDS[(tomorrow - 1) % CHALLENGE_IDS.length]];
+    const forecast =
+      nextEvent.id === 'clear'
+        ? `Tomorrow: clear. ${nextChallenge.label}.`
+        : `Tomorrow: ${nextEvent.name.toUpperCase()}. ${nextChallenge.label}.`;
+    this.add
+      .bitmapText(30, height - 62, FONT, forecast)
+      .setTint(hex(nextEvent.id === 'clear' ? PAL.cyan : PAL.gold));
 
     this.input.keyboard?.once('keydown-ENTER', () => this.leave());
     this.input.keyboard?.once('keydown-SPACE', () => this.leave());

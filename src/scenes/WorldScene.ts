@@ -49,6 +49,7 @@ import { Prompt } from '../ui/Prompt';
 import { WorldMap } from '../ui/WorldMap';
 import { WEAPONS, type WeaponId } from '../data/weapons';
 import { activeEvent } from '../data/events';
+import { WINTER, winterActiveCount, winterLootMult } from '../data/winter';
 import { Rng, hashString, subSeed } from '../core/Rng';
 import { ENEMIES, type EnemyId } from '../data/enemies';
 import { RESOURCES } from '../data/resources';
@@ -228,6 +229,14 @@ export class WorldScene extends Phaser.Scene {
         if (!this.ending) this.enemyManager.summonStalker(this.player.cx, this.player.cy);
       });
     }
+    if (winterActiveCount() > 0 && state.run.timeSec < 1) {
+      this.time.delayedCall(2400, () =>
+        bus.emit('juice:toast', {
+          text: `Deeper winter: +${Math.round((winterLootMult() - 1) * 100)}% on everything gathered.`,
+          color: '#8b3cff',
+        }),
+      );
+    }
     if (event.id !== 'clear' && state.run.timeSec < 1) {
       this.time.delayedCall(700, () => {
         this.announce(event.name);
@@ -244,7 +253,9 @@ export class WorldScene extends Phaser.Scene {
     this.subs.add(bus.on('player:died', () => this.endDay('death')));
     this.subs.add(bus.on('hud:pause', () => this.openPause()));
     this.worldMap = new WorldMap(this);
-    this.subs.add(bus.on('hud:map', () => this.worldMap.toggle()));
+    this.subs.add(bus.on('hud:map', () => {
+      if (!WINTER.mapHidden()) this.worldMap.toggle();
+    }));
     // Anything buffered while paused (the ESC that closed the menu) is dropped.
     this.events.on('resume', () => this.input$.flush());
 
@@ -799,7 +810,8 @@ export class WorldScene extends Phaser.Scene {
       else this.openPause();
       return;
     }
-    if (input.mapPressed) this.worldMap.toggle();
+    if (input.mapPressed && !WINTER.mapHidden()) this.worldMap.toggle();
+    if (input.mapPressed && WINTER.mapHidden()) bus.emit('juice:toast', { text: 'No map this winter.', color: PAL.grey });
     this.worldMap.update(this.player.cx, this.player.cy);
     if (input.swapPressed) this.weapons.swap();
     if (input.slotPressed) this.weapons.select(input.slotPressed);
@@ -925,7 +937,7 @@ export class WorldScene extends Phaser.Scene {
   /** What is still lit once the sun has gone. */
   private collectLights(): Array<{ x: number; y: number; radius: number }> {
     const lights: Array<{ x: number; y: number; radius: number }> = [];
-    const carried = ResourceSystem.campEffects().playerLightMult;
+    const carried = ResourceSystem.campEffects().playerLightMult * WINTER.lightMult();
     lights.push({ x: this.player.cx, y: this.player.cy, radius: 66 * carried });
     for (const l of this.decorLights) lights.push(l);
     for (const s of this.warmSpots) {
@@ -1058,6 +1070,7 @@ export class WorldScene extends Phaser.Scene {
   /** The music changes when a den does, and counts the attempt. */
   private updateBossMusic(): void {
     const boss = this.nearBoss();
+    hud.mapHidden = WINTER.mapHidden();
     hud.bossName = boss ? boss.name : null;
     hud.bossHp = boss ? boss.hp : 0;
     hud.bossMaxHp = boss ? boss.maxHp : 1;
