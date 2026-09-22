@@ -2,6 +2,20 @@ import { PAL } from '../art/palette';
 import type { Cost } from './upgrades';
 
 export const WEAPON_IDS = ['axe', 'knife', 'spear', 'bow', 'hammer', 'antler'] as const;
+
+/**
+ * What holding the attack does, per weapon. A flat damage multiplier made every
+ * charged hit the same hit; these are the moves that make a weapon feel like
+ * itself. Named here so the menu and the controls screen can say them.
+ */
+export const CHARGED_MOVE: Record<string, { name: string; desc: string }> = {
+  axe: { name: 'Spin', desc: 'A full turn: everything round you, hard.' },
+  knife: { name: 'Lunge', desc: 'A step in and a deep stab. Crits often.' },
+  spear: { name: 'Skewer', desc: 'Twice the reach, through everything in line.' },
+  bow: { name: 'Volley', desc: 'Three arrows in a fan.' },
+  hammer: { name: 'Quake', desc: 'A wide slam. Everything nearby stops.' },
+  antler: { name: 'Frost Nova', desc: 'A ring of cold. Slows all it touches.' },
+};
 export type WeaponId = (typeof WEAPON_IDS)[number];
 
 export type SwingShape = 'arc' | 'thrust' | 'circle' | 'ranged';

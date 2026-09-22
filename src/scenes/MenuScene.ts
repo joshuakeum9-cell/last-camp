@@ -10,7 +10,7 @@ import { CampSystem } from '../systems/CampSystem';
 import { UPGRADES } from '../data/upgrades';
 import { PERKS, PERK_LIST } from '../data/perks';
 import { RESOURCES, RESOURCE_IDS, CONSUMABLES, type ResourceId } from '../data/resources';
-import { BRANCHES, REINFORCE_COST, WEAPONS, type WeaponId } from '../data/weapons';
+import { BRANCHES, REINFORCE_COST, WEAPONS, type WeaponId, CHARGED_MOVE } from '../data/weapons';
 import { RowList, type RowSpec } from '../ui/Panel';
 import { makeFrame } from '../ui/Frame';
 import { FocusNav, type Focusable } from '../ui/Focus';
@@ -349,8 +349,9 @@ export class MenuScene extends Phaser.Scene {
       const equipped = state.player.equipped.includes(instance.uid);
 
       const stats = `${resolved.damage[0]} dmg / ${resolved.reach} reach. `;
+      const move = CHARGED_MOVE[instance.base];
       rows.push({
-        title: resolved.name,
+        title: move ? `${resolved.name}   hold: ${move.name}` : resolved.name,
         effect: stats + resolved.def.desc,
         cost: '',
         ownedLabel: 'CARRIED',

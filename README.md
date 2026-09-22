@@ -41,7 +41,7 @@ accounts and no network calls.
 | Key | Action |
 |---|---|
 | `W` `A` `S` `D` or arrows | Move |
-| `Q` or left mouse | Attack. Hold to charge |
+| `Q` or left mouse | Attack. Hold for the weapon's own move: the axe spins, the knife lunges, the spear skewers, the bow fires a volley, the hammer quakes, the antler throws a ring of frost |
 | `Space` | Dash. Invulnerable while dashing |
 | `E` | Interact, read, open, advance dialogue |
 | `F` | Eat food to heal out in the field |

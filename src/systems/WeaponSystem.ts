@@ -9,6 +9,7 @@ import {
   WEAPONS,
   type WeaponDef,
   type WeaponId,
+  type SwingShape,
 } from '../data/weapons';
 import { hex, RARITY_COLOR, PAL } from '../art/palette';
 import { WFX } from '../art/sprites/weapons';
@@ -290,15 +291,72 @@ export class WeaponSystem {
     let knockback = w.knockback;
     let arcDeg = w.def.arcDeg;
     let reach = w.reach;
+    let shape = w.def.shape;
+    let pierce = w.pierce;
+    let extraStun = 0;
+    let thrustWidth = w.def.thrustWidth;
+
     if (charged) {
+      // Each weapon's own move. The multiplier is the floor, the shape is the point.
       damage = Math.round(damage * BAL.combat.chargeDamageMult);
       knockback *= BAL.combat.chargeKnockbackMult;
-      arcDeg = Math.min(360, arcDeg * 1.35);
-      reach += 6;
+      switch (w.def.id) {
+        case 'axe':
+          shape = 'circle';
+          arcDeg = 360;
+          reach += 8;
+          damage = Math.round(damage * 0.8);
+          break;
+        case 'knife': {
+          // A step in first, so the stab lands where the enemy is about to be.
+          const step = 28;
+          this.player.sprite.setPosition(this.player.sprite.x + this.aimX * step, this.player.sprite.y + this.aimY * step);
+          this.player.body.reset(this.player.sprite.x, this.player.sprite.y);
+          shape = 'thrust';
+          thrustWidth = 16;
+          reach = 30;
+          damage = Math.round(damage * 1.2);
+          break;
+        }
+        case 'spear':
+          reach = w.reach * 2;
+          pierce = true;
+          extraStun = 0.35;
+          break;
+        case 'hammer':
+          shape = 'circle';
+          reach = 60;
+          extraStun = 0.6;
+          break;
+        case 'antler':
+          shape = 'circle';
+          reach = 46;
+          damage = Math.round(damage * 0.7);
+          break;
+        default:
+          arcDeg = Math.min(360, arcDeg * 1.35);
+          reach += 6;
+      }
     }
 
     if (w.def.shape === 'ranged') {
-      this.fireProjectile(w, damage, charged);
+      if (charged) {
+        // A volley: three arrows in a fan, one charge's worth of ammo.
+        const ax = this.aimX;
+        const ay = this.aimY;
+        for (const off of [-0.22, 0, 0.22]) {
+          const a = Math.atan2(ay, ax) + off;
+          this.aimX = Math.cos(a);
+          this.aimY = Math.sin(a);
+          this.fireProjectile(w, Math.round(damage * 0.6), off === 0);
+          this.ammo.set(w.instance.uid, this.ammoFor(w) + 1);
+        }
+        this.ammo.set(w.instance.uid, Math.max(0, this.ammoFor(w) - 1));
+        this.aimX = ax;
+        this.aimY = ay;
+      } else {
+        this.fireProjectile(w, damage, charged);
+      }
     } else {
       const result = this.combat.strike({
         x: this.player.cx,
@@ -310,11 +368,11 @@ export class WeaponSystem {
         knockback,
         crit: w.crit,
         reach,
-        shape: w.def.shape,
+        shape,
         arcDeg,
-        thrustWidth: w.def.thrustWidth,
-        pierce: w.pierce,
-        stun: w.hitStun + (isFinisher ? w.def.finisherStun : 0),
+        thrustWidth,
+        pierce,
+        stun: w.hitStun + extraStun + (isFinisher ? w.def.finisherStun : 0),
         flags: w.flags,
       });
 
@@ -324,18 +382,18 @@ export class WeaponSystem {
       } else {
         bus.emit('audio:play', { cue: 'whiff', volume: 0.3 });
       }
-      this.spawnSwingFx(w, charged, arcDeg, reach);
+      this.spawnSwingFx(w, charged, arcDeg, reach, shape);
     }
 
     if (charged) bus.emit('juice:shake', { intensity: 3, ms: 110 });
   }
 
-  private spawnSwingFx(w: ResolvedWeapon, charged: boolean, arcDeg: number, reach: number): void {
+  private spawnSwingFx(w: ResolvedWeapon, charged: boolean, arcDeg: number, reach: number, shape: SwingShape = w.def.shape): void {
     const angle = Math.atan2(this.aimY, this.aimX);
     const cx = this.player.cx + Math.cos(angle) * 4;
     const cy = this.player.cy + Math.sin(angle) * 4;
 
-    if (w.def.shape === 'thrust') {
+    if (shape === 'thrust') {
       const fx = this.scene.add
         .image(cx, cy, WFX.thrust)
         .setOrigin(0, 0.5)
@@ -355,7 +413,7 @@ export class WeaponSystem {
       return;
     }
 
-    if (w.def.shape === 'circle') {
+    if (shape === 'circle') {
       // The blade goes the whole way round: a wide arc that spins a full turn,
       // starting from wherever the player is aiming.
       const cx = this.player.cx;

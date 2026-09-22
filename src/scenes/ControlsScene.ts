@@ -37,7 +37,7 @@ const TOUCH: Row[] = [
 ];
 
 const TIPS: string[] = [
-  'Hold attack for a 2.5x charged hit',
+  'Hold attack: each weapon has its own move',
   'Dash through a hit: next hit crits',
   'Night: double loot, double danger',
   'Cold hurts. Fire and food fix it',

@@ -80,8 +80,13 @@ export class CombatSystem {
     const now = this.scene.time.now;
     const perfectCrit = now < this.player.perfectCritUntil;
 
-    for (const enemy of this.enemies) {
-      if (!enemy.alive) continue;
+    // Nearest first, so a swing that can only land once lands on the thing in
+    // front of you rather than whichever spawned earliest.
+    const ordered = this.enemies
+      .filter((e) => e.alive)
+      .sort((a, b) => Math.hypot(a.cx - req.x, a.cy - req.y) - Math.hypot(b.cx - req.x, b.cy - req.y));
+
+    for (const enemy of ordered) {
       if (!this.inSwing(req, enemy.cx, enemy.cy)) continue;
 
       const crit = perfectCrit || Math.random() < req.crit;
