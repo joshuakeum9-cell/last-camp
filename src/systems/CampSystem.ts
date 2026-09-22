@@ -16,6 +16,7 @@ export type StationId =
   | 'signaltable'
   | 'mira'
   | 'pup'
+  | 'trophy'
   | 'supplydrop';
 
 export interface CampPlacement {
@@ -153,7 +154,7 @@ export const CampSystem = {
       }
     }
     if (this.owned('trophy')) {
-      add({ key: CAMP_KEYS.trophy, tx: 22, ty: 10, scale: 1.2 });
+      add({ key: CAMP_KEYS.trophy, tx: 22, ty: 10, scale: 1.2, station: 'trophy' });
     }
 
     // --- the way out -----------------------------------------------------

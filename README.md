@@ -88,6 +88,14 @@ exists to teach and how many you have killed. Unmet things are a row of question
 Each boss drops the one weapon nothing else does: the Survivor Hammer from the Maw, the
 Hollow Antler from the Stag.
 
+## Fighting one again
+
+The skull over the gate is not only decoration. Stand at it and any boss already beaten
+can be called back for the day: it waits where it always waited, it hits as hard as it
+ever did, and it pays its loot again, this time at epic. Nothing else moves. The story
+does not replay, the ending does not change, and the day is spent either way. It is
+there for the one weapon you wanted a better roll of, and for the fight you liked.
+
 ## The end of it
 
 Build the Signal Table, kill all three of the valley's bosses, then work the radio at

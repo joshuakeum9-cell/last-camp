@@ -1042,7 +1042,13 @@ export class WorldScene extends Phaser.Scene {
       );
     }
 
-    if (!state.bosses.mawDefeated) {
+    const rematch = state.run?.rematch ?? null;
+    if (rematch) {
+      this.time.delayedCall(900, () =>
+        bus.emit('juice:toast', { text: 'You went out looking for it. It is where it was.', color: PAL.blood }),
+      );
+    }
+    if (!state.bosses.mawDefeated || rematch === 'maw') {
       const maw = new BossWhiteMaw(
         this,
         88 * TILE_SIZE,
@@ -1066,13 +1072,13 @@ export class WorldScene extends Phaser.Scene {
     this.buildTower();
 
     // The second boss paces the tower pass, past the ice the gate breaks through.
-    if (!state.bosses.stagDefeated) {
+    if (!state.bosses.stagDefeated || rematch === 'stag') {
       const stag = new BossHollowStag(this, 92 * TILE_SIZE, 20 * TILE_SIZE, this.player, this.juice);
       this.bosses.push(stag);
       this.physics.add.collider(stag.sprite, this.layer);
     }
     // The third only once Mira has said where to look, and only after dark.
-    if (state.story.rangerTold && !state.bosses.rangerDefeated) {
+    if ((state.story.rangerTold && !state.bosses.rangerDefeated) || rematch === 'ranger') {
       this.ranger = new BossRanger(this, 72 * TILE_SIZE, 22 * TILE_SIZE, this.player, this.juice, (x, y, count) => {
         const nearby = this.enemyManager.enemies.filter(
           (e) => e.alive && e.def.id === 'walker' && Math.hypot(e.cx - x, e.cy - y) < 260,
@@ -1393,6 +1399,7 @@ export class WorldScene extends Phaser.Scene {
     if (state.run) state.run.rareFinds += 2;
 
     bus.emit('juice:toast', { text: 'The White Maw is dead.', color: '#ffffff' });
+    if (state.run?.rematch) return;
     this.time.delayedCall(1400, () => {
       this.dialogue.show(
         [
@@ -1412,10 +1419,12 @@ export class WorldScene extends Phaser.Scene {
 
   /** A boss drops the one weapon nothing else does. */
   private dropBossWeapon(base: WeaponId, bossId: string): void {
-    if (state.player.weapons.some((w) => w.base === base)) return;
-    const weapon = LootSystem.makeWeapon(base, 'rare', new Rng(hashString(`${bossId}:${state.day}`)));
+    // A rematch always pays a fresh roll; the first kill only if you have none.
+    if (!state.run?.rematch && state.player.weapons.some((w) => w.base === base)) return;
+    const rarity = state.run?.rematch ? 'epic' : 'rare';
+    const weapon = LootSystem.makeWeapon(base, rarity, new Rng(hashString(`${bossId}:${state.day}:${state.stats.deaths}`)));
     LootSystem.takeWeapon(weapon);
-    this.onWeaponFound(WEAPONS[base].name, 'rare');
+    this.onWeaponFound(WEAPONS[base].name, rarity);
   }
 
   private onRangerDefeated(): void {
@@ -1428,6 +1437,7 @@ export class WorldScene extends Phaser.Scene {
     if (state.run) state.run.rareFinds += 2;
 
     bus.emit('juice:toast', { text: 'The lantern goes out for good.', color: '#ffcf1f' });
+    if (state.run?.rematch) return;
     this.time.delayedCall(1400, () => {
       this.dialogue.show(
         [
@@ -1450,6 +1460,7 @@ export class WorldScene extends Phaser.Scene {
     if (state.run) state.run.rareFinds += 2;
 
     bus.emit('juice:toast', { text: 'The Hollow Stag comes apart.', color: '#7bf3ff' });
+    if (state.run?.rematch) return;
     this.time.delayedCall(1400, () => {
       this.dialogue.show(
         [

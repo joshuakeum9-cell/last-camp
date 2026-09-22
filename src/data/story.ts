@@ -176,6 +176,16 @@ export const MIRA = {
       ],
     },
     {
+      id: 'pup',
+      label: 'The pup',
+      lines: [
+        'It sleeps against the woodpile and growls at the tower. I like it.',
+        'Its mother kept the whole cabin road for herself. Nine days I listened to her.',
+        'Do not name it. Things with names are harder to lose, and this valley loses things.',
+        'I named it anyway. I am not telling you what.',
+      ],
+    },
+    {
       id: 'tower',
       label: 'The tower',
       lines: [

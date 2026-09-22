@@ -267,9 +267,95 @@ export class MenuScene extends Phaser.Scene {
 
   private survivorRows(): RowSpec[] {
     const rows: RowSpec[] = [...this.titleRows()];
+    rows.push(...this.companyRows());
     rows.push(...this.perkRows());
     return rows;
   }
+
+  /** Who comes with you and who works the camp: Mira and the pup. */
+  private companyRows(): RowSpec[] {
+    const rows: RowSpec[] = [];
+    if (state.story.miraRescued) {
+      rows.push({
+        title: "Mira's work",
+        effect: OfflineSystem.describe(),
+        cost: '',
+        blockedBy: 'Capped at an hour. It is a bonus, not a substitute.',
+        state: 'blocked',
+      });
+
+      const pending = OfflineSystem.pending();
+      if (pending) {
+        rows.push({
+          title: `Collect ${pending.amount} ${pending.job}`,
+          effect: 'Take what she has brought in while you were away.',
+          cost: '',
+          state: 'affordable',
+          onClick: () => {
+            OfflineSystem.collect();
+            SaveSystem.save();
+            this.refresh();
+          },
+        });
+      }
+
+      const follows = state.story.miraFollows;
+      rows.push({
+        title: follows ? 'Mira comes with you' : '  Bring Mira along',
+        effect: follows
+          ? 'She gathers drops and carries a lantern. Click to leave her.'
+          : 'Follows you out, picks up drops, and carries a lantern.',
+        cost: '',
+        ownedLabel: 'WITH YOU',
+        icon: { key: 'npc-mira' },
+        state: follows ? 'owned' : 'affordable',
+        onClick: () => {
+          state.story.miraFollows = !follows;
+          if (!follows) OfflineSystem.assign(null);
+          if (!follows) state.story.miraFollows = true;
+          bus.emit('audio:play', { cue: 'swap' });
+          SaveSystem.save();
+          this.refresh();
+        },
+      });
+
+      for (const job of ['wood', 'food', 'scrap'] as const) {
+        if (OfflineSystem.job === job) continue;
+        rows.push({
+          title: `  Put Mira on ${job}`,
+          effect: `She will gather ${job} while the game is closed.`,
+          cost: '',
+          state: 'affordable',
+          onClick: () => {
+            OfflineSystem.assign(job);
+            SaveSystem.save();
+            this.refresh();
+          },
+        });
+      }
+    }
+
+    if (state.story.pupFound) {
+      const pupOn = state.story.pupFollows;
+      rows.push({
+        title: pupOn ? 'The pup comes with you' : '  Bring the pup',
+        effect: pupOn ? 'It bites what comes close. Click to leave it by the fire.' : 'It bites what comes close, and nothing can hurt it.',
+        cost: '',
+        ownedLabel: 'WITH YOU',
+        icon: { key: 'enemy-wolf', scale: 0.7 },
+        state: pupOn ? 'owned' : 'affordable',
+        onClick: () => {
+          state.story.pupFollows = !pupOn;
+          bus.emit('audio:play', { cue: 'swap' });
+          SaveSystem.save();
+          this.refresh();
+        },
+      });
+    }
+
+    return rows;
+  }
+
 
   /**
    * Titles earned from achievements. One is worn at a time; clicking swaps to it,
@@ -561,84 +647,6 @@ export class MenuScene extends Phaser.Scene {
       cost: '',
       state: dailyChallenge.done ? 'owned' : 'blocked',
     });
-
-    if (state.story.miraRescued) {
-      rows.push({
-        title: "Mira's work",
-        effect: OfflineSystem.describe(),
-        cost: '',
-        blockedBy: 'Capped at an hour. It is a bonus, not a substitute.',
-        state: 'blocked',
-      });
-
-      const pending = OfflineSystem.pending();
-      if (pending) {
-        rows.push({
-          title: `Collect ${pending.amount} ${pending.job}`,
-          effect: 'Take what she has brought in while you were away.',
-          cost: '',
-          state: 'affordable',
-          onClick: () => {
-            OfflineSystem.collect();
-            SaveSystem.save();
-            this.refresh();
-          },
-        });
-      }
-
-      const follows = state.story.miraFollows;
-      rows.push({
-        title: follows ? 'Mira comes with you' : '  Bring Mira along',
-        effect: follows
-          ? 'She follows, picks up what falls, and carries a lantern. Click to leave her at camp.'
-          : 'She follows you out, picks up what falls near her, and carries a lantern.',
-        cost: '',
-        ownedLabel: 'WITH YOU',
-        icon: { key: 'npc-mira' },
-        state: follows ? 'owned' : 'affordable',
-        onClick: () => {
-          state.story.miraFollows = !follows;
-          if (!follows) OfflineSystem.assign(null);
-          if (!follows) state.story.miraFollows = true;
-          bus.emit('audio:play', { cue: 'swap' });
-          SaveSystem.save();
-          this.refresh();
-        },
-      });
-
-      if (state.story.pupFound) {
-        const pupOn = state.story.pupFollows;
-        rows.push({
-          title: pupOn ? 'The pup comes with you' : '  Bring the pup',
-          effect: pupOn ? 'It bites what comes close and nothing can hurt it. Click to leave it by the fire.' : 'It bites what comes close and nothing can hurt it.',
-          cost: '',
-          ownedLabel: 'WITH YOU',
-          icon: { key: 'enemy-wolf', scale: 0.7 },
-          state: pupOn ? 'owned' : 'affordable',
-          onClick: () => {
-            state.story.pupFollows = !pupOn;
-            bus.emit('audio:play', { cue: 'swap' });
-            SaveSystem.save();
-            this.refresh();
-          },
-        });
-      }
-
-      for (const job of ['wood', 'food', 'scrap'] as const) {
-        if (OfflineSystem.job === job) continue;
-        rows.push({
-          title: `  Put Mira on ${job}`,
-          effect: `She will gather ${job} while the game is closed.`,
-          cost: '',
-          state: 'affordable',
-          onClick: () => {
-            OfflineSystem.assign(job);
-            SaveSystem.save();
-            this.refresh();
-          },
-        });
-      }
-    }
 
     // Deeper Winter. Off by default, and nothing here is needed to see the end.
     if (winterUnlocked()) {

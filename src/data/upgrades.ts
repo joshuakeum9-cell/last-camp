@@ -199,7 +199,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
     id: 'trophy',
     name: 'Maw Trophy',
     cost: {},
-    effect: '+5% damage. Everything here has seen what you killed.',
+    effect: '+5% damage. Stand at it to call a beaten boss back for a day.',
     campChange: 'A great white skull over the gate.',
     effects: { damageMult: 0.05 },
     awarded: true,

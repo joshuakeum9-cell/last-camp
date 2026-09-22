@@ -38,6 +38,8 @@ export interface RunState {
   event: string;
   /** What last hurt the player, for the death line. */
   lastHitBy: string;
+  /** A boss brought back for the day, for its loot. Null on an ordinary day. */
+  rematch: string | null;
   hp: number;
   cold: number;
   collected: Record<ResourceId, number>;
@@ -271,6 +273,7 @@ export function newRunState(seed: number, maxHp: number, storm: boolean, event =
     storm,
     event,
     lastHitBy: '',
+    rematch: null,
     hp: maxHp,
     cold: 0,
     collected: emptyResources(),
