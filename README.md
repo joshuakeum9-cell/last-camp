@@ -60,6 +60,15 @@ something in reach. The II button top right pauses; tapping the compass opens th
 Everything is sized and placed to stay out of the top of the screen and out of the way
 of your thumbs. Phones held in portrait get a rotate prompt.
 
+## What you take
+
+Every morning the gate deals three pacts and you keep one for the day. Each is a real
+gain paid for with a real loss: hit a third harder and take a fifth more, gather a third
+more and freeze a fifth faster, survive the first death and carry a fifth less home.
+Nothing else about the day is yours to choose, so this is the place where the plan gets
+made. The hand is seeded from the day, so it is the same hand whether you look now or
+after a restart, and a different one tomorrow.
+
 ## Every day is different
 
 Each morning the report names the day: a whiteout, a wolf moon, a rich vein of crystal,

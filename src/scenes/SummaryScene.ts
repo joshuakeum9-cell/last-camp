@@ -30,6 +30,8 @@ export interface SummaryData {
   cause?: string;
   /** A pack was left where the player fell. */
   packLeft?: boolean;
+  /** The pact taken that morning, by name. */
+  pact?: string;
   day: number;
   banked: Record<ResourceId, number>;
   bonusNight: Record<ResourceId, number>;
@@ -77,7 +79,9 @@ export class SummaryScene extends Phaser.Scene {
       .setAlpha(0.18)
       .setScale(1.2);
 
-    const title = died ? `DAY ${this.summary.day} SURVIVED` : `DAY ${this.summary.day} COMPLETE`;
+    // A death is not a loss here, but calling it SURVIVED under a line that says
+    // what killed you reads as a mistake. It was cut short; the camp is still there.
+    const title = died ? `DAY ${this.summary.day} CUT SHORT` : `DAY ${this.summary.day} COMPLETE`;
     this.add
       .bitmapText(width / 2, 16, FONT, title)
       .setOrigin(0.5, 0)
@@ -190,7 +194,7 @@ export class SummaryScene extends Phaser.Scene {
 
     // Tomorrow, teased. The one thing that makes a player press Continue instead
     // of closing the tab: knowing that the next day is a different day.
-    const tomorrow = this.summary.reason === 'death' ? state.day + 1 : state.day + 1;
+    const tomorrow = state.day + 1;
     const nextEvent = eventForDay(tomorrow, state.stats.deaths);
     const nextChallenge = CHALLENGES[CHALLENGE_IDS[(tomorrow - 1) % CHALLENGE_IDS.length]];
     const sled = traderToday(tomorrow, nextEvent.id) ? ' The trader is on the road.' : '';
@@ -260,6 +264,7 @@ export class SummaryScene extends Phaser.Scene {
       if (!area?.announce) continue;
       this.staticLine(left, 'New ground', area.name, PAL.gold);
     }
+    if (this.summary.pact) this.staticLine(left, 'You took', this.summary.pact, PAL.gold);
   }
 
   private countUpLine(
@@ -480,7 +485,7 @@ export class SummaryScene extends Phaser.Scene {
     const worn = state.player.cosmetics.title;
     const title = worn && worn !== 'none' && TITLES[worn] ? ` as ${TITLES[worn]}` : '';
     const line = [
-      `LAST CAMP: day ${this.summary.day} ${this.summary.reason === 'death' ? 'survived' : 'complete'}${title}.`,
+      `LAST CAMP: day ${this.summary.day} ${this.summary.reason === 'death' ? 'cut short' : 'complete'}${title}.`,
       `${kills} things killed, ${state.story.notesFound.length}/${NOTE_LIST.length} notes, ${state.meta.streak} day streak.`,
       'https://joshuakeum9-cell.github.io/last-camp/',
     ].join(' ');

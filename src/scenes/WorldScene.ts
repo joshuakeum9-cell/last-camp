@@ -54,6 +54,7 @@ import { WorldMap } from '../ui/WorldMap';
 import { drawFrame } from '../ui/Frame';
 import { WEAPONS, type WeaponId } from '../data/weapons';
 import { activeEvent } from '../data/events';
+import { PACT, PACTS, type PactId } from '../data/pacts';
 import { litFires } from '../systems/EnemyManager';
 import { WINTER, winterActiveCount, winterLootMult } from '../data/winter';
 import { Rng, hashString, subSeed } from '../core/Rng';
@@ -1494,6 +1495,7 @@ export class WorldScene extends Phaser.Scene {
     hud.mapHidden = WINTER.mapHidden();
     const ev = activeEvent(state.run?.event);
     hud.eventName = ev.id === 'clear' ? '' : ev.name.toUpperCase();
+    hud.pactName = PACT.def()?.name.toUpperCase() ?? '';
     hud.playerX = this.player.cx;
     hud.playerY = this.player.cy;
     hud.marks = [
@@ -1796,6 +1798,22 @@ export class WorldScene extends Phaser.Scene {
 
   private endDay(reason: 'return' | 'death'): void {
     if (this.ending) return;
+
+    // Second Wind. The day does not end: you come back up with a third of your
+    // health and a few seconds where nothing can touch you, once.
+    if (reason === 'death' && PACT.hasRevive() && state.run) {
+      state.run.pactUsed = true;
+      const back = Math.max(1, Math.round(ResourceSystem.maxHp() / 3));
+      this.player.heal(back);
+      state.run.hp = this.player.hp;
+      this.player.invulnUntil = this.time.now + 2200;
+      this.cameras.main.flash(300, 255, 255, 255);
+      this.juice.ring(this.player.cx, this.player.cy, PAL.cream, 40);
+      bus.emit('audio:play', { cue: 'rescue' });
+      bus.emit('juice:toast', { text: 'You get up. That was the one you had.', color: PAL.cream });
+      return;
+    }
+
     this.ending = true;
 
     const run = state.run;
@@ -1832,6 +1850,7 @@ export class WorldScene extends Phaser.Scene {
       breakables: run?.breakables ?? 0,
       cause: reason === 'death' ? this.causeOfDeath() : '',
       packLeft: reason === 'death' && !!state.map.deathPack,
+      pact: PACT.def()?.name ?? '',
     };
 
     const fade = reason === 'death' ? 700 : 340;

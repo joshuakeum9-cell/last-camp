@@ -42,6 +42,7 @@ const TIPS: string[] = [
   'Dash through a hit: next hit crits',
   'Night: double loot, double danger',
   'Cold hurts. Fire and food fix it',
+  'Each morning: keep one of three pacts',
   'Gamepad: stick, A hit, B dash, X use, Y eat',
 ];
 

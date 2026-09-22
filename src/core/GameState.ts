@@ -40,6 +40,9 @@ export interface RunState {
   lastHitBy: string;
   /** A boss brought back for the day, for its loot. Null on an ordinary day. */
   rematch: string | null;
+  /** The pact taken this morning, and whether its one-off has been spent. */
+  pact: string | null;
+  pactUsed: boolean;
   hp: number;
   cold: number;
   collected: Record<ResourceId, number>;
@@ -274,6 +277,8 @@ export function newRunState(seed: number, maxHp: number, storm: boolean, event =
     event,
     lastHitBy: '',
     rematch: null,
+    pact: null,
+    pactUsed: false,
     hp: maxHp,
     cold: 0,
     collected: emptyResources(),

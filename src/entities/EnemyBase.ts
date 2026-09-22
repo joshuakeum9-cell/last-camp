@@ -10,6 +10,7 @@ import { Juice } from '../systems/Juice';
 import { FX } from '../art/sprites/fx';
 import { WINTER } from '../data/winter';
 import { litFires } from '../systems/EnemyManager';
+import { PACT } from '../data/pacts';
 import { activeEvent } from '../data/events';
 
 export type EnemyState = 'idle' | 'chase' | 'windup' | 'attack' | 'recover' | 'hurt' | 'dead';
@@ -192,7 +193,7 @@ export class EnemyBase {
       case 'idle': {
         this.body.setVelocity(0, 0);
         // In a whiteout they cannot see you from as far either.
-        const sight = activeEvent(state.run?.event).id === 'whiteout' ? 0.6 : 1;
+        const sight = (activeEvent(state.run?.event).id === 'whiteout' ? 0.6 : 1) * PACT.aggroMult();
         if (dist < this.def.aggroRange * sight) this.enter('chase');
         break;
       }

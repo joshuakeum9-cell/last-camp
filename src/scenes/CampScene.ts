@@ -28,6 +28,7 @@ import { Pup } from '../entities/Pup';
 import { Dialogue } from '../ui/Dialogue';
 import { TouchControls } from '../ui/TouchControls';
 import { MIRA, NOTE_LIST } from '../data/story';
+import { pactHand, type PactId } from '../data/pacts';
 import type { ResourceId } from '../data/resources';
 import { eventForDay } from '../data/events';
 import { traderToday } from '../data/trader';
@@ -76,6 +77,9 @@ export class CampScene extends Phaser.Scene {
     // Scene instances are reused, so anything that changes during a visit starts
     // over here. `leaving` in particular: left true, the portal never fires again.
     this.leaving = false;
+    this.pactPanel = null;
+    this.pactHandToday = [];
+    this.pendingRematch = null;
     this.portalFrame = 0;
     this.stations = [];
     this.mira = null;
@@ -607,6 +611,9 @@ export class CampScene extends Phaser.Scene {
 
   private topicPanel: Phaser.GameObjects.GameObject[] | null = null;
   private rematchPanel: Phaser.GameObjects.GameObject[] | null = null;
+  private pactPanel: Phaser.GameObjects.GameObject[] | null = null;
+  private pactHandToday: PactId[] = [];
+  private pendingRematch: string | null = null;
 
   /** The bosses already beaten, which the trophy can bring back for a day. */
   private rematchList(): Array<{ id: string; name: string; where: string }> {
@@ -769,13 +776,91 @@ export class CampScene extends Phaser.Scene {
     this.scene.bringToTop('Menu');
   }
 
+  /**
+   * The gate out. Three pacts are dealt first, because the last thing that
+   * happens before a day starts should be a decision the player made.
+   */
   private headOut(rematch: string | null = null): void {
+    if (this.leaving || this.pactPanel) return;
+    this.openPacts(rematch);
+  }
+
+  /** Deals the morning's three and waits for 1, 2, 3 or a click. */
+  private openPacts(rematch: string | null): void {
+    this.pendingRematch = rematch;
+    const hand = pactHand(state.day, state.stats.deaths);
+    const { width, height } = BAL.view;
+    const w = 280;
+    const h = 22 + hand.length * 28 + 12;
+    const x = Math.round(width / 2 - w / 2);
+    const y = Math.round(height / 2 - h / 2) + 20;
+    const objects: Phaser.GameObjects.GameObject[] = [];
+    const frame = this.add.graphics().setScrollFactor(0).setDepth(8600);
+    drawFrame(frame, x, y, w, h, { edge: PAL.gold, alpha: 0.96 });
+    objects.push(
+      frame,
+      this.add.bitmapText(x + 8, y + 6, FONT, 'WHAT YOU TAKE').setTint(hex(PAL.gold)).setScrollFactor(0).setDepth(8601),
+      this.add
+        .bitmapText(x + w - 8, y + 6, FONT, 'E steps back')
+        .setOrigin(1, 0)
+        .setTint(hex(PAL.uiMuted))
+        .setScrollFactor(0)
+        .setDepth(8601)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => {
+          this.input.stopPropagation();
+          this.closePacts();
+        }),
+    );
+    hand.forEach((p, i) => {
+      const ry = y + 22 + i * 28;
+      const hit = this.add
+        .rectangle(x + 6, ry - 2, w - 12, 26, hex(PAL.deep))
+        .setOrigin(0)
+        .setAlpha(0.3)
+        .setScrollFactor(0)
+        .setDepth(8601)
+        .setInteractive({ useHandCursor: true });
+      hit.on('pointerdown', () => {
+        this.input.stopPropagation();
+        this.pickPact(i, rematch);
+      });
+      objects.push(
+        hit,
+        this.add.bitmapText(x + 10, ry, FONT, `${i + 1}  ${p.name}`).setTint(hex(PAL.cream)).setScrollFactor(0).setDepth(8602),
+        this.add.bitmapText(x + 10, ry + 9, FONT, p.boon).setTint(hex(PAL.teal)).setScrollFactor(0).setDepth(8602),
+        this.add.bitmapText(x + 10, ry + 18, FONT, p.cost).setTint(hex(PAL.blood)).setScrollFactor(0).setDepth(8602),
+      );
+    });
+    this.pactPanel = objects;
+    this.pactHandToday = hand.map((p) => p.id);
+    bus.emit('audio:play', { cue: 'open' });
+  }
+
+  private pickPact(i: number, rematch: string | null): void {
+    const id = this.pactHandToday[i];
+    if (!id) return;
+    this.closePacts();
+    bus.emit('audio:play', { cue: 'upgrade' });
+    this.leaveCamp(rematch, id);
+  }
+
+  private closePacts(): void {
+    if (!this.pactPanel) return;
+    for (const o of this.pactPanel) o.destroy();
+    this.pactPanel = null;
+  }
+
+  private leaveCamp(rematch: string | null, pact: PactId | null): void {
     if (this.leaving) return;
     this.leaving = true;
 
     const event = eventForDay(state.day, state.stats.deaths);
     state.run = newRunState(Date.now() & 0xffffff, ResourceSystem.maxHp(), event.storm, event.id);
     state.run.rematch = rematch;
+    state.run.pact = pact;
+    // The pact can change what full health means, so fill up after taking it.
+    state.run.hp = ResourceSystem.maxHp();
     SaveSystem.save();
     bus.emit('day:started', { day: state.day });
     bus.emit('audio:play', { cue: 'portal' });
@@ -833,6 +918,13 @@ export class CampScene extends Phaser.Scene {
     if (this.dialogue.isOpen) {
       this.prompt.hide();
       if (input.interactPressed) this.dialogue.advance();
+      return;
+    }
+
+    if (this.pactPanel) {
+      this.prompt.hide();
+      if (input.slotPressed) this.pickPact(input.slotPressed - 1, this.pendingRematch);
+      else if (input.interactPressed) this.closePacts();
       return;
     }
 

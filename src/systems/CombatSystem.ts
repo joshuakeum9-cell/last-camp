@@ -9,6 +9,7 @@ import type { Boss, BossHitbox } from '../entities/Boss';
 import type { Player } from '../entities/Player';
 import type { SwingShape, WeaponDef } from '../data/weapons';
 import { UPGRADES } from '../data/upgrades';
+import { PACT } from '../data/pacts';
 import type { Juice } from './Juice';
 import { PAL } from '../art/palette';
 
@@ -71,7 +72,7 @@ export class CombatSystem {
   damageMultiplier(): number {
     let mult = 1 + 0.05 * (state.player.perks.sharpedge ?? 0);
     if (state.camp.upgrades.trophy) mult += UPGRADES.trophy.effects.damageMult ?? 0;
-    return mult;
+    return mult * PACT.damageMult();
   }
 
   /** The player swings. Returns what it connected with, for combo and feedback. */

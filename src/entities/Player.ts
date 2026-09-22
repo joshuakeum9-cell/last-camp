@@ -6,6 +6,7 @@ import type { InputState } from '../core/InputSystem';
 import { playerKeyFor, type Facing } from '../art/sprites/player';
 import { FX } from '../art/sprites/fx';
 import { hex, PAL } from '../art/palette';
+import { PACT } from '../data/pacts';
 
 type Action = 'idle' | 'walk' | 'dash' | 'attack' | 'hurt';
 
@@ -120,8 +121,9 @@ export class Player {
   }
 
   private steer(input: InputState, seconds: number): void {
-    const targetX = input.moveX * BAL.player.speed;
-    const targetY = input.moveY * BAL.player.speed;
+    const pace = BAL.player.speed * PACT.speedMult();
+    const targetX = input.moveX * pace;
+    const targetY = input.moveY * pace;
     const time = input.moving ? BAL.player.accelTime : BAL.player.stopTime;
     // Exponential approach: frame-rate independent and reaches full speed in a few frames.
     const t = 1 - Math.exp(-seconds / Math.max(0.001, time));
@@ -299,6 +301,7 @@ export class Player {
     const now = this.scene.time.now;
     if (this.isInvulnerable || this.hp <= 0) return false;
 
+    amount = Math.max(1, Math.round(amount * PACT.damageTakenMult()));
     this.hp = Math.max(0, this.hp - amount);
     this.invulnUntil = now + BAL.player.invulnAfterHit * 1000;
     this.hurtUntil = now + 180;
