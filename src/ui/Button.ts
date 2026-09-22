@@ -25,6 +25,7 @@ export class Button {
   private opts: Required<ButtonOptions>;
   private enabled: boolean;
   private hovered = false;
+  private focused = false;
 
   constructor(
     private scene: Phaser.Scene,
@@ -88,6 +89,18 @@ export class Button {
     this.refresh();
   }
 
+  /** The keyboard or gamepad cursor is on this button. Drawn like a hover, plus a lit edge. */
+  setFocused(on: boolean): void {
+    this.focused = on;
+    this.refresh();
+  }
+
+  /** Press it, from a key or a pad. */
+  activate(): void {
+    if (!this.enabled) return;
+    this.onClick();
+  }
+
   private refresh(): void {
     if (!this.enabled) {
       this.bg.setFillStyle(hex(PAL.navy));
@@ -95,9 +108,10 @@ export class Button {
       this.label.setTint(hex(PAL.uiMuted));
       return;
     }
-    this.bg.setFillStyle(hex(this.hovered ? this.opts.fillHover : this.opts.fill));
-    this.border.setStrokeStyle(1, hex(this.hovered ? PAL.white : this.opts.border));
-    this.label.setTint(hex(this.hovered ? this.opts.textHover : this.opts.textColor));
+    const lit = this.hovered || this.focused;
+    this.bg.setFillStyle(hex(lit ? this.opts.fillHover : this.opts.fill));
+    this.border.setStrokeStyle(this.focused ? 2 : 1, hex(lit ? PAL.white : this.opts.border));
+    this.label.setTint(hex(lit ? this.opts.textHover : this.opts.textColor));
   }
 
   setText(text: string): this {

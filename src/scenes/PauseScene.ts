@@ -5,12 +5,14 @@ import { Button } from '../ui/Button';
 import { FONT } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
 import { makeFrame } from '../ui/Frame';
+import { FocusNav } from '../ui/Focus';
 
 /**
  * The pause menu, over a frozen expedition. Resume, settings, or save and leave
  * for the title. Leaving keeps the run: Continue picks it up out here.
  */
 export class PauseScene extends Phaser.Scene {
+  private nav?: FocusNav;
   constructor() {
     super('Pause');
   }
@@ -30,16 +32,17 @@ export class PauseScene extends Phaser.Scene {
     const bw = 124;
     const bx = Math.round(width / 2 - bw / 2);
     let by = 80;
+    const buttons: Button[] = [];
 
-    new Button(
+    buttons.push(new Button(
       this,
       bx,
       by,
       { width: bw, height: 20, text: 'RESUME', fill: PAL.rust, fillHover: PAL.ember, border: PAL.gold, textColor: PAL.cream },
       () => this.resumeWorld(),
-    );
+    ));
     by += 24;
-    new Button(
+    buttons.push(new Button(
       this,
       bx,
       by,
@@ -49,9 +52,9 @@ export class PauseScene extends Phaser.Scene {
         this.scene.launch('Controls', { next: 'World' });
         this.scene.bringToTop('Controls');
       },
-    );
+    ));
     by += 24;
-    new Button(
+    buttons.push(new Button(
       this,
       bx,
       by,
@@ -61,9 +64,9 @@ export class PauseScene extends Phaser.Scene {
         this.scene.launch('Settings', { returnTo: 'World' });
         this.scene.bringToTop('Settings');
       },
-    );
+    ));
     by += 24;
-    new Button(
+    buttons.push(new Button(
       this,
       bx,
       by,
@@ -75,14 +78,19 @@ export class PauseScene extends Phaser.Scene {
         this.scene.stop();
         this.scene.start('Title');
       },
-    );
+    ));
+    this.nav = new FocusNav(this, buttons, { onBack: () => this.resumeWorld() });
 
     this.add
       .bitmapText(Math.round(width / 2), by + 30, FONT, 'The day is saved. Continue picks it up right here.')
       .setOrigin(0.5, 0)
       .setTint(hex(PAL.uiMuted));
 
-    this.input.keyboard?.once('keydown-ESC', () => this.resumeWorld());
+    // ESC is handled by the navigator's onBack.
+  }
+
+  update(): void {
+    this.nav?.update();
   }
 
   private resumeWorld(): void {

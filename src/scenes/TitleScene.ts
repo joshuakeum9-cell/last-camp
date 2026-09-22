@@ -3,6 +3,7 @@ import { BAL } from '../data/balance';
 import { FONT, textWidth } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
 import { Button } from '../ui/Button';
+import { FocusNav } from '../ui/Focus';
 import { Weather } from '../systems/Weather';
 import { SaveSystem } from '../core/SaveSystem';
 import { state } from '../core/GameState';
@@ -12,6 +13,7 @@ import { campfireKey, CAMP_KEYS } from '../art/sprites/camp';
 import { DIFFICULTY_LIST, activeDifficulty } from '../data/difficulty';
 
 export class TitleScene extends Phaser.Scene {
+  private nav?: FocusNav;
   private weather!: Weather;
 
   constructor() {
@@ -136,14 +138,15 @@ export class TitleScene extends Phaser.Scene {
     const bx = Math.round(width / 2 - bw / 2);
     let by = 92;
 
+    const buttons: Button[] = [];
     if (hasSave) {
-      new Button(
+      buttons.push(new Button(
         this,
         bx,
         by,
         { width: bw, height: 20, text: `CONTINUE  DAY ${state.day}`, fill: PAL.rust, fillHover: PAL.ember, border: PAL.gold, textColor: PAL.cream },
         () => this.start(),
-      ).setDepth(600);
+      ).setDepth(600));
       if (state.meta.streak >= 2) {
         this.add
           .bitmapText(Math.round(width / 2) + bw / 2 + 6, by + 6, FONT, `${state.meta.streak} days running`)
@@ -154,7 +157,7 @@ export class TitleScene extends Phaser.Scene {
       by += 26;
     }
 
-    new Button(
+    buttons.push(new Button(
       this,
       bx,
       by,
@@ -168,9 +171,9 @@ export class TitleScene extends Phaser.Scene {
         this.weather.destroy();
         this.scene.start('Controls', { next: 'Camp', first: true });
       },
-    ).setDepth(600);
+    ).setDepth(600));
 
-    new Button(
+    buttons.push(new Button(
       this,
       bx,
       by + 26,
@@ -179,7 +182,7 @@ export class TitleScene extends Phaser.Scene {
         this.weather.destroy();
         this.scene.start('Settings', { returnTo: 'Title' });
       },
-    ).setDepth(600);
+    ).setDepth(600));
 
     // After the tower: the winter can be played again, harder, with everything
     // learned kept. It sits beside Settings so it never crowds a first-timer.
@@ -197,6 +200,7 @@ export class TitleScene extends Phaser.Scene {
       ).setDepth(600);
     }
 
+    this.nav = new FocusNav(this, buttons);
     this.buildDifficultyRow(by + 72);
 
     new Button(
@@ -219,7 +223,7 @@ export class TitleScene extends Phaser.Scene {
 
     void textWidth;
 
-    this.input.keyboard?.once('keydown-ENTER', () => this.start());
+    // Enter is handled by the navigator.
   }
 
   /**
@@ -336,6 +340,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
+    this.nav?.update();
     this.weather.update(delta, 0.25);
   }
 }

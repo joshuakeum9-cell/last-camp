@@ -13,6 +13,7 @@ import { RESOURCES, RESOURCE_IDS, CONSUMABLES, type ResourceId } from '../data/r
 import { BRANCHES, REINFORCE_COST, WEAPONS, type WeaponId } from '../data/weapons';
 import { RowList, type RowSpec } from '../ui/Panel';
 import { makeFrame } from '../ui/Frame';
+import { FocusNav, type Focusable } from '../ui/Focus';
 import { Button } from '../ui/Button';
 import { FONT } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
@@ -67,6 +68,7 @@ export class MenuScene extends Phaser.Scene {
   private tab: Tab = 'camp';
   private list!: RowList;
   private tabButtons: Button[] = [];
+  private nav?: FocusNav;
   private resourceLabels = new Map<ResourceId, Phaser.GameObjects.BitmapText>();
   private subtitle!: Phaser.GameObjects.BitmapText;
   private titleLabel!: Phaser.GameObjects.BitmapText;
@@ -103,6 +105,7 @@ export class MenuScene extends Phaser.Scene {
 
     this.list = new RowList(this, 18, 58, width - 36, height - 82);
     this.refresh();
+    this.bindNav();
 
     new Button(
       this,
@@ -167,9 +170,39 @@ export class MenuScene extends Phaser.Scene {
     }
   }
 
-  private cycleTab(): void {
+  /**
+   * Up and down walk the rows, Enter presses one, left and right (or the bumpers)
+   * change tab, Escape or B closes. Rows are wrapped as focusables over the list.
+   */
+  private bindNav(): void {
+    const items: Focusable[] = [];
+    for (let i = 0; i < this.list.count; i++) {
+      items.push({
+        setFocused: (on) => {
+          if (on) this.list.focusRow(i);
+        },
+        activate: () => {
+          this.list.activateRow(i);
+        },
+      });
+    }
+    this.nav = new FocusNav(this, items, {
+      onLeft: () => this.cycleTab(-1),
+      onRight: () => this.cycleTab(1),
+      onBack: () => this.close(),
+      wrap: true,
+    });
+  }
+
+  update(): void {
+    this.nav?.update();
+  }
+
+  private cycleTab(dir = 1): void {
     const i = TABS.findIndex((t) => t.id === this.tab);
-    this.scene.restart({ tab: TABS[(i + 1) % TABS.length].id });
+    const next = TABS[(i + dir + TABS.length) % TABS.length];
+    this.tab = next.id;
+    this.scene.restart({ tab: next.id });
   }
 
   // --- content -----------------------------------------------------------

@@ -32,6 +32,9 @@ export class RowList {
   private scrollY = 0;
   private contentHeight = 0;
   private mask?: Phaser.Display.Masks.GeometryMask;
+  private specs: RowSpec[] = [];
+  private cursor: Phaser.GameObjects.Rectangle | null = null;
+  private focusIndex = -1;
 
   constructor(
     private scene: Phaser.Scene,
@@ -63,6 +66,8 @@ export class RowList {
     this.container.removeAll(false);
     this.scrollY = 0;
     this.container.y = this.y;
+    this.specs = specs;
+    this.cursor = null;
 
     let y = 0;
     for (const spec of specs) {
@@ -72,6 +77,43 @@ export class RowList {
       y += spec.blockedBy ? 34 : 26;
     }
     this.contentHeight = y;
+  }
+
+  /** How many rows there are, for a navigator. */
+  get count(): number {
+    return this.rows.length;
+  }
+
+  /** Light the row at `i` and scroll it into view. -1 clears. */
+  focusRow(i: number): void {
+    this.cursor?.destroy();
+    this.cursor = null;
+    this.focusIndex = i;
+    const row = this.rows[i];
+    if (!row) return;
+    const h = this.specs[i]?.blockedBy ? 32 : 24;
+    this.cursor = this.scene.add
+      .rectangle(0, 0, this.width, h)
+      .setOrigin(0)
+      .setStrokeStyle(2, hex(PAL.white), 0.95);
+    row.add(this.cursor);
+    // Keep it on screen.
+    const top = row.y;
+    const bottom = row.y + h;
+    if (top < this.scrollY) this.scrollY = top;
+    else if (bottom > this.scrollY + this.height) this.scrollY = bottom - this.height;
+    this.scrollY = Phaser.Math.Clamp(this.scrollY, 0, Math.max(0, this.contentHeight - this.height));
+    this.container.y = this.y - this.scrollY;
+  }
+
+  /** Press the focused row, if it can be pressed. */
+  activateRow(i: number): void {
+    const spec = this.specs[i];
+    if (spec?.onClick) spec.onClick();
+  }
+
+  get focused(): number {
+    return this.focusIndex;
   }
 
   private buildRow(spec: RowSpec, y: number): Phaser.GameObjects.Container {

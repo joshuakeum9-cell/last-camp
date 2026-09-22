@@ -9,6 +9,7 @@ import { DIFFICULTY_IDS, activeDifficulty } from '../data/difficulty';
 import { FONT } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
 import { makeFrame } from '../ui/Frame';
+import { FocusNav, type Focusable } from '../ui/Focus';
 
 interface Row {
   label: string;
@@ -23,6 +24,8 @@ interface Row {
  * kind of intensity without taking information away.
  */
 export class SettingsScene extends Phaser.Scene {
+  private focusables: Focusable[] = [];
+  private nav?: FocusNav;
   private rows: Row[] = [];
   private values: Phaser.GameObjects.BitmapText[] = [];
   private returnTo = 'Title';
@@ -37,6 +40,7 @@ export class SettingsScene extends Phaser.Scene {
     this.returnTo = data?.returnTo ?? 'Title';
     this.confirmingRestore = !!data?.confirming;
     this.values = [];
+    this.focusables = [];
   }
 
   create(): void {
@@ -69,6 +73,14 @@ export class SettingsScene extends Phaser.Scene {
         bus.emit('settings:changed', { key: row.label });
         this.refresh();
       });
+      this.focusables.push({
+        setFocused: (on) => hit.setAlpha(on ? 0.35 : 0.001),
+        activate: () => {
+          row.cycle();
+          bus.emit('settings:changed', { key: row.label });
+          this.refresh();
+        },
+      });
 
       void label;
       void i;
@@ -76,6 +88,11 @@ export class SettingsScene extends Phaser.Scene {
     });
 
     this.buildSaveFileSection(y + 2);
+    this.nav = new FocusNav(this, this.focusables, {
+      onRight: () => this.nav?.press(),
+      onLeft: () => this.nav?.press(),
+      onBack: () => this.leave(),
+    });
 
     new Button(
       this,
@@ -258,6 +275,10 @@ export class SettingsScene extends Phaser.Scene {
   private refresh(): void {
     this.rows.forEach((row, i) => this.values[i]?.setText(row.get()));
     SaveSystem.save();
+  }
+
+  update(): void {
+    this.nav?.update();
   }
 
   private leave(): void {
