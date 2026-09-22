@@ -46,11 +46,24 @@ export class Juice {
     if (this.scene.physics?.world) this.scene.physics.world.timeScale = 1 / BAL.combat.hitstopScale;
     this.scene.tweens.timeScale = BAL.combat.hitstopScale;
 
-    // Use the real clock so the freeze ends even though the scene clock is slowed.
+    this.armHitstopEnd(ms);
+  }
+
+  /**
+   * Timers run on the slowed clock, so the delay is scaled down to land at the right
+   * real moment. If it lands early (a flurry extended the freeze, or a long frame
+   * rounded the maths), it re-arms for the remainder rather than giving up, because a
+   * scene left at five percent speed is a frozen game.
+   */
+  private armHitstopEnd(ms: number): void {
     this.scene.time.delayedCall(
-      ms * BAL.combat.hitstopScale,
+      Math.max(1, ms * BAL.combat.hitstopScale),
       () => {
-        if (this.scene.time.now < this.hitstopUntil - 1) return;
+        const remaining = this.hitstopUntil - this.scene.time.now;
+        if (remaining > 1) {
+          this.armHitstopEnd(remaining);
+          return;
+        }
         this.scene.time.timeScale = 1;
         if (this.scene.physics?.world) this.scene.physics.world.timeScale = 1;
         this.scene.tweens.timeScale = 1;

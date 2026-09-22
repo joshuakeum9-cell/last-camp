@@ -63,6 +63,8 @@ export interface GameEvents {
   'audio:music': { cue: string | null };
 
   'settings:changed': { key: string };
+  /** A hotbar slot was tapped or clicked: 0 and 1 are weapons, 2 is food. */
+  'hud:slot': { slot: number };
 }
 
 export type EventName = keyof GameEvents;

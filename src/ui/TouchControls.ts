@@ -44,9 +44,7 @@ export class TouchControls {
   }
 
   private shouldShow(): boolean {
-    if (state.settings.showTouch === 'on') return true;
-    if (state.settings.showTouch === 'off') return false;
-    return this.scene.sys.game.device.input.touch;
+    return touchControlsWanted(this.scene);
   }
 
   private build(): void {
@@ -224,4 +222,11 @@ export class TouchControls {
       btn.label.destroy();
     }
   }
+}
+
+/** Whether the on-screen controls are shown, per the setting or, on auto, the device. */
+export function touchControlsWanted(scene: Phaser.Scene): boolean {
+  if (state.settings.showTouch === 'on') return true;
+  if (state.settings.showTouch === 'off') return false;
+  return scene.sys.game.device.input.touch;
 }

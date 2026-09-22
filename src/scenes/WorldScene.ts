@@ -189,6 +189,13 @@ export class WorldScene extends Phaser.Scene {
 
     this.subs.add(bus.on('settings:changed', () => this.touch.refreshSettings()));
     this.subs.add(bus.on('player:died', () => this.endDay('death')));
+    this.subs.add(
+      bus.on('hud:slot', ({ slot }) => {
+        if (this.ending || this.dialogue.isOpen) return;
+        if (slot === 2) this.eat();
+        else this.weapons.select((slot + 1) as 1 | 2);
+      }),
+    );
     this.subs.add(bus.on('enemy:killed', (e) => this.onEnemyKilled(e.type, e.x, e.y)));
     this.subs.add(bus.on('boss:defeated', () => this.onBossDefeated()));
     this.subs.add(bus.on('player:hit', ({ damage }) => {

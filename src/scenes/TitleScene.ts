@@ -128,7 +128,10 @@ export class TitleScene extends Phaser.Scene {
       by,
       { width: bw, height: 20, text: hasSave ? 'NEW CAMP' : 'BEGIN' },
       () => {
-        if (hasSave && !confirm('Start over? Your camp and everything in it will be lost.')) return;
+        if (hasSave) {
+          this.confirmNewCamp();
+          return;
+        }
         SaveSystem.reset();
         this.start();
       },
@@ -217,9 +220,72 @@ export class TitleScene extends Phaser.Scene {
       .setDepth(600);
   }
 
+  /**
+   * Starting over throws away a camp, so it asks first, in the game's own style
+   * rather than a browser popup that looks like an error and stalls audio on phones.
+   */
+  private confirmNewCamp(): void {
+    const { width, height } = BAL.view;
+    const cx = Math.round(width / 2);
+    const cy = Math.round(height / 2);
+    const parts: Array<{ destroy(): void }> = [];
+
+    const shade = this.add
+      .rectangle(0, 0, width, height, hex(PAL.black))
+      .setOrigin(0)
+      .setAlpha(0.7)
+      .setDepth(700)
+      .setInteractive();
+    parts.push(shade);
+
+    const panel = this.add
+      .rectangle(cx, cy, 196, 70, hex(PAL.navy))
+      .setStrokeStyle(1, hex(PAL.gold))
+      .setDepth(701);
+    parts.push(panel);
+
+    const title = this.add
+      .bitmapText(cx, cy - 26, FONT, 'START OVER?')
+      .setOrigin(0.5, 0)
+      .setTint(hex(PAL.gold))
+      .setDepth(702);
+    const line = this.add
+      .bitmapText(cx, cy - 12, FONT, `Day ${state.day} and everything built will be lost.`)
+      .setOrigin(0.5, 0)
+      .setTint(hex(PAL.cream))
+      .setDepth(702);
+    parts.push(title, line);
+
+    const close = () => parts.forEach((p) => p.destroy());
+    parts.push(
+      new Button(
+        this,
+        cx - 90,
+        cy + 8,
+        { width: 86, height: 18, text: 'KEEP CAMP', fill: PAL.deep, border: PAL.cyan, textColor: PAL.white },
+        close,
+      ).setDepth(703),
+      new Button(
+        this,
+        cx + 4,
+        cy + 8,
+        { width: 86, height: 18, text: 'START OVER', fill: PAL.rust, fillHover: PAL.ember, border: PAL.gold, textColor: PAL.cream },
+        () => {
+          close();
+          SaveSystem.reset();
+          this.start();
+        },
+      ).setDepth(703),
+    );
+  }
+
   private start(): void {
     this.weather.destroy();
-    this.scene.start('Camp');
+    // A run saved mid-expedition resumes out there, with what was carried. Going
+    // through camp would wipe it, and the architecture promises a backgrounded tab
+    // picks up where it left off.
+    const resuming = !!state.run && state.run.timeSec > 0;
+    this.scene.start(resuming ? 'World' : 'Camp');
   }
 
   update(_time: number, delta: number): void {

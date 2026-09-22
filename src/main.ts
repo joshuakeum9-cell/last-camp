@@ -78,12 +78,21 @@ try {
     },
     /** Force N frames, so a stuck fade or tween completes without window focus. */
     step(frames = 60, dt = 16.7) {
-      let t = performance.now();
+      // Continue from wherever the clock already is, so synthetic frames never run
+      // behind real ones and hand the scene clocks a negative delta.
+      let t = Math.max(performance.now(), game.loop.time);
       for (let i = 0; i < frames; i++) {
         t += dt;
         game.loop.step(t);
       }
       return game.loop.frame;
+    },
+    /** Stop the browser's own frame loop, so `step` is the only thing advancing time. */
+    pause() {
+      game.loop.stop();
+    },
+    resume() {
+      game.loop.start(game.step.bind(game));
     },
     skipFades() {
       for (const s of game.scene.scenes) {

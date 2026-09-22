@@ -104,6 +104,17 @@ export class CampScene extends Phaser.Scene {
 
     this.touch = new TouchControls(this);
     this.subs.add(bus.on('settings:changed', () => this.touch.refreshSettings()));
+    this.subs.add(
+      bus.on('hud:slot', ({ slot }) => {
+        if (slot === 2) {
+          this.juice.floatText(this.player.cx, this.player.sprite.y - 24, 'Save it for the trail', PAL.grey);
+          return;
+        }
+        if (!state.player.equipped[slot] || state.player.activeSlot === slot) return;
+        state.player.activeSlot = slot as 0 | 1;
+        bus.emit('audio:play', { cue: 'swap' });
+      }),
+    );
 
     if (!this.scene.isActive('HUD')) this.scene.launch('HUD');
     this.scene.bringToTop('HUD');

@@ -12,6 +12,7 @@ import { RESOURCE_ICON } from '../art/sprites/icons';
 import { WEAPON_ICON_KEY } from '../art/sprites/weapons';
 import { ResourceSystem } from '../systems/ResourceSystem';
 import { FX } from '../art/sprites/fx';
+import { touchControlsWanted } from '../ui/TouchControls';
 
 /**
  * The overlay. During an expedition it shows only what the player must act on:
@@ -95,14 +96,13 @@ export class HUDScene extends Phaser.Scene {
     }).setScrollFactor(0);
 
     // --- weapon and dash, bottom right -----------------------------------
-    this.buildHotbar();
-
     // The weapon's name sits just above its slot, so the icon never has to be
-    // guessed at.
+    // guessed at. The hotbar moves it if the bar is not in the corner.
     this.weaponLabel = new Label(this, width - 6, BAL.view.height - 38, 'RUSTED AXE', {
       color: PAL.steel,
       originX: 1,
     }).setScrollFactor(0);
+    this.buildHotbar();
 
     const pip = this.add
       .rectangle(width - 6, BAL.view.height - 43, 8, 3, hex(PAL.cyan))
@@ -126,6 +126,11 @@ export class HUDScene extends Phaser.Scene {
     this.buildResourceRows();
 
     this.subs.add(bus.on('juice:toast', ({ text, color }) => this.toast(text, color)));
+    this.subs.add(
+      bus.on('settings:changed', ({ key }) => {
+        if (key === 'showTouch') this.scene.restart();
+      }),
+    );
     this.events.once('shutdown', () => this.subs.dispose());
   }
 
@@ -140,8 +145,12 @@ export class HUDScene extends Phaser.Scene {
     const gap = 3;
     const count = 3;
     const totalW = count * size + (count - 1) * gap;
-    const x0 = width - 4 - totalW;
+    // With on-screen buttons in the bottom right corner, the bar sits bottom centre
+    // instead, between the stick and the buttons, where a thumb can still reach it.
+    const touch = touchControlsWanted(this);
+    const x0 = touch ? Math.round(width / 2 - totalW / 2) : width - 4 - totalW;
     const y = height - 4 - size;
+    this.weaponLabel.container.x = touch ? x0 + totalW : width - 6;
 
     this.add
       .rectangle(x0 - 3, y - 3, totalW + 6, size + 6, hex(PAL.black))
@@ -158,7 +167,15 @@ export class HUDScene extends Phaser.Scene {
         .setOrigin(0)
         .setAlpha(0.9)
         .setStrokeStyle(1, hex(PAL.greyDark))
-        .setScrollFactor(0);
+        .setScrollFactor(0)
+        .setInteractive({ useHandCursor: true });
+      // Tapping a slot is the same as pressing its key. The event stops here so the
+      // scene underneath does not also read the tap as an attack.
+      const slot = i;
+      frame.on('pointerdown', () => {
+        this.input.stopPropagation();
+        bus.emit('hud:slot', { slot });
+      });
       const icon = this.add
         .image(x + size / 2, y + size / 2, 'fx-dot1')
         .setScale(1.6)
