@@ -1183,7 +1183,7 @@ export class WorldScene extends Phaser.Scene {
     }
     if (input.mapPressed && !WINTER.mapHidden()) this.worldMap.toggle();
     if (input.mapPressed && WINTER.mapHidden()) bus.emit('juice:toast', { text: 'No map this winter.', color: PAL.grey });
-    this.worldMap.update(this.player.cx, this.player.cy);
+    this.worldMap.update(this.player.cx, this.player.cy, hud.marks);
     if (input.swapPressed) this.weapons.swap();
     if (input.slotPressed && this.tradePanel) this.acceptTrade(input.slotPressed - 1);
     else if (input.slotPressed === 1 || input.slotPressed === 2) this.weapons.select(input.slotPressed);

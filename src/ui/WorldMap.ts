@@ -92,9 +92,21 @@ export class WorldMap {
     this.container.setVisible(false);
   }
 
+  private markDots?: Phaser.GameObjects.Graphics;
+
   /** Called every frame while open, with the player's position in world pixels. */
-  update(playerX: number, playerY: number): void {
+  update(playerX: number, playerY: number, marks: Array<{ x: number; y: number; color: string }> = []): void {
     if (!this.container.visible) return;
+    if (!this.markDots) {
+      this.markDots = this.scene.add.graphics();
+      this.container.addAt(this.markDots, this.container.list.indexOf(this.campDot));
+    }
+    const g = this.markDots;
+    g.clear();
+    for (const m of marks) {
+      g.fillStyle(hex(m.color), 1);
+      g.fillRect(this.ox + (m.x / TILE_SIZE) * SCALE - 2, this.oy + (m.y / TILE_SIZE) * SCALE - 2, 4, 4);
+    }
     this.playerDot.setPosition(
       this.ox + (playerX / TILE_SIZE) * SCALE,
       this.oy + (playerY / TILE_SIZE) * SCALE,

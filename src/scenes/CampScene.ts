@@ -22,6 +22,7 @@ import { Rng } from '../core/Rng';
 import { hud, resetHud } from '../core/HudState';
 import { Label } from '../ui/Label';
 import { Prompt } from '../ui/Prompt';
+import { drawFrame } from '../ui/Frame';
 import { NPCMira } from '../entities/NPCMira';
 import { Dialogue } from '../ui/Dialogue';
 import { TouchControls } from '../ui/TouchControls';
@@ -505,7 +506,9 @@ export class CampScene extends Phaser.Scene {
       case 'mira':
         if (this.mira) {
           const lines = this.mira.interact();
-          if (lines.length) this.dialogue.show(lines, 'Mira', undefined, 'npc-mira');
+          // Her greeting first; the things worth asking come after it.
+          if (lines.length) this.dialogue.show(lines, 'Mira', () => this.openTopics(), 'npc-mira');
+          else this.openTopics();
         }
         break;
 
@@ -581,6 +584,73 @@ export class CampScene extends Phaser.Scene {
       bus.emit('audio:play', { cue: 'cache' });
       this.juice.sparks(this.fireX, this.fireY - 10, PAL.gold, 12, 90);
     });
+  }
+
+  private topicPanel: Phaser.GameObjects.GameObject[] | null = null;
+
+  /** Which of her topics are open right now, in order. */
+  private openTopicList(): Array<{ id: string; label: string; lines: string[] }> {
+    const st = state;
+    const gates: Record<string, boolean> = {
+      her: true,
+      eleven: st.story.notesFound.includes('cabin') || st.story.rangerTold,
+      collar: st.story.notesFound.includes('collar') || st.bosses.mawDefeated,
+      tower: st.story.towerOpen || st.story.ending !== null || st.bosses.stagDefeated,
+    };
+    return MIRA.topics.filter((t) => gates[t.id]);
+  }
+
+  /**
+   * A short list of things to ask her. 1, 2, 3 or a click picks one; E or walking
+   * off closes it. Topics open as the story does, so there is a reason to come
+   * back and talk after every big thing.
+   */
+  private openTopics(): void {
+    const topics = this.openTopicList();
+    if (topics.length === 0 || this.topicPanel) return;
+    const { width, height } = BAL.view;
+    const w = 220;
+    const h = 20 + topics.length * 14 + 10;
+    const x = Math.round(width / 2 - w / 2);
+    const y = Math.round(height / 2 - h / 2) + 30;
+    const objects: Phaser.GameObjects.GameObject[] = [];
+    const frame = this.add.graphics().setScrollFactor(0).setDepth(8600);
+    drawFrame(frame, x, y, w, h, { edge: PAL.teal, alpha: 0.96 });
+    objects.push(
+      frame,
+      this.add.bitmapText(x + 8, y + 6, FONT, 'ASK MIRA').setTint(hex(PAL.teal)).setScrollFactor(0).setDepth(8601),
+      this.add.bitmapText(x + w - 8, y + 6, FONT, 'E closes').setOrigin(1, 0).setTint(hex(PAL.uiMuted)).setScrollFactor(0).setDepth(8601),
+    );
+    topics.forEach((t, i) => {
+      const ry = y + 20 + i * 14;
+      const hit = this.add
+        .rectangle(x + 6, ry - 2, w - 12, 13, hex(PAL.deep))
+        .setOrigin(0)
+        .setAlpha(0.3)
+        .setScrollFactor(0)
+        .setDepth(8601)
+        .setInteractive({ useHandCursor: true });
+      hit.on('pointerdown', () => {
+        this.input.stopPropagation();
+        this.pickTopic(i);
+      });
+      objects.push(hit, this.add.bitmapText(x + 10, ry, FONT, `${i + 1}  ${t.label}`).setTint(hex(PAL.cream)).setScrollFactor(0).setDepth(8602));
+    });
+    this.topicPanel = objects;
+  }
+
+  private pickTopic(i: number): void {
+    const topics = this.openTopicList();
+    const t = topics[i];
+    this.closeTopics();
+    if (!t) return;
+    this.dialogue.show(t.lines, 'Mira', undefined, 'npc-mira');
+  }
+
+  private closeTopics(): void {
+    if (!this.topicPanel) return;
+    for (const o of this.topicPanel) o.destroy();
+    this.topicPanel = null;
   }
 
   /** The journal: what has been found, and how much has not. */
@@ -672,6 +742,14 @@ export class CampScene extends Phaser.Scene {
     if (this.dialogue.isOpen) {
       this.prompt.hide();
       if (input.interactPressed) this.dialogue.advance();
+      return;
+    }
+
+    if (this.topicPanel) {
+      this.prompt.hide();
+      if (input.slotPressed) this.pickTopic(input.slotPressed - 1);
+      else if (input.interactPressed) this.closeTopics();
+      else if (!this.mira || Phaser.Math.Distance.Between(this.player.cx, this.player.cy, this.mira.cx, this.mira.cy) > 40) this.closeTopics();
       return;
     }
 

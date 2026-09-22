@@ -140,6 +140,52 @@ export const MIRA = {
     'Noise, and under the noise, nothing.',
     'Mira taps the dial. Something between here and there is still in the way, she says.',
   ],
+  /**
+   * Things the player can ask her at camp. Each opens once its condition holds,
+   * and each answer is four lines that say a little more than the notes do.
+   */
+  topics: [
+    {
+      id: 'her',
+      label: 'About you',
+      lines: [
+        'Mechanic. The kind that fixes generators in places nobody visits.',
+        'They hired me to keep the tower fed. I never went up. Nobody who kept it fed went up.',
+        'When the cold started I was in the cabin with the ranger and ten others.',
+        'I am the one who did not walk toward it. Make of that what you want.',
+      ],
+    },
+    {
+      id: 'eleven',
+      label: 'The eleven',
+      lines: [
+        'They left on the first clear morning. Coats, packs, the good lantern.',
+        'The ranger stayed. He said somebody had to keep the light on.',
+        'They came back nine days later. They did not come back as people.',
+        'He tied me up so they would have a reason to keep coming home. That was his word. Home.',
+      ],
+    },
+    {
+      id: 'collar',
+      label: 'The collar',
+      lines: [
+        'Subject 6. There was a Subject 1 through 5. They did not make it to a collar.',
+        'It was kept in a pen under the tower. Warm in there. Everything up there is warm.',
+        'Somebody cut the strap. Not chewed. Cut. I have thought about who for a long time.',
+        'If it was the ranger, it was the kindest thing he ever did, and I still hate him for it.',
+      ],
+    },
+    {
+      id: 'tower',
+      label: 'The tower',
+      lines: [
+        'It is not a radio tower. It never was. The dish is for show.',
+        'It pulls the warmth in. Out of the ground, the air, the animals. Us.',
+        'The people who built it thought they could hold a winter in one place and study it.',
+        'The stair is on the outside. Two hundred steps. I counted, years ago, and came back down.',
+      ],
+    },
+  ],
   /** When she is coming along. */
   follows: 'I am coming with you today. Do not walk faster than I can.',
   /** After the tower. */
