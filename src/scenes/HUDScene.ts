@@ -59,6 +59,7 @@ export class HUDScene extends Phaser.Scene {
   private objective!: Label;
   private objectiveTag!: Phaser.GameObjects.BitmapText;
   private hurtWash!: Phaser.GameObjects.Image;
+  private eventLabel!: Label;
 
   constructor() {
     super('HUD');
@@ -124,6 +125,9 @@ export class HUDScene extends Phaser.Scene {
       color: PAL.cyan,
       originX: 0.5,
     }).setScrollFactor(0);
+    // The day's event, beside the dial, so a wolf moon is on screen all day.
+    this.eventLabel = new Label(this, Math.round(width / 2) + 20, 8, '', { color: PAL.gold, outline: 'shadow' })
+      .setScrollFactor(0);
 
     // --- boss bar, top centre, only in a fight ----------------------------
     const bossW = 160;
@@ -418,6 +422,8 @@ export class HUDScene extends Phaser.Scene {
     this.hpText.setText(`${Math.max(0, Math.ceil(hud.hp))}/${Math.round(hud.maxHp)}`);
     this.coldText.setText(String(Math.round(hud.cold)));
     this.clock.setVisible(inWorld);
+    this.eventLabel.setVisible(inWorld && hud.eventName !== '');
+    this.eventLabel.setText(hud.eventName);
     this.clockArc.setVisible(inWorld);
     this.dialBack.setVisible(inWorld);
     if (inWorld) {

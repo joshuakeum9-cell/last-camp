@@ -57,6 +57,9 @@ export class InputSystem {
 
   private buffer: Record<string, number> = {};
   private lastAim = { x: 0, y: 1 };
+  /** Last frame's gamepad button state, for press edges. */
+  private padPrev: boolean[] = [];
+  private padAttackHeld = false;
 
   readonly out: InputState = {
     moveX: 0,
@@ -148,6 +151,48 @@ export class InputSystem {
       my = touchInput.moveY;
     }
 
+    // A gamepad, if one is plugged in. Standard layout: left stick or d-pad moves,
+    // A hits (hold to charge), B dashes, X uses, Y eats, bumpers pick a slot,
+    // Start pauses, Back opens the map. The right stick aims when pushed.
+    const pad = this.scene.input.gamepad?.getPad(0);
+    if (pad && pad.connected) {
+      const dead = 0.25;
+      const ax = pad.axes.length > 0 ? pad.axes[0].getValue() : 0;
+      const ay = pad.axes.length > 1 ? pad.axes[1].getValue() : 0;
+      if (Math.hypot(ax, ay) > dead) {
+        mx = ax;
+        my = ay;
+      }
+      const btn = (i: number) => !!pad.buttons[i]?.pressed;
+      if (btn(14)) mx -= 1;
+      if (btn(15)) mx += 1;
+      if (btn(12)) my -= 1;
+      if (btn(13)) my += 1;
+      const edge = (i: number, name: string) => {
+        const now = btn(i);
+        if (now && !this.padPrev[i]) this.press(name);
+        this.padPrev[i] = now;
+      };
+      edge(0, 'attack');
+      edge(1, 'dash');
+      edge(2, 'interact');
+      edge(3, 'eat');
+      edge(4, 'slot1');
+      edge(5, 'slot2');
+      edge(9, 'menu');
+      edge(8, 'map');
+      this.padAttackHeld = btn(0);
+      const rx = pad.axes.length > 2 ? pad.axes[2].getValue() : 0;
+      const ry = pad.axes.length > 3 ? pad.axes[3].getValue() : 0;
+      if (Math.hypot(rx, ry) > 0.4) {
+        const len = Math.hypot(rx, ry);
+        this.lastAim = { x: rx / len, y: ry / len };
+        this.usingPointerAim = false;
+      }
+    } else {
+      this.padAttackHeld = false;
+    }
+
     const len = Math.hypot(mx, my);
     if (len > 1) {
       mx /= len;
@@ -202,7 +247,7 @@ export class InputSystem {
     o.slotPressed = this.take('slot1') ? 1 : this.take('slot2') ? 2 : this.take('slot3') ? 3 : 0;
     o.menuPressed = this.take('menu');
     o.mapPressed = this.take('map');
-    o.attackHeld = touchInput.active ? touchInput.attackHeld : this.pointerDown || down(k.Q);
+    o.attackHeld = touchInput.active ? touchInput.attackHeld : this.pointerDown || down(k.Q) || this.padAttackHeld;
 
     return o;
   }

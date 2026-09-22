@@ -498,7 +498,7 @@ export class CampScene extends Phaser.Scene {
       case 'mira':
         if (this.mira) {
           const lines = this.mira.interact();
-          if (lines.length) this.dialogue.show(lines, 'Mira');
+          if (lines.length) this.dialogue.show(lines, 'Mira', undefined, 'npc-mira');
         }
         break;
 

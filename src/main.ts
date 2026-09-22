@@ -43,6 +43,7 @@ const config: Phaser.Types.Core.GameConfig = {
     },
   },
   input: {
+    gamepad: true,
     activePointers: 3,
   },
   render: {

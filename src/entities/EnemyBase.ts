@@ -272,7 +272,10 @@ export class EnemyBase {
         if (!this.seen) {
           this.seen = true;
           bus.emit('enemy:seen', { type: this.def.id });
-          if (this.elite) bus.emit('juice:toast', { text: `A ${this.def.name}, and a big one.`, color: this.def.accent });
+          if (this.elite) {
+            const article = /^[aeiou]/i.test(this.def.name) ? 'An' : 'A';
+            bus.emit('juice:toast', { text: `${article} ${this.def.name}, and a big one.`, color: this.def.accent });
+          }
         }
         break;
     }

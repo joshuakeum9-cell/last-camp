@@ -1329,6 +1329,8 @@ export class WorldScene extends Phaser.Scene {
   private updateBossMusic(): void {
     const boss = this.nearBoss();
     hud.mapHidden = WINTER.mapHidden();
+    const ev = activeEvent(state.run?.event);
+    hud.eventName = ev.id === 'clear' ? '' : ev.name.toUpperCase();
     hud.playerX = this.player.cx;
     hud.playerY = this.player.cy;
     hud.bossName = boss ? boss.name : null;
@@ -1337,6 +1339,17 @@ export class WorldScene extends Phaser.Scene {
 
     if (boss && !this.bossMusicOn) {
       this.bossMusicOn = true;
+      // The card. A name across the middle, then the one line that says what it is.
+      const subtitles: Record<string, string> = {
+        maw: 'Subject 6. Do not release.',
+        stag: 'Held together by the ice in its bones.',
+        ranger: 'He kept the light on for them.',
+      };
+      this.bossCard(boss.name);
+      this.time.delayedCall(500, () =>
+        bus.emit('juice:toast', { text: subtitles[boss.id] ?? '', color: '#ff2b55' }),
+      );
+      bus.emit('audio:play', { cue: 'mawPhase2', volume: 0.6 });
       if (boss.id === 'maw') state.bosses.mawAttempts++;
       else if (boss.id === 'stag') state.bosses.stagAttempts++;
       else state.bosses.rangerAttempts++;
@@ -1422,6 +1435,29 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  /** The boss's name, in red, below where an area banner would sit. */
+  private bossCard(name: string): void {
+    const { width, height } = BAL.view;
+    const label = new Label(this, Math.round(width / 2), Math.round(height / 2) + 14, name.toUpperCase(), {
+      color: PAL.blood,
+      scale: 2,
+      originX: 0.5,
+      originY: 0.5,
+    })
+      .setScrollFactor(0)
+      .setDepth(7600)
+      .setAlpha(0);
+    this.tweens.add({
+      targets: label.target,
+      alpha: 1,
+      y: Math.round(height / 2) + 6,
+      duration: 300,
+      hold: 1700,
+      yoyo: true,
+      onComplete: () => label.destroy(),
+    });
+  }
+
   private announce(name: string): void {
     const { width, height } = BAL.view;
     const label = new Label(this, Math.round(width / 2), Math.round(height / 2) - 30, name.toUpperCase(), {
@@ -1488,7 +1524,7 @@ export class WorldScene extends Phaser.Scene {
       this.showPrompt(this.mira.prompt);
       if (pressed) {
         const lines = this.mira.interact();
-        if (lines.length) this.dialogue.show(lines, 'Mira');
+        if (lines.length) this.dialogue.show(lines, 'Mira', undefined, 'npc-mira');
       }
       return;
     }
