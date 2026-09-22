@@ -18,7 +18,7 @@ import { hex, PAL } from '../art/palette';
 import { StorePrototype } from '../systems/StorePrototype';
 import { OfflineSystem } from '../systems/OfflineSystem';
 import { dailyChallenge } from '../systems/DailyChallengeSystem';
-import { ACHIEVEMENT_LIST } from '../data/achievements';
+import { ACHIEVEMENT_LIST, TITLES } from '../data/achievements';
 import { RESOURCE_ICON } from '../art/sprites/icons';
 import { ENEMIES, ENEMY_IDS } from '../data/enemies';
 
@@ -44,6 +44,7 @@ export class MenuScene extends Phaser.Scene {
   private tabButtons: Button[] = [];
   private resourceLabels = new Map<ResourceId, Phaser.GameObjects.BitmapText>();
   private subtitle!: Phaser.GameObjects.BitmapText;
+  private titleLabel!: Phaser.GameObjects.BitmapText;
   private openTab: Tab = 'camp';
 
   constructor() {
@@ -68,6 +69,12 @@ export class MenuScene extends Phaser.Scene {
     this.subtitle = this.add
       .bitmapText(18, 28, FONT, CampSystem.description())
       .setTint(hex(PAL.grey));
+    // The worn title sits opposite the camp's description, in gold, so a reward
+    // earned hours ago is still on screen.
+    this.titleLabel = this.add
+      .bitmapText(width - 18, 28, FONT, wornTitle())
+      .setOrigin(1, 0)
+      .setTint(hex(PAL.gold));
 
     this.buildResourceBar();
     this.buildTabs();
@@ -150,6 +157,7 @@ export class MenuScene extends Phaser.Scene {
       label.setText(String(state.camp.storage[id] ?? 0));
     }
     this.subtitle.setText(CampSystem.description());
+    this.titleLabel.setText(wornTitle());
 
     switch (this.tab) {
       case 'camp':
@@ -201,6 +209,46 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private survivorRows(): RowSpec[] {
+    const rows: RowSpec[] = [...this.titleRows()];
+    rows.push(...this.perkRows());
+    return rows;
+  }
+
+  /**
+   * Titles earned from achievements. One is worn at a time; clicking swaps to it,
+   * and clicking the one already worn takes it off.
+   */
+  private titleRows(): RowSpec[] {
+    const earned = Object.keys(TITLES).filter((t) => t !== 'none' && state.store.owned.includes(t));
+    if (earned.length === 0) {
+      return [
+        {
+          title: 'No titles yet',
+          effect: 'Achievements give titles. The one you wear shows under the camp name.',
+          cost: '',
+          state: 'blocked',
+        },
+      ];
+    }
+
+    return earned.map((value) => {
+      const worn = state.player.cosmetics.title === value;
+      return {
+        title: `Title: ${TITLES[value]}`,
+        effect: worn ? 'Worn. Click to take it off.' : 'Wear this one.',
+        cost: '',
+        ownedLabel: 'WORN',
+        state: worn ? 'owned' : 'affordable',
+        onClick: () => {
+          state.player.cosmetics.title = worn ? 'none' : value;
+          SaveSystem.save();
+          this.refresh();
+        },
+      } satisfies RowSpec;
+    });
+  }
+
+  private perkRows(): RowSpec[] {
     return PERK_LIST.map((perk) => {
       const level = UpgradeSystem.perkLevel(perk.id);
       const maxed = level >= perk.maxLevel;
@@ -554,4 +602,10 @@ function costLabel(cost: Partial<Record<ResourceId, number>>): string {
     ([id, n]) => `${n} ${RESOURCES[id as ResourceId].short.toLowerCase()}`,
   );
   return parts.join('  ');
+}
+
+/** The title the survivor is wearing, or nothing at all. */
+function wornTitle(): string {
+  const title = state.player.cosmetics.title;
+  return title && title !== 'none' && TITLES[title] ? TITLES[title] : '';
 }

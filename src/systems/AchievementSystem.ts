@@ -51,6 +51,11 @@ export class AchievementSystem {
   private applyReward(id: AchievementId): void {
     const reward = ACHIEVEMENTS[id].reward;
     if (!state.store.owned.includes(reward.value)) state.store.owned.push(reward.value);
+    // The first title earned is worn straight away, so the reward is visible without
+    // anyone having to go looking for a menu they do not know exists.
+    if (reward.kind === 'title' && state.player.cosmetics.title === 'none') {
+      state.player.cosmetics.title = reward.value;
+    }
   }
 
   /** Counting achievements, checked when anything relevant happens. */

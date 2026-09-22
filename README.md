@@ -96,6 +96,12 @@ and at the top there is a switch and a choice: end the winter, or keep the camp 
 and only the camp. The save remembers which, the title screen changes, and Mira has
 something to say about it either way. You can keep playing afterwards.
 
+## Titles
+
+Achievements give titles. The first one you earn is worn automatically, and the SURVIVOR
+tab lets you swap or take it off. The one you wear sits beside the camp's name in the
+menu and under the day on the summary screen.
+
 ## Difficulty
 
 Three settings, chosen on the title screen and changeable at any time.

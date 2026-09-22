@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BAL } from '../data/balance';
 import { bus } from '../core/EventBus';
 import { state } from '../core/GameState';
+import { TITLES } from '../data/achievements';
 import { SaveSystem } from '../core/SaveSystem';
 import { ResourceSystem } from '../systems/ResourceSystem';
 import { RESOURCES, RESOURCE_IDS, totalResources, type ResourceId } from '../data/resources';
@@ -68,16 +69,26 @@ export class SummaryScene extends Phaser.Scene {
       .setScale(2)
       .setTint(hex(died ? PAL.blood : PAL.gold));
 
+    // The worn title, if there is one. It is the only place an achievement reward
+    // shows up during play, so it goes where the day's name already is.
+    const worn = state.player.cosmetics.title;
+    if (worn && worn !== 'none' && TITLES[worn]) {
+      this.add
+        .bitmapText(width / 2, 31, FONT, `You are ${TITLES[worn]}.`)
+        .setOrigin(0.5, 0)
+        .setTint(hex(PAL.gold));
+    }
+
     if (died) {
       this.add
-        .bitmapText(width / 2, 34, FONT, 'You collapsed in the snow. You woke up at the fire.')
+        .bitmapText(width / 2, 40, FONT, 'You collapsed in the snow. You woke up at the fire.')
         .setOrigin(0.5, 0)
         .setTint(hex(PAL.grey));
       // Spelled out, because losing a haul should not feel like losing the camp.
       this.add
         .bitmapText(
           width / 2,
-          44,
+          49,
           FONT,
           'Your camp, your tools and everything you have built are safe.',
         )
@@ -85,12 +96,12 @@ export class SummaryScene extends Phaser.Scene {
         .setTint(hex(PAL.green));
     } else if (this.summary.untouched) {
       this.add
-        .bitmapText(width / 2, 36, FONT, 'Not a scratch. +10% on everything you carried.')
+        .bitmapText(width / 2, 42, FONT, 'Not a scratch. +10% on everything you carried.')
         .setOrigin(0.5, 0)
         .setTint(hex(PAL.green));
     }
 
-    this.lineY = died ? 58 : 54;
+    this.lineY = died ? 62 : 54;
     this.delay = 260;
     this.buildResourceLines();
     this.buildEventLines();

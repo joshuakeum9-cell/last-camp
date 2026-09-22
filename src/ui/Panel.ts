@@ -8,6 +8,8 @@ export interface RowSpec {
   effect: string;
   /** Cost chips, e.g. "10 wood  1 crystal". Empty when free or owned. */
   cost: string;
+  /** What an owned row says instead of BUILT, for lists that are not upgrades. */
+  ownedLabel?: string;
   /** Shown under the effect when the row cannot be taken. */
   blockedBy?: string | null;
   state: 'affordable' | 'blocked' | 'owned';
@@ -88,7 +90,7 @@ export class RowList {
     if (spec.state === 'owned') {
       row.add(
         this.scene.add
-          .bitmapText(this.width - 6, 3, FONT, 'BUILT')
+          .bitmapText(this.width - 6, 3, FONT, spec.ownedLabel ?? 'BUILT')
           .setOrigin(1, 0)
           .setTint(hex(PAL.green)),
       );

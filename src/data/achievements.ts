@@ -15,6 +15,22 @@ export const ACHIEVEMENT_IDS = [
 ] as const;
 export type AchievementId = (typeof ACHIEVEMENT_IDS)[number];
 
+/**
+ * Earned titles, by the value an achievement's reward carries. A title is worn
+ * rather than owned: it is the line under the camp's name, and the line on the
+ * summary at the end of a day.
+ */
+export const TITLES: Record<string, string> = {
+  none: 'no title',
+  survivor: 'the Survivor',
+  unmarked: 'the Unmarked',
+  mawbreaker: 'the Mawbreaker',
+  stagbreaker: 'the Stagbreaker',
+  lightkeeper: 'the Lightkeeper',
+  climber: 'the Climber',
+  archivist: 'the Archivist',
+};
+
 export interface AchievementDef {
   id: AchievementId;
   name: string;

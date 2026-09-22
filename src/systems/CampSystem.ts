@@ -52,7 +52,7 @@ export const CampSystem = {
       case 2:
         return 'Patched, staked down, and starting to look deliberate.';
       case 3:
-        return 'A working camp. Somewhere you would choose to come back to.';
+        return 'A working camp. Somewhere to come back to.';
       case 4:
         return 'Walls, lanterns, and room for more than one person.';
       default:

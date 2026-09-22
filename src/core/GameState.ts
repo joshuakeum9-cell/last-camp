@@ -76,7 +76,7 @@ export interface GameState {
     /** Which slot is in the hand. Slots keep their place; only this moves. */
     activeSlot: 0 | 1;
     consumables: Record<ConsumableId, number>;
-    cosmetics: { outfit: string; weaponSkin: string; fireColor: string; trail: string };
+    cosmetics: { outfit: string; weaponSkin: string; fireColor: string; trail: string; title: string };
   };
 
   run: RunState | null;
@@ -179,7 +179,7 @@ export function newGameState(): GameState {
       equipped: ['w-axe-0', null],
       activeSlot: 0,
       consumables: emptyConsumables(),
-      cosmetics: { outfit: 'default', weaponSkin: 'default', fireColor: 'default', trail: 'none' },
+      cosmetics: { outfit: 'default', weaponSkin: 'default', fireColor: 'default', trail: 'none', title: 'none' },
     },
     run: null,
     map: {
