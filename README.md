@@ -78,6 +78,13 @@ day. Two bosses: the White Maw in its den past the snowbank, and the Hollow Stag
 the tower pass past the ice, with a charge to sidestep, a ring to dash through, and an
 ice fall that punishes standing still.
 
+## Bestiary and boss weapons
+
+The BEASTS tab at camp lists everything that has come for you, with the one thing it
+exists to teach and how many you have killed. Unmet things are a row of question marks.
+Each boss drops the one weapon nothing else does: the Survivor Hammer from the Maw, the
+Hollow Antler from the Stag.
+
 ## Difficulty
 
 Three settings, chosen on the title screen and changeable at any time.

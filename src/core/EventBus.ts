@@ -18,6 +18,8 @@ export interface GameEvents {
 
   'enemy:hit': { id: string; type: string; damage: number; crit: boolean; kill: boolean };
   'enemy:killed': { id: string; type: string; x: number; y: number; night: boolean };
+  /** An enemy noticed the player, once per enemy. */
+  'enemy:seen': { type: string };
 
   'resource:collected': { id: ResourceId; amount: number; night: boolean };
   'node:broken': { kind: string };

@@ -145,6 +145,18 @@ const ICONS: Record<string, string[]> = {
     '..oCCCo...',
     '...ooo....',
   ],
+  antler: [
+    'C....o...C',
+    'oC..oWo..C',
+    '.oC.oWo.Co',
+    '..oCoWoCo.',
+    '...oWWWo..',
+    '....oWo...',
+    '....oWo...',
+    '....oWo...',
+    '....oWo...',
+    '.....o....',
+  ],
   hammer: [
     '..oooooo..',
     '.oSSSSSSo.',
@@ -165,6 +177,7 @@ export const WEAPON_ICON_KEY: Record<string, string> = {
   spear: 'icon-spear',
   bow: 'icon-bow',
   hammer: 'icon-hammer',
+  antler: 'icon-antler',
 };
 
 export function buildWeaponIcons(scene: Phaser.Scene): void {

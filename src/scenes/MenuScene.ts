@@ -20,8 +20,9 @@ import { OfflineSystem } from '../systems/OfflineSystem';
 import { dailyChallenge } from '../systems/DailyChallengeSystem';
 import { ACHIEVEMENT_LIST } from '../data/achievements';
 import { RESOURCE_ICON } from '../art/sprites/icons';
+import { ENEMIES, ENEMY_IDS } from '../data/enemies';
 
-type Tab = 'camp' | 'survivor' | 'weapons' | 'inventory' | 'goals' | 'store';
+type Tab = 'camp' | 'survivor' | 'weapons' | 'inventory' | 'goals' | 'beasts' | 'store';
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'camp', label: 'CAMP' },
@@ -29,7 +30,8 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'weapons', label: 'WEAPONS' },
   { id: 'inventory', label: 'SUPPLIES' },
   { id: 'goals', label: 'GOALS' },
-  { id: 'store', label: 'SUPPLY DROP' },
+  { id: 'beasts', label: 'BEASTS' },
+  { id: 'store', label: 'DROP' },
 ];
 
 /**
@@ -112,14 +114,14 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private buildTabs(): void {
-    let x = 18;
+    let x = 14;
     for (const t of TABS) {
       const btn = new Button(
         this,
         x,
         40,
         {
-          width: 68,
+          width: 60,
           height: 14,
           text: t.label,
           fill: this.tab === t.id ? PAL.blueDark : PAL.deep,
@@ -132,7 +134,7 @@ export class MenuScene extends Phaser.Scene {
         },
       );
       this.tabButtons.push(btn);
-      x += 72;
+      x += 65;
     }
   }
 
@@ -161,6 +163,9 @@ export class MenuScene extends Phaser.Scene {
         break;
       case 'inventory':
         this.list.setRows(this.inventoryRows());
+        break;
+      case 'beasts':
+        this.list.setRows(this.bestiaryRows());
         break;
       case 'goals':
         this.list.setRows(this.goalRows());
@@ -375,6 +380,54 @@ export class MenuScene extends Phaser.Scene {
   }
 
   /** Today's challenge, Mira's work, and the achievement list. */
+  /**
+   * Everything that has come for the player, with the one thing it exists to teach.
+   * Unmet things are a row of question marks, so the list itself says how much of
+   * the valley is still unknown.
+   */
+  private bestiaryRows(): RowSpec[] {
+    const rows: RowSpec[] = [];
+    const seen = state.stats.enemiesSeen;
+    const kills = state.stats.enemiesKilled;
+
+    for (const id of ENEMY_IDS) {
+      const def = ENEMIES[id];
+      const met = seen.includes(id) || (kills[id] ?? 0) > 0;
+      const killed = kills[id] ?? 0;
+      rows.push({
+        title: met ? def.name : '???',
+        effect: met ? def.teaches : 'Not met yet.',
+        cost: killed > 0 ? `${killed} killed` : met ? 'Seen' : '',
+        state: met ? 'affordable' : 'blocked',
+      });
+    }
+
+    const bosses: Array<{ id: string; name: string; teaches: string; dead: boolean }> = [
+      {
+        id: 'maw',
+        name: 'The White Maw',
+        teaches: 'Charges end in walls, and walls end in openings.',
+        dead: state.bosses.mawDefeated,
+      },
+      {
+        id: 'stag',
+        name: 'The Hollow Stag',
+        teaches: 'Sidestep the charge, dash the ring, keep moving under the ice.',
+        dead: state.bosses.stagDefeated,
+      },
+    ];
+    for (const b of bosses) {
+      const met = seen.includes(b.id) || b.dead;
+      rows.push({
+        title: met ? b.name : '???',
+        effect: met ? b.teaches : 'Something big. Not met yet.',
+        cost: b.dead ? 'Dead' : met ? 'Seen' : '',
+        state: met ? 'affordable' : 'blocked',
+      });
+    }
+    return rows;
+  }
+
   private goalRows(): RowSpec[] {
     const rows: RowSpec[] = [];
 

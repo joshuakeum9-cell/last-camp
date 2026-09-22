@@ -45,6 +45,7 @@ import { hud } from '../core/HudState';
 import { Label } from '../ui/Label';
 import { Prompt } from '../ui/Prompt';
 import { WorldMap } from '../ui/WorldMap';
+import { WEAPONS, type WeaponId } from '../data/weapons';
 import { activeEvent } from '../data/events';
 import { Rng, hashString, subSeed } from '../core/Rng';
 import { ENEMIES, type EnemyId } from '../data/enemies';
@@ -256,6 +257,8 @@ export class WorldScene extends Phaser.Scene {
     );
     this.subs.add(bus.on('enemy:killed', (e) => this.onEnemyKilled(e.type, e.x, e.y)));
     this.subs.add(bus.on('boss:defeated', ({ id }) => this.onBossDefeated(id)));
+    this.subs.add(bus.on('enemy:seen', ({ type }) => this.markSeen(type)));
+    this.subs.add(bus.on('boss:attempted', ({ id }) => this.markSeen(id)));
     this.subs.add(bus.on('player:hit', ({ damage }) => {
       if (state.run) state.run.damageTaken += damage;
     }));
@@ -886,6 +889,7 @@ export class WorldScene extends Phaser.Scene {
     }
     state.bosses.mawDefeated = true;
     UpgradeSystem.award('trophy');
+    this.dropBossWeapon('hammer', 'maw');
     const night = this.clock.bountyActive;
     ResourceSystem.collect('scrap', 40, night);
     ResourceSystem.collect('crystal', 5, night);
@@ -905,8 +909,22 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
+  private markSeen(type: string): void {
+    if (state.stats.enemiesSeen.includes(type)) return;
+    state.stats.enemiesSeen.push(type);
+  }
+
+  /** A boss drops the one weapon nothing else does. */
+  private dropBossWeapon(base: WeaponId, bossId: string): void {
+    if (state.player.weapons.some((w) => w.base === base)) return;
+    const weapon = LootSystem.makeWeapon(base, 'rare', new Rng(hashString(`${bossId}:${state.day}`)));
+    LootSystem.takeWeapon(weapon);
+    this.onWeaponFound(WEAPONS[base].name, 'rare');
+  }
+
   private onStagDefeated(): void {
     state.bosses.stagDefeated = true;
+    this.dropBossWeapon('antler', 'stag');
     const night = this.clock.bountyActive;
     ResourceSystem.collect('crystal', 12, night);
     ResourceSystem.collect('medical', 3, night);

@@ -1,7 +1,7 @@
 import { PAL } from '../art/palette';
 import type { Cost } from './upgrades';
 
-export const WEAPON_IDS = ['axe', 'knife', 'spear', 'bow', 'hammer'] as const;
+export const WEAPON_IDS = ['axe', 'knife', 'spear', 'bow', 'hammer', 'antler'] as const;
 export type WeaponId = (typeof WEAPON_IDS)[number];
 
 export type SwingShape = 'arc' | 'thrust' | 'circle' | 'ranged';
@@ -137,6 +137,26 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     slow: { amount: 0.35, seconds: 1.5 },
     source: 'cache',
   },
+  antler: {
+    ...base,
+    id: 'antler',
+    name: 'Hollow Antler',
+    desc: 'Torn from the Stag. The cold still lives in it.',
+    color: PAL.ice,
+    damage: [11, 11, 16],
+    windup: 0.1,
+    active: 0.08,
+    recovery: 0.2,
+    shape: 'thrust',
+    reach: 40,
+    arcDeg: 0,
+    thrustWidth: 14,
+    knockback: 120,
+    crit: 0.1,
+    pierce: true,
+    slow: { amount: 0.4, seconds: 1.2 },
+    source: 'boss',
+  },
   hammer: {
     ...base,
     id: 'hammer',
@@ -250,6 +270,24 @@ export const BRANCHES: Record<WeaponId, [BranchDef, BranchDef]> = {
       cost: BRANCH_COST,
       chargesAdd: 2,
       flags: ['fastRecharge'],
+    },
+  ],
+  antler: [
+    {
+      id: 'rime',
+      name: 'Rime Antler',
+      desc: 'What it touches freezes solid for a moment.',
+      cost: BRANCH_COST,
+      reachAdd: 6,
+      flags: ['freeze'],
+    },
+    {
+      id: 'tine',
+      name: 'Tine Antler',
+      desc: 'Longer, and a hit that lands true stops the thing dead.',
+      cost: BRANCH_COST,
+      reachAdd: 14,
+      hitStun: 0.4,
     },
   ],
   hammer: [

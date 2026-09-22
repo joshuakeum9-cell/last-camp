@@ -72,6 +72,7 @@ export class EnemyBase {
   private to: ToPlayer = { x: 0, y: 0, dx: 0, dy: 1, dist: 999 };
   private facing = 1;
   private lastHurtAt = -999;
+  private seen = false;
 
   constructor(
     readonly scene: Phaser.Scene,
@@ -258,6 +259,10 @@ export class EnemyBase {
 
       case 'chase':
         this.play('run');
+        if (!this.seen) {
+          this.seen = true;
+          bus.emit('enemy:seen', { type: this.def.id });
+        }
         break;
     }
   }
