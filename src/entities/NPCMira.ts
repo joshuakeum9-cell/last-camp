@@ -160,6 +160,12 @@ export class NPCMira {
     const lines: string[] = [];
     lines.push(MIRA.greeting[Math.min(MIRA.greeting.length - 1, state.camp.level - 1)]);
     if (state.bosses.mawDefeated) lines.push(...MIRA.afterBoss);
+    if (state.bosses.rangerDefeated) {
+      lines.push(...MIRA.afterRanger);
+    } else if (!state.story.rangerTold && state.day >= 4) {
+      state.story.rangerTold = true;
+      lines.push(...MIRA.rangerTell);
+    }
     if (state.camp.upgrades.signaltable) lines.push(MIRA.signal);
     if (state.story.miraAssignment) {
       lines.push(MIRA.assignments[state.story.miraAssignment]);

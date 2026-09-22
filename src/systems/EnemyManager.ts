@@ -51,7 +51,10 @@ export class EnemyManager {
     const scale = dayScale(day);
 
     for (const area of AREA_LIST) {
-      const rules = (AREA_SPAWNS[area.id] ?? []).filter((r) => r.fromDay <= day);
+      // Once the one who kept calling them is gone, the cabin's walkers stop coming.
+      const rules = (AREA_SPAWNS[area.id] ?? []).filter(
+        (r) => r.fromDay <= day && !(area.id === 'cabin' && r.id === 'walker' && state.bosses.rangerDefeated),
+      );
       if (rules.length === 0) continue;
 
       const rng = new Rng(subSeed(seed, `spawn:${area.id}`));

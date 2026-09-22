@@ -415,6 +415,12 @@ export class MenuScene extends Phaser.Scene {
         teaches: 'Sidestep the charge, dash the ring, keep moving under the ice.',
         dead: state.bosses.stagDefeated,
       },
+      {
+        id: 'ranger',
+        name: 'The One Who Stayed',
+        teaches: 'Only after dark. Step out of the fan, dash off the mark, kill what he calls.',
+        dead: state.bosses.rangerDefeated,
+      },
     ];
     for (const b of bosses) {
       const met = seen.includes(b.id) || b.dead;

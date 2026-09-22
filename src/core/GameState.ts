@@ -97,6 +97,8 @@ export interface GameState {
     reportSeenDay: number;
     /** One-time hints already shown, by id. */
     hints: string[];
+    /** Mira has told the player about the ranger, so he is out there at night. */
+    rangerTold: boolean;
   };
 
   bosses: {
@@ -105,6 +107,8 @@ export interface GameState {
     mawAttempts: number;
     stagDefeated: boolean;
     stagAttempts: number;
+    rangerDefeated: boolean;
+    rangerAttempts: number;
   };
 
   challenge: {
@@ -185,8 +189,9 @@ export function newGameState(): GameState {
       miraAssignedAt: null,
       reportSeenDay: 0,
       hints: [],
+      rangerTold: false,
     },
-    bosses: { alphaDefeated: false, mawDefeated: false, mawAttempts: 0, stagDefeated: false, stagAttempts: 0 },
+    bosses: { alphaDefeated: false, mawDefeated: false, mawAttempts: 0, stagDefeated: false, stagAttempts: 0, rangerDefeated: false, rangerAttempts: 0 },
     challenge: { id: '', dayIssued: 0, progress: 0, claimed: false, source: 'local' },
     achievements: {},
     stats: {

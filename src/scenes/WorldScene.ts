@@ -25,6 +25,7 @@ import { Gate } from '../entities/Gate';
 import { NPCMira } from '../entities/NPCMira';
 import { BossWhiteMaw } from '../entities/BossWhiteMaw';
 import { BossHollowStag } from '../entities/BossHollowStag';
+import { BossRanger } from '../entities/BossRanger';
 import type { Boss } from '../entities/Boss';
 import { Dialogue } from '../ui/Dialogue';
 import { TouchControls } from '../ui/TouchControls';
@@ -125,6 +126,7 @@ export class WorldScene extends Phaser.Scene {
   private gates: Gate[] = [];
   private mira: NPCMira | null = null;
   private bosses: Boss[] = [];
+  private ranger: BossRanger | null = null;
   private subs = new Subscriptions();
 
   private mapData!: WorldMapData;
@@ -161,6 +163,7 @@ export class WorldScene extends Phaser.Scene {
     this.gates = [];
     this.mira = null;
     this.bosses = [];
+    this.ranger = null;
     this.currentArea = null;
     this.canInteract = false;
     this.warmSpots = [];
@@ -667,6 +670,20 @@ export class WorldScene extends Phaser.Scene {
       this.bosses.push(stag);
       this.physics.add.collider(stag.sprite, this.layer);
     }
+    // The third only once Mira has said where to look, and only after dark.
+    if (state.story.rangerTold && !state.bosses.rangerDefeated) {
+      this.ranger = new BossRanger(this, 72 * TILE_SIZE, 22 * TILE_SIZE, this.player, this.juice, (x, y, count) => {
+        const nearby = this.enemyManager.enemies.filter(
+          (e) => e.alive && e.def.id === 'walker' && Math.hypot(e.cx - x, e.cy - y) < 260,
+        ).length;
+        for (let i = 0; i < Math.max(0, Math.min(count, 4 - nearby)); i++) {
+          const a = Math.random() * Math.PI * 2;
+          this.enemyManager.spawn('walker', x + Math.cos(a) * 150, y + Math.sin(a) * 110);
+        }
+      });
+      this.bosses.push(this.ranger);
+      this.physics.add.collider(this.ranger.sprite, this.layer);
+    }
     this.combat.bosses = this.bosses;
     this.bossMusicOn = false;
   }
@@ -739,6 +756,7 @@ export class WorldScene extends Phaser.Scene {
     if (input.eatPressed) this.eat();
 
     this.enemyManager.update(dt, this.player.cx, this.player.cy);
+    this.ranger?.setNight(this.clock.isNight);
     for (const boss of this.bosses) boss.update(dt);
     this.updateBossMusic();
     this.combat.update();
@@ -863,6 +881,8 @@ export class WorldScene extends Phaser.Scene {
     for (const s of this.warmSpots) {
       if (s.lit) lights.push({ x: s.x, y: s.y, radius: BAL.warmSpot.lightRadius });
     }
+    const lantern = this.ranger?.light;
+    if (lantern) lights.push(lantern);
 
     // Home always shows, so the way back is never guesswork.
     lights.push({
@@ -885,6 +905,10 @@ export class WorldScene extends Phaser.Scene {
   private onBossDefeated(id: string): void {
     if (id === 'stag') {
       this.onStagDefeated();
+      return;
+    }
+    if (id === 'ranger') {
+      this.onRangerDefeated();
       return;
     }
     state.bosses.mawDefeated = true;
@@ -920,6 +944,28 @@ export class WorldScene extends Phaser.Scene {
     const weapon = LootSystem.makeWeapon(base, 'rare', new Rng(hashString(`${bossId}:${state.day}`)));
     LootSystem.takeWeapon(weapon);
     this.onWeaponFound(WEAPONS[base].name, 'rare');
+  }
+
+  private onRangerDefeated(): void {
+    state.bosses.rangerDefeated = true;
+    UpgradeSystem.award('lantern');
+    const night = this.clock.bountyActive;
+    ResourceSystem.collect('medical', 4, night);
+    ResourceSystem.collect('scrap', 20, night);
+    ResourceSystem.collect('food', 10, night);
+    if (state.run) state.run.rareFinds += 2;
+
+    bus.emit('juice:toast', { text: 'The lantern goes out for good.', color: '#ffcf1f' });
+    this.time.delayedCall(1400, () => {
+      this.dialogue.show(
+        [
+          'The coat is a ranger coat. The name tape has been picked off.',
+          'In the pocket, a rope, cut to the length of a wrist, and a list of eleven names.',
+          'The twelfth line says only: and me, when they come back.',
+        ],
+        'The Cabin',
+      );
+    });
   }
 
   private onStagDefeated(): void {
@@ -969,7 +1015,8 @@ export class WorldScene extends Phaser.Scene {
     if (boss && !this.bossMusicOn) {
       this.bossMusicOn = true;
       if (boss.id === 'maw') state.bosses.mawAttempts++;
-      else state.bosses.stagAttempts++;
+      else if (boss.id === 'stag') state.bosses.stagAttempts++;
+      else state.bosses.rangerAttempts++;
       bus.emit('boss:attempted', { id: boss.id });
       bus.emit('audio:music', { cue: 'boss' });
     } else if (!boss && this.bossMusicOn) {

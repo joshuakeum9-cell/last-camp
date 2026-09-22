@@ -120,6 +120,18 @@ export const MIRA = {
   ],
   /** Once the signal table is built. */
   signal: 'The tower is answering. It should not be able to answer.',
+  /** Said once, a few days after the rescue. It sets the third boss loose. */
+  rangerTell: [
+    'The one who tied me up. He did not walk to the tower with the others.',
+    'He stayed. He said somebody had to keep the light on for when they came back.',
+    'They did come back. Not as people. He kept me there so they would have a reason to.',
+    'He still comes to the cabin every night to check the rope. I have seen the lantern from here.',
+  ],
+  /** After the ranger is dead. */
+  afterRanger: [
+    'No lantern tonight. I looked for an hour.',
+    'Thank you. I do not think he knew any more what he was keeping me for.',
+  ],
 };
 
 // --- the journal ---------------------------------------------------------

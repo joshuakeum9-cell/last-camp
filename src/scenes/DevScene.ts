@@ -43,7 +43,7 @@ export class DevScene extends Phaser.Scene {
       `resources gathered ${state.stats.resourcesCollected}`,
       `areas ${state.map.discoveredAreas.length}/8   notes ${state.story.notesFound.length}/6`,
       `mira ${state.story.miraRescued ? 'rescued' : 'no'}   secret ${state.map.secretFound ? 'found' : 'no'}`,
-      `alpha ${state.bosses.alphaDefeated ? 'dead' : 'alive'}   maw ${state.bosses.mawDefeated ? 'dead' : 'alive'} (${state.bosses.mawAttempts} attempts)   stag ${state.bosses.stagDefeated ? 'dead' : 'alive'} (${state.bosses.stagAttempts} attempts)`,
+      `alpha ${state.bosses.alphaDefeated ? 'dead' : 'alive'}   maw ${state.bosses.mawDefeated ? 'dead' : 'alive'} (${state.bosses.mawAttempts} attempts)   stag ${state.bosses.stagDefeated ? 'dead' : 'alive'} (${state.bosses.stagAttempts} attempts)   ranger ${state.bosses.rangerDefeated ? 'dead' : 'alive'}`,
       `achievements ${achievements.unlockedCount}/10   ${dailyChallenge.describe()}`,
       `simulated spend $${StorePrototype.simulatedSpend.toFixed(2)}   session ${analytics.sessionSeconds}s`,
     ];

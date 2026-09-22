@@ -8,6 +8,7 @@ export const ACHIEVEMENT_IDS = [
   'nightwalker',
   'theWhiteMaw',
   'theHollowStag',
+  'theOneWhoStayed',
   'notEmpty',
   'wholeStory',
 ] as const;
@@ -76,6 +77,12 @@ export const ACHIEVEMENTS: Record<AchievementId, AchievementDef> = {
     name: 'The Hollow Stag',
     desc: 'Bring down what paces the tower pass.',
     reward: { kind: 'title', value: 'stagbreaker', label: 'Title: Stagbreaker' },
+  },
+  theOneWhoStayed: {
+    id: 'theOneWhoStayed',
+    name: 'The One Who Stayed',
+    desc: 'Put out the lantern at the cabin.',
+    reward: { kind: 'title', value: 'lightkeeper', label: 'Title: Lightkeeper' },
   },
   notEmpty: {
     id: 'notEmpty',

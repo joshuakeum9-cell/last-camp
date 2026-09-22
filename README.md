@@ -74,9 +74,12 @@ Frost rats and ice wolves in the forest. Crows that wheel over the road and the 
 pass and dive straight through you. Skaters on the lake that slide at full speed and
 never slow down. Drift brutes at the cabin and the den, hulks under a foot of snow with
 a slam that has no safe side. The stalker comes at night, and in a whiteout it comes by
-day. Two bosses: the White Maw in its den past the snowbank, and the Hollow Stag pacing
-the tower pass past the ice, with a charge to sidestep, a ring to dash through, and an
-ice fall that punishes standing still.
+day. Three bosses: the White Maw in its den past the snowbank; the Hollow Stag pacing the
+tower pass past the ice, with a charge to sidestep, a ring to dash through, and an ice
+fall that punishes standing still; and, once Mira tells you about him, the One Who
+Stayed, a ranger who only comes to the cabin after dark with a lantern, a fan of embers,
+a blink that puts him behind you, and a call the trees answer. Kill him and the cabin's
+walkers stop coming.
 
 ## Bestiary and boss weapons
 

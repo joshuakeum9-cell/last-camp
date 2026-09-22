@@ -356,6 +356,7 @@ const CUES: Record<string, CueFn> = {
   maw: (c, o, n, p) => {
     blip(c, o, n, { freq: 90, to: 140, dur: 0.6, type: 'sawtooth', gain: 0.12 * p.volume });
   },
+  ranger: (c, o, n, p) => blip(c, o, n, { freq: 330, to: 110, dur: 0.6, type: 'sine', gain: 0.09 * p.volume }),
   stag: (c, o, n, p) => blip(c, o, n, { freq: 520, to: 160, dur: 0.5, type: 'triangle', gain: 0.1 * p.volume }),
   mawCharge: (c, o, n, p) => thump(c, o, n, { dur: 0.5, gain: 0.2 * p.volume, cutoff: 900 }),
   mawSlam: (c, o, n, p) => {
