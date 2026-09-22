@@ -96,6 +96,14 @@ and at the top there is a switch and a choice: end the winter, or keep the camp 
 and only the camp. The save remembers which, the title screen changes, and Mira has
 something to say about it either way. You can keep playing afterwards.
 
+## Ice fishing
+
+Holes are cut in the lake ice. Stand at one, press E, and a marker runs along a bar:
+press again while it is in the lit band and a fish comes up, two or three food and now
+and then a crystal in its gut. Miss and it gets away for a moment. Walk off and the line
+goes slack. Each hole needs a while before it bites again, and you are standing still
+on open ice the whole time.
+
 ## Mira comes along
 
 Once rescued, Mira can work the camp while the game is closed or come out with you.

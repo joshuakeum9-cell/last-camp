@@ -148,6 +148,17 @@ export const BAL = {
     coldSpike: 22,
     cooldownMs: 2500,
   },
+  /** Ice fishing at the lake. One press, timed. */
+  fishing: {
+    /** Fraction of the bar that counts as a catch. */
+    window: 0.24,
+    /** Marker cycles per second. */
+    speed: 1.6,
+    food: [2, 3] as [number, number],
+    crystalChance: 0.15,
+    /** Seconds before the same hole bites again. */
+    holeCooldown: 25,
+  },
   eat: {
     /** Seconds between bites, so a stack of food cannot be inhaled mid-fight. */
     cooldown: 1.2,

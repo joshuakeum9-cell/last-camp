@@ -41,7 +41,8 @@ export type DecorKind =
   | 'fence'
   | 'tyre'
   | 'clawMarks'
-  | 'rockSpire';
+  | 'rockSpire'
+  | 'fishHole';
 
 /**
  * What turns up in each area. This is most of what makes the areas feel like
@@ -53,7 +54,7 @@ const DECOR_TABLE: Record<AreaId, DecorKind[]> = {
   forest: ['fallenLog', 'stump', 'deadShrub', 'grassTuft', 'snowMound', 'oldFire', 'stump', 'fallenLog'],
   road: ['signpost', 'lampPost', 'tyre', 'bones', 'snowMound', 'oldFire', 'deadShrub', 'lampPost', 'tyre'],
   cabin: ['fence', 'stump', 'fallenLog', 'oldFire', 'snowMound', 'grassTuft', 'fence'],
-  lake: ['iceCrack', 'reeds', 'snowMound', 'bones', 'iceCrack', 'reeds', 'iceCrack'],
+  lake: ['iceCrack', 'reeds', 'snowMound', 'fishHole', 'iceCrack', 'reeds', 'iceCrack', 'fishHole'],
   secret: ['glowShroom', 'glowShroom', 'bones', 'snowMound', 'glowShroom'],
   bossden: ['skull', 'bones', 'clawMarks', 'snowMound', 'oldFire', 'skull', 'clawMarks'],
   towerpass: ['rockSpire', 'snowMound', 'bones', 'signpost', 'oldFire', 'rockSpire'],

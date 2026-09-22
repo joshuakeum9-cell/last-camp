@@ -48,6 +48,7 @@ import { hud } from '../core/HudState';
 import { Label } from '../ui/Label';
 import { Prompt } from '../ui/Prompt';
 import { WorldMap } from '../ui/WorldMap';
+import { drawFrame } from '../ui/Frame';
 import { WEAPONS, type WeaponId } from '../data/weapons';
 import { activeEvent } from '../data/events';
 import { WINTER, winterActiveCount, winterLootMult } from '../data/winter';
@@ -94,14 +95,32 @@ const DECOR_TEXTURE: Record<string, string> = {
   tyre: SCENERY_KEYS.tyre,
   clawMarks: SCENERY_KEYS.clawMarks,
   rockSpire: SCENERY_KEYS.rockSpire,
+  fishHole: SCENERY_KEYS.fishHole,
 };
 
 /** Decor that lies on the ground and sorts under everything that walks. */
-const FLAT_DECOR: DecorKind[] = ['grassTuft', 'bones', 'oldFire', 'iceCrack', 'clawMarks'];
+const FLAT_DECOR: DecorKind[] = ['grassTuft', 'bones', 'oldFire', 'iceCrack', 'clawMarks', 'fishHole'];
 /** Decor you cannot walk through, with the width of its footprint. */
 const SOLID_DECOR: Partial<Record<DecorKind, number>> = { rockSpire: 10, fence: 14, lampPost: 5, stump: 9 };
 /** Decor that is lit once the sun has gone. */
 const LIT_DECOR: Partial<Record<DecorKind, number>> = { lampPost: 54, glowShroom: 30 };
+
+interface FishHole {
+  x: number;
+  y: number;
+  /** Scene time after which it bites again. */
+  readyAt: number;
+}
+
+interface Fishing {
+  hole: FishHole;
+  /** 0..1 position of the marker along the bar, driven by a sine. */
+  t: number;
+  startedAt: number;
+  frame: Phaser.GameObjects.Graphics;
+  bar: Phaser.GameObjects.Graphics;
+  label: Label;
+}
 
 interface WarmSpot {
   x: number;
@@ -144,6 +163,8 @@ export class WorldScene extends Phaser.Scene {
   private worldMap!: WorldMap;
   private pickups: Pickup[] = [];
   private warmSpots: WarmSpot[] = [];
+  private fishHoles: FishHole[] = [];
+  private fishing: Fishing | null = null;
   private decorLights: Array<{ x: number; y: number; radius: number }> = [];
   private iceHazards = new Set<string>();
   private iceTimer = 0;
@@ -174,6 +195,8 @@ export class WorldScene extends Phaser.Scene {
     this.currentArea = null;
     this.canInteract = false;
     this.warmSpots = [];
+    this.fishHoles = [];
+    this.fishing = null;
     this.decorLights = [];
     this.iceHazards = new Set();
     this.iceTimer = 0;
@@ -500,8 +523,94 @@ export class WorldScene extends Phaser.Scene {
       }
 
       if (d.kind === 'oldFire') this.warmSpots.push({ x, y: y - 4, lit: false });
+      if (d.kind === 'fishHole') this.fishHoles.push({ x, y: y - 6, readyAt: 0 });
       if (d.kind === 'iceCrack') this.iceHazards.add(`${d.tx},${d.ty}`);
     }
+  }
+
+  /**
+   * Ice fishing. A marker runs up and down a bar; press when it is in the lit
+   * band and something comes up. The lake is the one place with nothing to chop,
+   * so this is what it gives instead, and standing still on the ice is its own
+   * kind of risk.
+   */
+  private startFishing(hole: FishHole): void {
+    const x = Math.round(this.player.cx);
+    const y = Math.round(this.player.sprite.y) - 46;
+    const frame = this.add.graphics().setDepth(7600);
+    drawFrame(frame, x - 36, y - 6, 72, 14, { fill: PAL.black, alpha: 0.85, edge: PAL.cyan });
+    const bar = this.add.graphics().setDepth(7601);
+    const label = new Label(this, x, y - 16, 'E when it is in the light', {
+      color: PAL.cream,
+      originX: 0.5,
+    }).setDepth(7602);
+    this.fishing = { hole, t: 0, startedAt: this.time.now, frame, bar, label };
+    bus.emit('audio:play', { cue: 'eat', volume: 0.5 });
+    this.hint('fish', 'Fishing: press E when the marker is in the light band.');
+  }
+
+  private updateFishing(dt: number): void {
+    const f = this.fishing;
+    if (!f) return;
+    void dt;
+    const elapsed = (this.time.now - f.startedAt) / 1000;
+    f.t = 0.5 + 0.5 * Math.sin(elapsed * BAL.fishing.speed * Math.PI * 2);
+
+    const x = Math.round(this.player.cx);
+    const y = Math.round(this.player.sprite.y) - 46;
+    drawFrame(f.frame, x - 36, y - 6, 72, 14, { fill: PAL.black, alpha: 0.85, edge: PAL.cyan });
+    f.label.container.setPosition(x, y - 16);
+
+    const g = f.bar;
+    g.clear();
+    const left = x - 32;
+    const w = 64;
+    const win = BAL.fishing.window;
+    // The lit band sits in the middle; the marker runs the whole width.
+    g.fillStyle(hex(PAL.green), 0.55);
+    g.fillRect(left + w * (0.5 - win / 2), y - 3, w * win, 8);
+    g.fillStyle(hex(PAL.white), 1);
+    g.fillRect(left + Math.round(w * f.t) - 1, y - 4, 3, 10);
+
+    // Walking away drops the line.
+    if (Math.hypot(f.hole.x - this.player.cx, f.hole.y - this.player.cy) > 30) this.stopFishing('The line goes slack.');
+    // So does taking too long. Something else is out there.
+    if (elapsed > 6) this.stopFishing('Nothing. Try again.');
+  }
+
+  private resolveFishing(): void {
+    const f = this.fishing;
+    if (!f) return;
+    const win = BAL.fishing.window;
+    const hit = Math.abs(f.t - 0.5) <= win / 2;
+    if (!hit) {
+      this.stopFishing('It got away.');
+      f.hole.readyAt = this.time.now + 4000;
+      return;
+    }
+    const night = this.clock.bountyActive;
+    const food = Phaser.Math.Between(BAL.fishing.food[0], BAL.fishing.food[1]);
+    ResourceSystem.collect('food', food, night);
+    let text = `A fish. +${food} food.`;
+    if (Math.random() < BAL.fishing.crystalChance) {
+      ResourceSystem.collect('crystal', 1, night);
+      text = 'A fish, and a crystal in its gut.';
+    }
+    this.juice.sparks(f.hole.x, f.hole.y, PAL.cyan, 10, 100);
+    this.juice.floatText(f.hole.x, f.hole.y - 14, text, PAL.cyan);
+    bus.emit('audio:play', { cue: 'pickupRare' });
+    f.hole.readyAt = this.time.now + BAL.fishing.holeCooldown * 1000;
+    this.stopFishing(null);
+  }
+
+  private stopFishing(reason: string | null): void {
+    const f = this.fishing;
+    if (!f) return;
+    f.frame.destroy();
+    f.bar.destroy();
+    f.label.destroy();
+    this.fishing = null;
+    if (reason) bus.emit('juice:toast', { text: reason, color: PAL.grey });
   }
 
   /** Two wood, and an old fire pit is a fire again for the rest of the day. */
@@ -832,6 +941,7 @@ export class WorldScene extends Phaser.Scene {
     this.enemyManager.sweep();
     this.enemyManager.setNight(this.clock.isNight, this.player.cx, this.player.cy);
 
+    this.updateFishing(dt);
     this.updatePickups(dt);
     this.companion?.update(dt, this.player.cx, this.player.cy, input.moving, this.currentArea?.id ?? null);
     this.updateArea();
@@ -1200,6 +1310,20 @@ export class WorldScene extends Phaser.Scene {
     if (this.dialogue.isOpen) {
       this.prompt.hide();
       if (pressed) this.dialogue.advance();
+      return;
+    }
+
+    if (this.fishing) {
+      this.prompt.hide();
+      if (pressed) this.resolveFishing();
+      return;
+    }
+
+    for (const hole of this.fishHoles) {
+      if (Math.hypot(hole.x - this.player.cx, hole.y - this.player.cy) > 22) continue;
+      const ready = this.time.now >= hole.readyAt;
+      this.showPrompt(ready ? 'Fish' : 'Nothing biting');
+      if (pressed && ready) this.startFishing(hole);
       return;
     }
 

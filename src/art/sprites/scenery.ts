@@ -404,6 +404,22 @@ const ROCK_SPIRE = [
   '.ssssssss.',
 ];
 
+/** A hole cut in the lake ice, dark water in it, a ring of chipped ice round it. */
+const FISH_HOLE = [
+  '....ssssss....',
+  '..sswwwwwwss..',
+  '.swwMMMMMMwws.',
+  '.swMMddddMMws.',
+  'swMMddddddMMws',
+  'swMddddddddMws',
+  'swMddddddddMws',
+  'swMMddddddMMws',
+  '.swMMddddMMws.',
+  '.swwMMMMMMwws.',
+  '..sswwwwwwss..',
+  '....ssssss....',
+];
+
 export const SCENERY_KEYS = {
   pine: 'sc-pine',
   pineSmall: 'sc-pine-small',
@@ -433,6 +449,7 @@ export const SCENERY_KEYS = {
   tyre: 'sc-tyre',
   clawMarks: 'sc-claw-marks',
   rockSpire: 'sc-rock-spire',
+  fishHole: 'sc-fish-hole',
 } as const;
 
 export function buildScenery(scene: Phaser.Scene): void {
@@ -465,4 +482,5 @@ export function buildScenery(scene: Phaser.Scene): void {
   make(SCENERY_KEYS.tyre, TYRE);
   make(SCENERY_KEYS.clawMarks, CLAW_MARKS);
   make(SCENERY_KEYS.rockSpire, ROCK_SPIRE);
+  make(SCENERY_KEYS.fishHole, FISH_HOLE);
 }
