@@ -3,6 +3,8 @@ import { BAL } from '../data/balance';
 import { bus } from '../core/EventBus';
 import { state } from '../core/GameState';
 import { TITLES } from '../data/achievements';
+import { makeFrame } from '../ui/Frame';
+import { renderCost } from '../ui/Panel';
 import { SaveSystem } from '../core/SaveSystem';
 import { ResourceSystem } from '../systems/ResourceSystem';
 import { RESOURCES, RESOURCE_IDS, totalResources, type ResourceId } from '../data/resources';
@@ -291,15 +293,12 @@ export class SummaryScene extends Phaser.Scene {
     const x = 250;
     const { height } = BAL.view;
 
-    this.add
-      .rectangle(x - 10, 50, 200, height - 86, hex(PAL.deep))
-      .setOrigin(0)
-      .setAlpha(0.35);
+    makeFrame(this, x - 10, 50, 200, height - 86, { fill: PAL.deep, alpha: 0.3, edge: PAL.blueDark });
     this.add
       .bitmapText(x, 56, FONT, 'WHAT CAN YOU UPGRADE?')
       .setTint(hex(PAL.gold));
 
-    const affordable: Array<{ name: string; cost: string }> = [];
+    const affordable: Array<{ name: string; cost: Partial<Record<ResourceId, number>> }> = [];
     let nearest: { name: string; missing: string } | null = null;
     let nearestGap = Infinity;
 
@@ -312,7 +311,7 @@ export class SummaryScene extends Phaser.Scene {
       if (up.requires?.boss && !state.bosses.mawDefeated) continue;
 
       if (ResourceSystem.canAfford(up.cost)) {
-        affordable.push({ name: up.name, cost: costLabel(up.cost) });
+        affordable.push({ name: up.name, cost: up.cost });
       } else {
         const gap = totalGap(up.cost);
         if (gap < nearestGap) {
@@ -326,7 +325,7 @@ export class SummaryScene extends Phaser.Scene {
       const level = state.player.perks[perk.id] ?? 0;
       if (level >= perk.maxLevel) continue;
       if (ResourceSystem.canAfford(perk.cost)) {
-        affordable.push({ name: PERKS[perk.id].name, cost: costLabel(perk.cost) });
+        affordable.push({ name: PERKS[perk.id].name, cost: perk.cost });
       }
     }
 
@@ -338,10 +337,7 @@ export class SummaryScene extends Phaser.Scene {
 
     for (const item of affordable.slice(0, 7)) {
       const row = this.add.bitmapText(x, y, FONT, item.name).setTint(hex(PAL.gold));
-      this.add
-        .bitmapText(x + 186, y, FONT, item.cost)
-        .setOrigin(1, 0)
-        .setTint(hex(PAL.cream));
+      renderCost(this, x + 186, y - 1, item.cost);
       // Newly affordable rows pulse, so the eye goes straight to them.
       this.tweens.add({ targets: row, alpha: 0.55, duration: 700, yoyo: true, repeat: -1 });
       y += 11;
@@ -446,11 +442,6 @@ export class SummaryScene extends Phaser.Scene {
   }
 }
 
-function costLabel(cost: Partial<Record<ResourceId, number>>): string {
-  return Object.entries(cost)
-    .map(([id, n]) => `${n}${RESOURCES[id as ResourceId].short[0]}`)
-    .join(' ');
-}
 
 function totalGap(cost: Partial<Record<ResourceId, number>>): number {
   let gap = 0;

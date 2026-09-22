@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { FONT, textWidth } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
 import { touchInput } from '../core/InputSystem';
+import { drawFrame } from './Frame';
 
 /**
  * The interaction prompt: a key badge and a verb, on a small panel above the player.
@@ -12,7 +13,7 @@ import { touchInput } from '../core/InputSystem';
  */
 export class Prompt {
   readonly container: Phaser.GameObjects.Container;
-  private panel: Phaser.GameObjects.Rectangle;
+  private panel: Phaser.GameObjects.Graphics;
   private badge: Phaser.GameObjects.Rectangle;
   private badgeText: Phaser.GameObjects.BitmapText;
   private verb: Phaser.GameObjects.BitmapText;
@@ -23,11 +24,8 @@ export class Prompt {
   constructor(private scene: Phaser.Scene) {
     this.container = scene.add.container(0, 0).setDepth(7500).setVisible(false);
 
-    this.panel = scene.add
-      .rectangle(0, 0, 60, 14, hex(PAL.black))
-      .setOrigin(0.5)
-      .setAlpha(0.82)
-      .setStrokeStyle(1, hex(PAL.gold), 0.9);
+    this.panel = scene.add.graphics();
+    drawFrame(this.panel, -30, -8, 60, 16, { fill: PAL.black, alpha: 0.85, edge: PAL.gold });
 
     this.badge = scene.add.rectangle(0, 0, 11, 10, hex(PAL.gold)).setOrigin(0, 0.5);
     this.badgeText = scene.add
@@ -60,8 +58,7 @@ export class Prompt {
       const totalW = pad + badgeW + gap + verbW + pad;
       const left = -Math.round(totalW / 2);
 
-      // setSize, not `.width =`: only setSize moves the origin with the new width.
-      this.panel.setSize(totalW, 14);
+      drawFrame(this.panel, left, -8, totalW, 16, { fill: PAL.black, alpha: 0.85, edge: PAL.gold });
       this.totalW = totalW;
       this.badge.setSize(badgeW, 10);
       this.badge.x = left + pad;

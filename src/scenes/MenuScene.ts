@@ -12,6 +12,7 @@ import { PERKS, PERK_LIST } from '../data/perks';
 import { RESOURCES, RESOURCE_IDS, CONSUMABLES, type ResourceId } from '../data/resources';
 import { BRANCHES, REINFORCE_COST, WEAPONS, type WeaponId } from '../data/weapons';
 import { RowList, type RowSpec } from '../ui/Panel';
+import { makeFrame } from '../ui/Frame';
 import { Button } from '../ui/Button';
 import { FONT } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
@@ -60,10 +61,7 @@ export class MenuScene extends Phaser.Scene {
     this.tab = this.openTab;
 
     this.add.rectangle(0, 0, width, height, hex(PAL.black)).setOrigin(0).setAlpha(0.88);
-    this.add
-      .rectangle(10, 8, width - 20, height - 16, hex(PAL.navy))
-      .setOrigin(0)
-      .setStrokeStyle(1, hex(PAL.blueDark));
+    makeFrame(this, 10, 8, width - 20, height - 16, { edge: PAL.gold, alpha: 0.97 });
 
     this.add.bitmapText(18, 14, FONT, 'THE LAST CAMP').setScale(1.5).setTint(hex(PAL.gold));
     this.subtitle = this.add
@@ -192,6 +190,7 @@ export class MenuScene extends Phaser.Scene {
         title: def.name,
         effect: status.owned ? def.campChange : def.effect,
         cost: costLabel(def.cost),
+        costItems: def.cost,
         blockedBy: status.owned ? null : status.blockedBy,
         state: status.owned ? 'owned' : status.reason === 'affordable' ? 'affordable' : 'blocked',
         onClick:
@@ -257,6 +256,7 @@ export class MenuScene extends Phaser.Scene {
         title: perk.maxLevel > 1 ? `${perk.name}  ${level}/${perk.maxLevel}` : perk.name,
         effect: perk.desc,
         cost: maxed ? '' : costLabel(perk.cost),
+        costItems: maxed ? undefined : perk.cost,
         blockedBy: maxed || can ? null : ResourceSystem.shortfall(perk.cost),
         state: maxed ? 'owned' : can ? 'affordable' : 'blocked',
         onClick: can
@@ -311,6 +311,7 @@ export class MenuScene extends Phaser.Scene {
           title: `  Reinforce ${resolved.def.name}`,
           effect: 'Stronger in every way. Opens the two paths beyond it.',
           cost: costLabel(REINFORCE_COST),
+          costItems: REINFORCE_COST,
           blockedBy: can ? null : ResourceSystem.shortfall(REINFORCE_COST),
           state: can ? 'affordable' : 'blocked',
           onClick: can
@@ -331,6 +332,7 @@ export class MenuScene extends Phaser.Scene {
             title: `  ${branch.name}`,
             effect: branch.desc,
             cost: costLabel(branch.cost),
+            costItems: branch.cost,
             blockedBy: can ? null : ResourceSystem.shortfall(branch.cost),
             state: can ? 'affordable' : 'blocked',
             onClick: can
@@ -358,6 +360,7 @@ export class MenuScene extends Phaser.Scene {
         title: `Craft ${WEAPONS.spear.name}`,
         effect: WEAPONS.spear.desc,
         cost: costLabel(cost),
+        costItems: cost,
         blockedBy: can ? null : ResourceSystem.shortfall(cost),
         state: can ? 'affordable' : 'blocked',
         onClick: can
@@ -399,6 +402,7 @@ export class MenuScene extends Phaser.Scene {
         title: 'Cook Warm Broth',
         effect: CONSUMABLES.broth.desc,
         cost: costLabel(cost),
+        costItems: cost,
         blockedBy: can ? null : ResourceSystem.shortfall(cost),
         state: can ? 'affordable' : 'blocked',
         onClick: can

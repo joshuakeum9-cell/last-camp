@@ -13,6 +13,8 @@ import { WEAPON_ICON_KEY } from '../art/sprites/weapons';
 import { ResourceSystem } from '../systems/ResourceSystem';
 import { FX } from '../art/sprites/fx';
 import { touchControlsWanted } from '../ui/TouchControls';
+import { makeFrame, drawFrame } from '../ui/Frame';
+import { PixelFactory } from '../art/PixelFactory';
 
 /**
  * The overlay. During an expedition it shows only what the player must act on:
@@ -39,8 +41,11 @@ export class HUDScene extends Phaser.Scene {
   private compass!: Phaser.GameObjects.Image;
   private resourceRows = new Map<ResourceId, { icon: Phaser.GameObjects.Image; label: Label }>();
   private toasts: Label[] = [];
-  private resourcePanel!: Phaser.GameObjects.Rectangle;
-  private statusPanel!: Phaser.GameObjects.Rectangle;
+  private resourcePanel!: Phaser.GameObjects.Graphics;
+  private statusPanel!: Phaser.GameObjects.Graphics;
+  private hpText!: Label;
+  private coldText!: Label;
+  private dialBack!: Phaser.GameObjects.Graphics;
   private pauseButton!: Phaser.GameObjects.Rectangle;
   private compassHit!: Phaser.GameObjects.Rectangle;
   private pauseGlyph!: Phaser.GameObjects.BitmapText;
@@ -64,39 +69,51 @@ export class HUDScene extends Phaser.Scene {
     this.resourceRows.clear();
 
     // --- health and cold, top left ---------------------------------------
-    // The same treatment for the health and cold meters on the left.
-    this.statusPanel = this.add
-      .rectangle(2, 2, 84, 22, hex(PAL.black))
-      .setOrigin(0)
-      .setAlpha(0.42)
-      .setStrokeStyle(1, hex(PAL.blueDark), 0.7)
-      .setScrollFactor(0);
+    // A heart and a snowflake, a bar each, and the number inside the bar. The
+    // number is the part players actually read once they know the game.
+    if (!this.textures.exists('ui-heart')) {
+      PixelFactory.makeTexture(
+        this,
+        'ui-heart',
+        ['.ww.ww.', 'wwwwwww', 'wwwwwww', '.wwwww.', '..www..', '...w...'],
+        { '.': null, w: 'blood' },
+      );
+    }
+    this.statusPanel = makeFrame(this, 2, 2, 104, 28, { fill: PAL.black, alpha: 0.5 }).setScrollFactor(0);
 
-    this.hpBar = new Bar(this, 6, 6, {
-      width: 74,
-      height: 7,
+    this.add.image(8, 10, 'ui-heart').setOrigin(0, 0.5).setScrollFactor(0);
+    this.hpBar = new Bar(this, 18, 5, {
+      width: 82,
+      height: 10,
       fill: PAL.blood,
       ghost: PAL.cream,
     }).setScrollFactor(0);
-
-    this.coldBar = new Bar(this, 6, 16, {
-      width: 58,
-      height: 5,
-      fill: PAL.ice,
-    }).setScrollFactor(0);
-
-    this.coldIcon = this.add
-      .bitmapText(68, 15, FONT, '*')
-      .setTint(hex(PAL.cyan))
+    this.hpText = new Label(this, 59, 6, '60/60', { color: PAL.white, originX: 0.5, outline: 'shadow' })
       .setScrollFactor(0);
 
-    // --- day clock, top centre -------------------------------------------
+    this.coldIcon = this.add
+      .bitmapText(8, 17, FONT, '*')
+      .setTint(hex(PAL.cyan))
+      .setScrollFactor(0);
+    this.coldBar = new Bar(this, 18, 19, {
+      width: 60,
+      height: 6,
+      fill: PAL.ice,
+    }).setScrollFactor(0);
+    this.coldText = new Label(this, 100, 17, '0', { color: PAL.cyan, originX: 1, outline: 'shadow' })
+      .setScrollFactor(0);
+
+    // --- day dial, top centre --------------------------------------------
+    // A clock face split into the day's phases, with the day number in the middle
+    // and the hand sweeping round it. One glance says how much light is left.
+    this.dialBack = this.add.graphics().setScrollFactor(0);
     this.clockArc = this.add.graphics().setScrollFactor(0);
-    this.dayLabel = new Label(this, Math.round(width / 2), 5, 'DAY 1', {
+    this.dayLabel = new Label(this, Math.round(width / 2), 13, '1', {
       color: PAL.white,
       originX: 0.5,
+      outline: 'shadow',
     }).setScrollFactor(0);
-    this.clock = new Label(this, Math.round(width / 2), 15, 'MORNING', {
+    this.clock = new Label(this, Math.round(width / 2), 33, 'MORNING', {
       color: PAL.cyan,
       originX: 0.5,
     }).setScrollFactor(0);
@@ -104,18 +121,18 @@ export class HUDScene extends Phaser.Scene {
     // --- boss bar, top centre, only in a fight ----------------------------
     const bossW = 160;
     this.bossBack = this.add
-      .rectangle(Math.round(width / 2), 34, bossW, 5, hex(PAL.black))
+      .rectangle(Math.round(width / 2), 46, bossW, 5, hex(PAL.black))
       .setOrigin(0.5, 0)
       .setAlpha(0.7)
       .setStrokeStyle(1, hex(PAL.blood), 0.9)
       .setScrollFactor(0)
       .setVisible(false);
     this.bossFill = this.add
-      .rectangle(Math.round(width / 2 - bossW / 2), 34, bossW, 5, hex(PAL.blood))
+      .rectangle(Math.round(width / 2 - bossW / 2), 46, bossW, 5, hex(PAL.blood))
       .setOrigin(0, 0)
       .setScrollFactor(0)
       .setVisible(false);
-    this.bossLabel = new Label(this, Math.round(width / 2), 40, '', { color: PAL.blood, originX: 0.5 })
+    this.bossLabel = new Label(this, Math.round(width / 2), 52, '', { color: PAL.blood, originX: 0.5 })
       .setScrollFactor(0)
       .setVisible(false);
 
@@ -205,12 +222,7 @@ export class HUDScene extends Phaser.Scene {
     const y = height - 4 - size;
     this.weaponLabel.container.x = touch ? x0 + totalW : width - 6;
 
-    this.add
-      .rectangle(x0 - 3, y - 3, totalW + 6, size + 6, hex(PAL.black))
-      .setOrigin(0)
-      .setAlpha(0.55)
-      .setStrokeStyle(1, hex(PAL.blueDark), 0.7)
-      .setScrollFactor(0);
+    makeFrame(this, x0 - 4, y - 4, totalW + 8, size + 8, { fill: PAL.black, alpha: 0.6 }).setScrollFactor(0);
 
     const keys = ['1', '2', 'F'];
     for (let i = 0; i < count; i++) {
@@ -282,12 +294,10 @@ export class HUDScene extends Phaser.Scene {
 
     // A permanent strip along the bottom left. Every resource is always shown, even at
     // zero, so a new player can see what the game counts before they have any of it.
-    this.resourcePanel = this.add
-      .rectangle(2, y - 3, RESOURCE_IDS.length * slot + 6, 16, hex(PAL.black))
-      .setOrigin(0)
-      .setAlpha(0.55)
-      .setStrokeStyle(1, hex(PAL.blueDark), 0.7)
-      .setScrollFactor(0);
+    this.resourcePanel = makeFrame(this, 2, y - 4, RESOURCE_IDS.length * slot + 6, 18, {
+      fill: PAL.black,
+      alpha: 0.6,
+    }).setScrollFactor(0);
 
     RESOURCE_IDS.forEach((id, i) => {
       const x = 6 + i * slot;
@@ -343,9 +353,12 @@ export class HUDScene extends Phaser.Scene {
       this.coldIcon.setTint(hex(PAL.cyan));
     }
 
-    this.dayLabel.setText(`DAY ${hud.day}`);
+    this.dayLabel.setText(String(hud.day));
+    this.hpText.setText(`${Math.max(0, Math.ceil(hud.hp))}/${Math.round(hud.maxHp)}`);
+    this.coldText.setText(String(Math.round(hud.cold)));
     this.clock.setVisible(inWorld);
     this.clockArc.setVisible(inWorld);
+    this.dialBack.setVisible(inWorld);
     if (inWorld) {
       const text = hud.showSeconds
         ? `${hud.phaseName}  ${Math.max(0, Math.ceil(hud.secondsLeft))}s`
@@ -389,20 +402,52 @@ export class HUDScene extends Phaser.Scene {
   }
 
   private drawClockArc(width: number): void {
+    const cx = Math.round(width / 2);
+    const cy = 17;
+    const r = 13;
+    const top = -Math.PI / 2;
+
+    // The face: one wedge per phase, in the colour of that light.
+    const back = this.dialBack;
+    back.clear();
+    back.fillStyle(hex(PAL.black), 0.65);
+    back.fillCircle(cx, cy, r + 3);
+    const phases = BAL.day.phases;
+    const total = BAL.day.length;
+    const colours: Record<string, string> = {
+      morning: PAL.gold,
+      midday: PAL.cream,
+      evening: PAL.orange,
+      nightfall: PAL.violetDark,
+      night: PAL.navy,
+    };
+    let from = 0;
+    for (const p of phases) {
+      const until = Math.min(p.until, total);
+      if (until <= from) continue;
+      const a0 = top + (from / total) * Math.PI * 2;
+      const a1 = top + (until / total) * Math.PI * 2;
+      back.fillStyle(hex(colours[p.id] ?? PAL.navy), 0.55);
+      back.slice(cx, cy, r, a0, a1, false);
+      back.fillPath();
+      from = until;
+    }
+    back.lineStyle(1, hex(PAL.grey), 0.9);
+    back.strokeCircle(cx, cy, r + 0.5);
+
+    // The hand.
     const g = this.clockArc;
     g.clear();
-    const cx = Math.round(width / 2);
-    const cy = 4;
-    const r = 24;
-    g.lineStyle(1, hex(PAL.greyDark), 0.9);
+    const progress = Phaser.Math.Clamp(hud.dayProgress, 0, 1);
+    const angle = top + progress * Math.PI * 2;
+    const night = hud.phaseName === 'NIGHT' || hud.phaseName === 'NIGHTFALL';
+    g.lineStyle(2, hex(night ? PAL.ice : PAL.white), 1);
     g.beginPath();
-    g.arc(cx, cy, r, Math.PI, Math.PI * 2);
+    g.moveTo(cx, cy);
+    g.lineTo(cx + Math.cos(angle) * (r - 2), cy + Math.sin(angle) * (r - 2));
     g.strokePath();
-
-    const angle = Math.PI + Math.PI * Phaser.Math.Clamp(hud.dayProgress, 0, 1);
-    const night = hud.dayProgress >= 0.83;
-    g.fillStyle(hex(night ? PAL.ice : PAL.gold), 1);
-    g.fillCircle(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r, 2);
+    g.fillStyle(hex(night ? PAL.ice : PAL.white), 1);
+    g.fillCircle(cx + Math.cos(angle) * (r - 2), cy + Math.sin(angle) * (r - 2), 1.5);
   }
 
   private updateResources(): void {
@@ -417,6 +462,5 @@ export class HUDScene extends Phaser.Scene {
       entry.icon.setAlpha(amount > 0 ? 1 : 0.35);
       entry.label.setAlpha(amount > 0 ? 1 : 0.4);
     }
-    this.statusPanel.height = 22;
   }
 }

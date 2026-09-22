@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { RESOURCE_ICON } from '../art/sprites/icons';
+import type { ResourceId } from '../data/resources';
 import { FONT, wrap } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
 
@@ -10,6 +12,8 @@ export interface RowSpec {
   cost: string;
   /** What an owned row says instead of BUILT, for lists that are not upgrades. */
   ownedLabel?: string;
+  /** A resource cost, drawn as icons and numbers instead of the `cost` text. */
+  costItems?: Partial<Record<ResourceId, number>>;
   /** Shown under the effect when the row cannot be taken. */
   blockedBy?: string | null;
   state: 'affordable' | 'blocked' | 'owned';
@@ -94,6 +98,10 @@ export class RowList {
           .setOrigin(1, 0)
           .setTint(hex(PAL.green)),
       );
+    } else if (spec.costItems && Object.keys(spec.costItems).length > 0) {
+      row.add(
+        renderCost(this.scene, this.width - 6, 2, spec.costItems, spec.state === 'affordable' ? PAL.cream : PAL.greyDark),
+      );
     } else if (spec.cost) {
       row.add(
         this.scene.add
@@ -143,4 +151,32 @@ export class RowList {
     this.mask?.destroy();
     void wrap;
   }
+}
+
+/**
+ * A cost as icon-and-number chips, laid out right to left from `rightX`. Numbers
+ * next to the thing's own picture read faster than "25W 1C" ever did, and they
+ * match the strip at the bottom of the screen.
+ */
+export function renderCost(
+  scene: Phaser.Scene,
+  rightX: number,
+  y: number,
+  cost: Partial<Record<ResourceId, number>>,
+  color: string = PAL.cream,
+): Phaser.GameObjects.GameObject[] {
+  const out: Phaser.GameObjects.GameObject[] = [];
+  let x = rightX;
+  const entries = Object.entries(cost).filter(([, n]) => (n ?? 0) > 0).reverse();
+  for (const [id, n] of entries) {
+    const icon = scene.add.image(x, y + 5, RESOURCE_ICON[id as ResourceId]).setOrigin(1, 0.5).setScale(0.8);
+    x -= 10;
+    const num = scene.add
+      .bitmapText(x, y + 1, FONT, String(n))
+      .setOrigin(1, 0)
+      .setTint(hex(color));
+    x -= num.width + 6;
+    out.push(icon, num);
+  }
+  return out;
 }

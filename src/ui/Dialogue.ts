@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { makeFrame } from './Frame';
 import { BAL } from '../data/balance';
 import { FONT, wrap } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
@@ -45,13 +46,7 @@ export class Dialogue {
     const c = this.scene.add.container(0, 0).setScrollFactor(0).setDepth(8500);
     this.container = c;
 
-    c.add(
-      this.scene.add
-        .rectangle(x, y, boxW, boxH, hex(PAL.navy))
-        .setOrigin(0)
-        .setAlpha(0.96)
-        .setStrokeStyle(1, hex(PAL.gold)),
-    );
+    c.add(makeFrame(this.scene, x, y, boxW, boxH, { edge: PAL.gold, alpha: 0.96 }));
 
     let textTop = y + 8;
     if (title) {
