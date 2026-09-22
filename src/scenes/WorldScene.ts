@@ -1673,7 +1673,7 @@ export class WorldScene extends Phaser.Scene {
         this.strayPup = null;
         this.pup = new Pup(this, this.player.cx + 16, this.player.sprite.y + 2, this.juice);
         bus.emit('audio:play', { cue: 'rescue' });
-        bus.emit('juice:toast', { text: 'A wolf pup, the alpha\u2019s. It follows without being asked.', color: PAL.cream });
+        bus.emit('juice:toast', { text: "A wolf pup, the alpha's. It follows without being asked.", color: PAL.cream });
         SaveSystem.save();
       }
       return;
