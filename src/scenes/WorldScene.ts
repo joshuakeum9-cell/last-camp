@@ -129,6 +129,8 @@ export class WorldScene extends Phaser.Scene {
     this.gates = [];
     this.mira = null;
     this.boss = null;
+    this.currentArea = null;
+    this.canInteract = false;
 
     this.mapData = generateWorld(seed);
     this.buildTilemap();

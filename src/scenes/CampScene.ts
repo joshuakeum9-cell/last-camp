@@ -67,6 +67,13 @@ export class CampScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Scene instances are reused, so anything that changes during a visit starts
+    // over here. `leaving` in particular: left true, the portal never fires again.
+    this.leaving = false;
+    this.portalFrame = 0;
+    this.stations = [];
+    this.mira = null;
+
     state.run = null;
     resetHud();
     hud.context = 'camp';
