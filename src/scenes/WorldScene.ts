@@ -43,6 +43,7 @@ import { hud } from '../core/HudState';
 import { Label } from '../ui/Label';
 import { Prompt } from '../ui/Prompt';
 import { WorldMap } from '../ui/WorldMap';
+import { activeEvent } from '../data/events';
 import { Rng, hashString, subSeed } from '../core/Rng';
 import { ENEMIES, type EnemyId } from '../data/enemies';
 import { RESOURCES } from '../data/resources';
@@ -212,10 +213,11 @@ export class WorldScene extends Phaser.Scene {
     this.setupCamera();
 
     this.weather.setStorm(state.run.storm);
-    if (state.run.storm) {
-      bus.emit('juice:toast', {
-        text: 'A storm is coming in. The cold will bite harder.',
-        color: '#2fd8ff',
+    const event = activeEvent(state.run.event);
+    if (event.id !== 'clear' && state.run.timeSec < 1) {
+      this.time.delayedCall(700, () => {
+        this.announce(event.name);
+        bus.emit('juice:toast', { text: event.report, color: '#2fd8ff' });
       });
     }
 
@@ -735,7 +737,7 @@ export class WorldScene extends Phaser.Scene {
     }
     this.touch.update(this.canInteract, !!state.player.equipped[1], (state.run?.collected.food ?? 0) > 0);
 
-    this.weather.update(dt, this.currentArea?.id === 'lake' ? 0.5 : 0.18);
+    this.weather.update(dt, Math.max(this.currentArea?.id === 'lake' ? 0.5 : 0.18, activeEvent(state.run?.event).fog));
     this.weather.setNight(this.clock.darkness);
     this.lighting.update(_time, this.clock.darkness, this.collectLights());
     audio.setWindIntensity(this.clock.darkness + (state.run?.storm ? 0.4 : 0));

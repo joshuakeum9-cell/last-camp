@@ -26,6 +26,7 @@ import { NPCMira } from '../entities/NPCMira';
 import { Dialogue } from '../ui/Dialogue';
 import { TouchControls } from '../ui/TouchControls';
 import { NOTE_LIST } from '../data/story';
+import { eventForDay } from '../data/events';
 
 interface Station {
   id: StationId;
@@ -397,10 +398,11 @@ export class CampScene extends Phaser.Scene {
     state.story.reportSeenDay = state.day;
 
     const lines: string[] = [];
+    const event = eventForDay(state.day, state.stats.deaths);
     if (state.day === 1) {
       lines.push('You do not remember getting here. The fire was already burning.');
-    } else if (state.day >= BAL.day.stormFromDay) {
-      lines.push('The sky is the colour of old iron. There is weather coming.');
+    } else if (event.report) {
+      lines.push(event.report);
     } else {
       lines.push('Clear, and colder than yesterday.');
     }
@@ -526,8 +528,8 @@ export class CampScene extends Phaser.Scene {
     if (this.leaving) return;
     this.leaving = true;
 
-    const storm = state.day >= BAL.day.stormFromDay && Math.random() < BAL.day.stormChance;
-    state.run = newRunState(Date.now() & 0xffffff, ResourceSystem.maxHp(), storm);
+    const event = eventForDay(state.day, state.stats.deaths);
+    state.run = newRunState(Date.now() & 0xffffff, ResourceSystem.maxHp(), event.storm, event.id);
     SaveSystem.save();
     bus.emit('day:started', { day: state.day });
     bus.emit('audio:play', { cue: 'portal' });

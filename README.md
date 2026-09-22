@@ -60,6 +60,14 @@ something in reach. The II button top right pauses; tapping the compass opens th
 Everything is sized and placed to stay out of the top of the screen and out of the way
 of your thumbs. Phones held in portrait get a rotate prompt.
 
+## Every day is different
+
+Each morning the report names the day: a whiteout, a wolf moon, a rich vein of crystal,
+a blizzard, or still air. Each one bends something out there: how many things hunt you,
+what the nodes give, how fast the cold climbs, how far you can see. Every area has its
+own scenery too. Lamps light the road at night, thin ice on the lake gives way if you
+stand on a crack, and old fire pits can be lit with two wood to shed cold mid-trip.
+
 ## Difficulty
 
 Three settings, chosen on the title screen and changeable at any time.

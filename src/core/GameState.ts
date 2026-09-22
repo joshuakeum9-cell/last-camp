@@ -34,6 +34,8 @@ export interface RunState {
   timeSec: number;
   phase: PhaseId;
   storm: boolean;
+  /** The day's event, see data/events.ts. */
+  event: string;
   hp: number;
   cold: number;
   collected: Record<ResourceId, number>;
@@ -206,12 +208,13 @@ export function newGameState(): GameState {
   };
 }
 
-export function newRunState(seed: number, maxHp: number, storm: boolean): RunState {
+export function newRunState(seed: number, maxHp: number, storm: boolean, event = 'clear'): RunState {
   return {
     seed,
     timeSec: 0,
     phase: 'morning',
     storm,
+    event,
     hp: maxHp,
     cold: 0,
     collected: emptyResources(),

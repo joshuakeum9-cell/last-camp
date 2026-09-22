@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { state } from '../core/GameState';
 import { BAL, dayScale } from '../data/balance';
+import { activeEvent } from '../data/events';
 import { AREA_LIST, type AreaId } from '../data/areas';
 import { AREA_SPAWNS, ENEMIES, SPAWN_DENSITY, type EnemyId } from '../data/enemies';
 import { EnemyBase, type EnemyBehavior } from '../entities/EnemyBase';
@@ -51,7 +52,12 @@ export class EnemyManager {
       const tiles = (area.rect.x1 - area.rect.x0) * (area.rect.y1 - area.rect.y0);
       const groups = Math.max(
         1,
-        Math.round((tiles / 100) * SPAWN_DENSITY * activeDifficulty(state.settings.difficulty).spawnRate),
+        Math.round(
+          (tiles / 100) *
+            SPAWN_DENSITY *
+            activeDifficulty(state.settings.difficulty).spawnRate *
+            activeEvent(state.run?.event).spawnMult,
+        ),
       );
 
       for (let g = 0; g < groups; g++) {
