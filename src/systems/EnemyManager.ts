@@ -78,18 +78,20 @@ export class EnemyManager {
         if (!spot) continue;
 
         const packSize = rng.int(def.pack[0], def.pack[1]) + (def.pack[1] > 1 ? scale.pack : 0);
+        // From day two, one pack in eight is led by an elite. Never the alpha or stalker.
+        const eliteLead = day >= 2 && rule.id !== 'alpha' && rule.id !== 'stalker' && rng.chance(0.12);
         for (let i = 0; i < packSize; i++) {
           const jitterX = rng.range(-22, 22);
           const jitterY = rng.range(-18, 18);
-          this.spawn(rule.id, spot.x + jitterX, spot.y + jitterY);
+          this.spawn(rule.id, spot.x + jitterX, spot.y + jitterY, eliteLead && i === 0);
           if (this.enemies.length >= BAL.perf.maxActiveEnemies * 3) return;
         }
       }
     }
   }
 
-  spawn(id: EnemyId, x: number, y: number): EnemyBase {
-    const enemy = new EnemyBase(this.scene, ENEMIES[id], x, y, BEHAVIORS[id], this.juice);
+  spawn(id: EnemyId, x: number, y: number, elite = false): EnemyBase {
+    const enemy = new EnemyBase(this.scene, ENEMIES[id], x, y, BEHAVIORS[id], this.juice, elite);
     this.enemies.push(enemy);
     return enemy;
   }

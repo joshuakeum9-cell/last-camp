@@ -63,6 +63,8 @@ export class EnemyBase {
   stunUntil = 0;
   /** Group id, so a pack can alert together. */
   packId = '';
+  /** Bigger, meaner, worth more. One in a pack now and then. */
+  readonly elite: boolean;
 
   private stateUntil = 0;
   private nextAttackAt = 0;
@@ -82,14 +84,16 @@ export class EnemyBase {
     y: number,
     private behavior: EnemyBehavior,
     private juice: Juice,
+    elite = false,
   ) {
     this.id = `${def.id}-${Math.random().toString(36).slice(2, 9)}`;
+    this.elite = elite;
 
     const scale = dayScale(state.day);
     const diff = activeDifficulty(state.settings.difficulty);
-    this.maxHp = Math.max(1, Math.round(def.hp * scale.hp * diff.enemyHp));
+    this.maxHp = Math.max(1, Math.round(def.hp * scale.hp * diff.enemyHp * (elite ? 2.5 : 1)));
     this.hp = this.maxHp;
-    this.damage = Math.max(1, Math.round(def.damage * scale.damage * diff.enemyDamage * WINTER.damageMult()));
+    this.damage = Math.max(1, Math.round(def.damage * scale.damage * diff.enemyDamage * WINTER.damageMult() * (elite ? 1.3 : 1)));
 
     this.shadow = scene.add
       .ellipse(x, y - 1, 16, 6, hex(PAL.blue))
@@ -100,6 +104,11 @@ export class EnemyBase {
     this.sprite.setOrigin(0.5, 1);
     this.sprite.setDepth(y);
     this.sprite.setData('enemy', this);
+    if (elite) {
+      // A third bigger and wearing its accent colour, so it reads as the one to watch.
+      this.sprite.setScale(1.3).setTint(hex(def.accent));
+      this.shadow.setScale(1.3);
+    }
 
     this.body = this.sprite.body as Phaser.Physics.Arcade.Body;
     const w = Math.max(8, Math.round(this.sprite.width * 0.55));
@@ -263,6 +272,7 @@ export class EnemyBase {
         if (!this.seen) {
           this.seen = true;
           bus.emit('enemy:seen', { type: this.def.id });
+          if (this.elite) bus.emit('juice:toast', { text: `A ${this.def.name}, and a big one.`, color: this.def.accent });
         }
         break;
     }
@@ -335,7 +345,7 @@ export class EnemyBase {
     this.body.enable = false;
 
     const night = state.run?.phase === 'night' || state.run?.phase === 'nightfall';
-    bus.emit('enemy:killed', { id: this.id, type: this.def.id, x: this.cx, y: this.cy, night });
+    bus.emit('enemy:killed', { id: this.id, type: this.def.id, x: this.cx, y: this.cy, night, elite: this.elite });
     bus.emit('audio:play', { cue: 'enemyDie' });
 
     this.juice.sparks(this.cx, this.cy, this.def.accent, 14, 150);

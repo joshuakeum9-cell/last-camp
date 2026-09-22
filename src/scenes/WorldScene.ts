@@ -307,12 +307,15 @@ export class WorldScene extends Phaser.Scene {
         else this.weapons.select((slot + 1) as 1 | 2);
       }),
     );
-    this.subs.add(bus.on('enemy:killed', (e) => this.onEnemyKilled(e.type, e.x, e.y)));
+    this.subs.add(bus.on('enemy:killed', (e) => this.onEnemyKilled(e.type, e.x, e.y, !!e.elite)));
     this.subs.add(bus.on('boss:defeated', ({ id }) => this.onBossDefeated(id)));
     this.subs.add(bus.on('enemy:seen', ({ type }) => this.markSeen(type)));
     this.subs.add(bus.on('boss:attempted', ({ id }) => this.markSeen(id)));
-    this.subs.add(bus.on('player:hit', ({ damage }) => {
-      if (state.run) state.run.damageTaken += damage;
+    this.subs.add(bus.on('player:hit', ({ damage, source }) => {
+      if (state.run) {
+        state.run.damageTaken += damage;
+        state.run.lastHitBy = source;
+      }
     }));
     this.events.once('shutdown', () => this.cleanup());
     this.cameras.main.fadeIn(280, 0, 0, 0);
@@ -1156,7 +1159,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /** Drops are rolled here rather than in the enemy, so loot rules live in one place. */
-  private onEnemyKilled(type: string, x: number, y: number): void {
+  private onEnemyKilled(type: string, x: number, y: number, elite = false): void {
     if (state.run) state.run.kills++;
     state.stats.enemiesKilled[type] = (state.stats.enemiesKilled[type] ?? 0) + 1;
 
@@ -1171,6 +1174,13 @@ export class WorldScene extends Phaser.Scene {
     const def = ENEMIES[type as EnemyId];
     if (!def) return;
     const rng = new Rng(hashString(`${type}:${Math.round(x)}:${Math.round(y)}`));
+    // An elite always pays: a crystal, some scrap, and now and then a kit.
+    if (elite) {
+      this.pickups.push(new Pickup(this, 'crystal', 1, x - 6, y));
+      this.pickups.push(new Pickup(this, 'scrap', 3, x + 6, y));
+      if (rng.chance(0.25)) this.pickups.push(new Pickup(this, 'medical', 1, x, y - 6));
+      if (state.run) state.run.rareFinds++;
+    }
     for (const drop of def.drops) {
       if (!rng.chance(drop.chance)) continue;
       const amount = rng.int(drop.min, drop.max);
@@ -1365,7 +1375,10 @@ export class WorldScene extends Phaser.Scene {
       nearHome || this.nearLitFire() ? 'fire' : 'none',
     );
     this.updateThinIce(dt);
-    if (damage > 0) this.player.hp = Math.max(0, this.player.hp - damage);
+    if (damage > 0) {
+      this.player.hp = Math.max(0, this.player.hp - damage);
+      if (state.run && this.player.hp <= 0) state.run.lastHitBy = 'cold';
+    }
     if (this.player.hp <= 0 && !this.ending) this.endDay('death');
 
     this.frostVignette.setAlpha(Math.max(0, (this.cold.fraction - 0.6) * 0.9));
@@ -1578,6 +1591,7 @@ export class WorldScene extends Phaser.Scene {
       newAreas: run?.newAreas ?? [],
       notes: run?.notesFound.length ?? 0,
       breakables: run?.breakables ?? 0,
+      cause: reason === 'death' ? this.causeOfDeath() : '',
     };
 
     const fade = reason === 'death' ? 700 : 340;
@@ -1586,6 +1600,25 @@ export class WorldScene extends Phaser.Scene {
       this.scene.stop('HUD');
       this.scene.start('Summary', payload);
     });
+  }
+
+  /** One plain sentence for the summary: what got you, where, and when. */
+  private causeOfDeath(): string {
+    const source = state.run?.lastHitBy ?? '';
+    const names: Record<string, string> = {
+      maw: 'the White Maw',
+      stag: 'the Hollow Stag',
+      ranger: 'the One Who Stayed',
+      icicle: 'falling ice',
+      ember: 'a thrown ember',
+      cold: 'the cold',
+      spitter: 'a Snow Spitter',
+    };
+    const def = ENEMIES[source as EnemyId];
+    const who = names[source] ?? (def ? `${/^[aeiou]/i.test(def.name) ? 'an' : 'a'} ${def.name}` : 'something out there');
+    const where = this.currentArea ? `in the ${this.currentArea.name}` : 'out there';
+    const when = this.clock.isNight ? 'after dark' : this.clock.phase === 'evening' ? 'in the evening' : 'in daylight';
+    return `Killed by ${who} ${where}, ${when}.`;
   }
 
   private cleanup(): void {

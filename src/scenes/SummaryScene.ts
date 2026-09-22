@@ -24,6 +24,8 @@ import { dailyChallenge } from '../systems/DailyChallengeSystem';
 
 export interface SummaryData {
   reason: 'return' | 'death';
+  /** The death line, empty on a return. */
+  cause?: string;
   day: number;
   banked: Record<ResourceId, number>;
   bonusNight: Record<ResourceId, number>;
@@ -87,7 +89,7 @@ export class SummaryScene extends Phaser.Scene {
 
     if (died) {
       this.add
-        .bitmapText(width / 2, 40, FONT, 'You collapsed in the snow. You woke up at the fire.')
+        .bitmapText(width / 2, 40, FONT, this.summary.cause || 'You collapsed in the snow. You woke up at the fire.')
         .setOrigin(0.5, 0)
         .setTint(hex(PAL.grey));
       // Spelled out, because losing a haul should not feel like losing the camp.

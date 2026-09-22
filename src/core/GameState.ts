@@ -36,6 +36,8 @@ export interface RunState {
   storm: boolean;
   /** The day's event, see data/events.ts. */
   event: string;
+  /** What last hurt the player, for the death line. */
+  lastHitBy: string;
   hp: number;
   cold: number;
   collected: Record<ResourceId, number>;
@@ -252,6 +254,7 @@ export function newRunState(seed: number, maxHp: number, storm: boolean, event =
     phase: 'morning',
     storm,
     event,
+    lastHitBy: '',
     hp: maxHp,
     cold: 0,
     collected: emptyResources(),
