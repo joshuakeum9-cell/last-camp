@@ -118,6 +118,12 @@ and then a crystal in its gut. Miss and it gets away for a moment. Walk off and 
 goes slack. Each hole needs a while before it bites again, and you are standing still
 on open ice the whole time.
 
+## The pup
+
+Kill the Alpha Beast and its pup is left at the cabin. Take it in and it follows you
+everywhere, bites whatever comes close, and cannot be hurt. At camp it sleeps by the
+fire and can be petted. The GOALS tab lets you leave it at camp for a day.
+
 ## Mira comes along
 
 Once rescued, Mira can work the camp while the game is closed or come out with you.
