@@ -48,6 +48,14 @@ export class HUDScene extends Phaser.Scene {
   create(): void {
     const { width } = BAL.view;
 
+    // The HUD is stopped at the end of every day and launched again at camp. Scene
+    // fields survive that, so anything collected here must start empty or the update
+    // keeps driving game objects the previous run destroyed.
+    this.hotbar = [];
+    this.dashPips = [];
+    this.toasts = [];
+    this.resourceRows.clear();
+
     // --- health and cold, top left ---------------------------------------
     // The same treatment for the health and cold meters on the left.
     this.statusPanel = this.add
