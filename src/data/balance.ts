@@ -128,6 +128,10 @@ export const BAL = {
     fireRadius: 84,
     /** Walk this close to the portal's centre and the day starts. */
     portalRadius: 14,
+    /** Fraction of max health you wake with after collapsing out there. */
+    wakeHpFraction: 0.5,
+    /** Cold is capped at this on waking, so the fire has less to undo. */
+    wakeColdMax: 40,
   },
   eat: {
     /** Seconds between bites, so a stack of food cannot be inhaled mid-fight. */

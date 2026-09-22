@@ -405,14 +405,27 @@ export class SummaryScene extends Phaser.Scene {
         if (lost > 0) state.camp.storage[id] += lost;
       }
       state.run = null;
+      this.wakeAtFire();
       SaveSystem.save();
       bus.emit('juice:toast', { text: 'You get up. The day is not over.', color: '#c56bff' });
       this.scene.start('Camp');
     });
   }
 
+  /**
+   * Waking at the fire after a collapse is a partial recovery, not a full one and
+   * not none: enough to move, with the fire left to do the rest.
+   */
+  private wakeAtFire(): void {
+    if (this.summary.reason !== 'death') return;
+    const maxHp = ResourceSystem.maxHp();
+    state.player.hp = Math.max(state.player.hp, Math.round(maxHp * BAL.camp.wakeHpFraction));
+    state.player.cold = Math.min(state.player.cold, BAL.camp.wakeColdMax);
+  }
+
   private leave(): void {
     dailyChallenge.claimIfDone();
+    this.wakeAtFire();
     state.day += 1;
     state.stats.daysSurvived += 1;
     state.stats.bestDay = Math.max(state.stats.bestDay, state.day);
