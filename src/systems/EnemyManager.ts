@@ -106,7 +106,7 @@ export class EnemyManager {
     return rules[rules.length - 1];
   }
 
-  private findOpenTile(areaId: AreaId, rng: Rng): { x: number; y: number } | null {
+  findOpenTile(areaId: AreaId, rng: Rng): { x: number; y: number } | null {
     const area = AREA_LIST.find((a) => a.id === areaId);
     if (!area) return null;
     for (let attempt = 0; attempt < 30; attempt++) {

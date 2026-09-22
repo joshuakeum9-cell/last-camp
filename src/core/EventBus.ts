@@ -50,6 +50,8 @@ export interface GameEvents {
   'boss:defeated': { id: string };
   /** The tower was climbed and a choice was made. */
   'story:ended': { ending: 'shutdown' | 'kept' };
+  /** The save was written. The HUD blinks a small word so nobody wonders. */
+  'save:done': Record<string, never>;
 
   'challenge:progress': { id: string; progress: number; done: boolean };
   'achievement:unlocked': { id: string };

@@ -60,6 +60,7 @@ export class HUDScene extends Phaser.Scene {
   private objectiveTag!: Phaser.GameObjects.BitmapText;
   private hurtWash!: Phaser.GameObjects.Image;
   private eventLabel!: Label;
+  private savedLabel!: Phaser.GameObjects.BitmapText;
 
   constructor() {
     super('HUD');
@@ -228,6 +229,22 @@ export class HUDScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(-1);
 
+    // A small SAVED that blinks whenever the save is written. Phones especially:
+    // people close the tab and want to know it kept.
+    this.savedLabel = this.add
+      .bitmapText(width - 6, BAL.view.height - 60, FONT, 'SAVED')
+      .setOrigin(1, 0)
+      .setTint(hex(PAL.green))
+      .setAlpha(0)
+      .setScrollFactor(0);
+    this.subs.add(
+      bus.on('save:done', () => {
+        this.tweens.killTweensOf(this.savedLabel);
+        this.savedLabel.setAlpha(1);
+        this.tweens.add({ targets: this.savedLabel, alpha: 0, delay: 700, duration: 500 });
+      }),
+    );
+
     // The one line that says what to do next. Under the meters, where the eye
     // already goes; gold tag, plain words.
     this.objectiveTag = this.add
@@ -368,7 +385,9 @@ export class HUDScene extends Phaser.Scene {
 
   private toast(text: string, color: string = PAL.cream): void {
     const { width, height } = BAL.view;
-    const label = new Label(this, Math.round(width / 2), height - 58, text, {
+    // Above the hotbar row normally; above the reading panel when one is open.
+    const base = hud.dialogueOpen ? height - 112 : height - 58;
+    const label = new Label(this, Math.round(width / 2), base, text, {
       color,
       originX: 0.5,
     })

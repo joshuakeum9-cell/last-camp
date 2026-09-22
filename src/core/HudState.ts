@@ -34,6 +34,8 @@ export interface HudState {
   bossMaxHp: number;
   /** Deeper Winter's No Map: the compass stays off too. */
   mapHidden: boolean;
+  /** A reading panel is up, so toasts move above it. */
+  dialogueOpen: boolean;
   /** The day's event, in capitals, or empty when the day is clear. */
   eventName: string;
   /** The player's world position, for the minimap. */
@@ -64,6 +66,7 @@ export const hud: HudState = {
   bossHp: 0,
   bossMaxHp: 1,
   mapHidden: false,
+  dialogueOpen: false,
   eventName: '',
   playerX: 0,
   playerY: 0,

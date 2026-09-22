@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { hud } from '../core/HudState';
 import { makeFrame } from './Frame';
 import { BAL } from '../data/balance';
 import { FONT, wrap } from '../art/PixelFont';
@@ -30,6 +31,7 @@ export class Dialogue {
     this.index = 0;
     this.onDone = onDone;
     this.build(title, portrait);
+    hud.dialogueOpen = true;
     this.locked = true;
     // A short lock stops the same key press that opened it from closing it.
     this.scene.time.delayedCall(160, () => {
@@ -116,5 +118,6 @@ export class Dialogue {
   close(): void {
     this.container?.destroy(true);
     this.container = undefined;
+    hud.dialogueOpen = false;
   }
 }

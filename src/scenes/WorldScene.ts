@@ -538,6 +538,69 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  private scheduleAirdrop(): void {
+    const run = state.run;
+    if (!run || state.day < 2 || run.timeSec > 1) return;
+    const roll = hashString(`drop:${state.day}`);
+    if (roll % 5 >= 2) return;
+    const at = 60 + (roll % 90);
+    this.time.delayedCall(at * 1000, () => this.airdrop());
+  }
+
+  private airdrop(): void {
+    if (this.ending || !state.run) return;
+    const known = state.map.discoveredAreas.filter((a) => a !== 'gate' && a !== 'secret');
+    if (known.length === 0) return;
+    const rng = new Rng(hashString(`drop-spot:${state.day}`));
+    const areaId = rng.pick(known);
+    // Somewhere open, and not on top of a note, another cache, or a fire pit, or
+    // the prompt for one of those would win and the crate would look unopenable.
+    let spot: { x: number; y: number } | null = null;
+    for (let attempt = 0; attempt < 12 && !spot; attempt++) {
+      const candidate = this.enemyManager.findOpenTile(areaId, rng);
+      if (!candidate) continue;
+      const near = (x: number, y: number) => Math.hypot(x - candidate.x, y - candidate.y) < 40;
+      const busy =
+        this.notes.some((n) => near(n.sprite.x, n.sprite.y)) ||
+        this.caches.some((c) => near(c.sprite.x, c.sprite.y)) ||
+        this.warmSpots.some((w) => near(w.x, w.y)) ||
+        near(this.player.cx, this.player.cy);
+      if (!busy) spot = candidate;
+    }
+    if (!spot) return;
+    const area = AREAS[areaId];
+    const tx = Math.floor(spot.x / TILE_SIZE);
+    const ty = Math.floor(spot.y / TILE_SIZE);
+    const def = {
+      id: `drop-${state.day}`,
+      area: areaId,
+      tx,
+      ty,
+      rarity: 'rare' as const,
+      flavour: 'Dropped from the tower. Still warm inside.',
+    };
+    const x = tx * TILE_SIZE + TILE_SIZE / 2;
+    const y = ty * TILE_SIZE + TILE_SIZE;
+
+    // It falls in, then sits under a light so it can be seen from a way off.
+    const cache = new Cache(this, def, x, y, this.juice, (name, rarity) => this.onWeaponFound(name, rarity));
+    this.caches.push(cache);
+    const beacon = this.add
+      .image(x, y - 10, FX.glowLarge)
+      .setTint(hex(PAL.gold))
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setAlpha(0.5)
+      .setScale(0.9)
+      .setDepth(y - 1);
+    this.tweens.add({ targets: beacon, alpha: 0.2, scale: 1.2, duration: 900, yoyo: true, repeat: -1 });
+    this.decorLights.push({ x, y: y - 10, radius: 90 });
+    this.juice.sparks(x, y - 6, PAL.gold, 18, 140);
+    bus.emit('juice:shake', { intensity: 3, ms: 220 });
+    bus.emit('audio:play', { cue: 'smash' });
+    bus.emit('juice:toast', { text: `Something came down over the ${area.name}.`, color: PAL.gold });
+    this.hint('airdrop', 'A crate from the tower. Rare, and lit up until dark.');
+  }
+
   /**
    * The trader's sled: three offers, taken with 1, 2, 3 or a click, paid from what
    * you are carrying. E or walking away closes it.
@@ -893,6 +956,11 @@ export class WorldScene extends Phaser.Scene {
     } else if (state.story.miraFollows) {
       this.companion = new MiraCompanion(this, this.player.cx - 18, this.player.sprite.y + 2);
     }
+
+    // Some days something comes down from the tower in the middle of the day: a
+    // crate on a chute, somewhere already found, with a light on it. A reason to
+    // change plans halfway through.
+    this.scheduleAirdrop();
 
     // Some days the trader's sled is on the road.
     const stock = traderToday(state.day, state.run?.event);

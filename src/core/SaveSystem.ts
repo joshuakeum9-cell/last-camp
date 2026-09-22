@@ -7,6 +7,7 @@ import {
   state,
   type GameState,
 } from './GameState';
+import { bus } from './EventBus';
 
 const KEY = 'lastcamp.save.v1';
 const BACKUP_KEY = 'lastcamp.save.backup';
@@ -43,6 +44,7 @@ export const SaveSystem = {
       const prev = localStorage.getItem(KEY);
       if (prev) localStorage.setItem(BACKUP_KEY, prev);
       localStorage.setItem(KEY, json);
+      bus.emit('save:done', {});
       return true;
     } catch (err) {
       console.warn('[SaveSystem] save failed:', err);
