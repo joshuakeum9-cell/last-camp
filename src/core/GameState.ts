@@ -88,6 +88,8 @@ export interface GameState {
     openedGates: GateId[];
     secretFound: boolean;
     cachesOpened: string[];
+    /** What was dropped where you last fell, waiting to be picked up. */
+    deathPack: { x: number; y: number; day: number; lost: Record<ResourceId, number> } | null;
   };
 
   story: {
@@ -208,6 +210,7 @@ export function newGameState(): GameState {
       openedGates: [],
       secretFound: false,
       cachesOpened: [],
+      deathPack: null,
     },
     story: {
       notesFound: [],

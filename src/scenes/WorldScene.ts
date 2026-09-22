@@ -32,7 +32,7 @@ import { traderToday, type TradeOffer } from '../data/trader';
 import type { Boss } from '../entities/Boss';
 import { Dialogue } from '../ui/Dialogue';
 import { TouchControls } from '../ui/TouchControls';
-import { GATE_IDS } from '../data/areas';
+import { GATE_IDS, AREA_LIST } from '../data/areas';
 import { RARITY_COLOR } from '../art/palette';
 import { ResourceSystem } from '../systems/ResourceSystem';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
@@ -56,7 +56,7 @@ import { activeEvent } from '../data/events';
 import { WINTER, winterActiveCount, winterLootMult } from '../data/winter';
 import { Rng, hashString, subSeed } from '../core/Rng';
 import { ENEMIES, type EnemyId } from '../data/enemies';
-import { RESOURCES } from '../data/resources';
+import { RESOURCES, type ResourceId } from '../data/resources';
 import {
   AREAS,
   RETURN_ZONE,
@@ -151,6 +151,7 @@ export class WorldScene extends Phaser.Scene {
   private mira: NPCMira | null = null;
   private bosses: Boss[] = [];
   private ranger: BossRanger | null = null;
+  private pack: { x: number; y: number; sprite: Phaser.GameObjects.Image; glow: Phaser.GameObjects.Image } | null = null;
   private companion: MiraCompanion | null = null;
   private trader: Trader | null = null;
   private tradePanel: { objects: Phaser.GameObjects.GameObject[]; offers: TradeOffer[] } | null = null;
@@ -197,6 +198,7 @@ export class WorldScene extends Phaser.Scene {
     this.bosses = [];
     this.ranger = null;
     this.companion = null;
+    this.pack = null;
     this.trader = null;
     this.tradePanel = null;
     this.currentArea = null;
@@ -536,6 +538,54 @@ export class WorldScene extends Phaser.Scene {
       if (d.kind === 'fishHole') this.fishHoles.push({ x, y: y - 6, readyAt: 0 });
       if (d.kind === 'iceCrack') this.iceHazards.add(`${d.tx},${d.ty}`);
     }
+  }
+
+  /** The pack from the last death, lying where you fell, from the next day on. */
+  private placeDeathPack(): void {
+    const dp = state.map.deathPack;
+    if (!dp || dp.day >= state.day) return;
+    const sprite = this.add.image(dp.x, dp.y + 8, SCENERY_KEYS.crate).setOrigin(0.5, 1).setScale(1.1).setDepth(dp.y + 8);
+    sprite.setTint(hex(PAL.grey));
+    const glow = this.add
+      .image(dp.x, dp.y - 4, FX.glowMed)
+      .setTint(hex(PAL.cream))
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setAlpha(0.35)
+      .setScale(0.7)
+      .setDepth(dp.y + 7);
+    this.tweens.add({ targets: glow, alpha: 0.6, duration: 1000, yoyo: true, repeat: -1 });
+    this.pack = { x: dp.x, y: dp.y, sprite, glow };
+    this.decorLights.push({ x: dp.x, y: dp.y - 4, radius: 60 });
+
+    const area = AREA_LIST.find((a) => rectContains(a.rect, Math.floor(dp.x / TILE_SIZE), Math.floor(dp.y / TILE_SIZE)));
+    this.time.delayedCall(2800, () =>
+      bus.emit('juice:toast', {
+        text: `Your pack is out there${area ? `, in the ${area.name}` : ''}. Go back for it.`,
+        color: PAL.cream,
+      }),
+    );
+  }
+
+  private takeDeathPack(): void {
+    const dp = state.map.deathPack;
+    const pack = this.pack;
+    if (!dp || !pack) return;
+    const night = this.clock.bountyActive;
+    const parts: string[] = [];
+    for (const [id, n] of Object.entries(dp.lost)) {
+      if (n > 0) {
+        ResourceSystem.collect(id as ResourceId, n, night);
+        parts.push(`${n} ${id}`);
+      }
+    }
+    state.map.deathPack = null;
+    pack.sprite.destroy();
+    pack.glow.destroy();
+    this.pack = null;
+    this.juice.sparks(pack.x, pack.y, PAL.cream, 14, 110);
+    bus.emit('audio:play', { cue: 'cache' });
+    bus.emit('juice:toast', { text: `Your pack. ${parts.join(', ')}. Still there.`, color: PAL.cream });
+    SaveSystem.save();
   }
 
   private scheduleAirdrop(): void {
@@ -964,6 +1014,7 @@ export class WorldScene extends Phaser.Scene {
     // crate on a chute, somewhere already found, with a light on it. A reason to
     // change plans halfway through.
     this.scheduleAirdrop();
+    this.placeDeathPack();
 
     // Some days the trader's sled is on the road.
     const stock = traderToday(state.day, state.run?.event);
@@ -1406,6 +1457,11 @@ export class WorldScene extends Phaser.Scene {
     hud.eventName = ev.id === 'clear' ? '' : ev.name.toUpperCase();
     hud.playerX = this.player.cx;
     hud.playerY = this.player.cy;
+    hud.marks = [
+      ...(this.pack ? [{ x: this.pack.x, y: this.pack.y, color: PAL.cream }] : []),
+      ...this.caches.filter((c) => c.def.id.startsWith('drop-') && !c.isOpen).map((c) => ({ x: c.sprite.x, y: c.sprite.y, color: PAL.gold })),
+      ...(this.trader ? [{ x: this.trader.cx, y: this.trader.cy, color: PAL.gold }] : []),
+    ];
     hud.bossName = boss ? boss.name : null;
     hud.bossHp = boss ? boss.hp : 0;
     hud.bossMaxHp = boss ? boss.maxHp : 1;
@@ -1585,6 +1641,12 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
+    if (this.pack && Math.hypot(this.pack.x - this.player.cx, this.pack.y - this.player.cy) < 24) {
+      this.showPrompt('Take your pack');
+      if (pressed) this.takeDeathPack();
+      return;
+    }
+
     for (const hole of this.fishHoles) {
       if (Math.hypot(hole.x - this.player.cx, hole.y - this.player.cy) > 22) continue;
       const ready = this.time.now >= hole.readyAt;
@@ -1679,6 +1741,12 @@ export class WorldScene extends Phaser.Scene {
 
     if (reason === 'death') {
       state.stats.deaths++;
+      // What was lost is not gone: it is lying where you fell. Going back for it
+      // is the risk that makes a death a story instead of a subtraction.
+      const lostAny = Object.values(result.lost).some((n) => n > 0);
+      state.map.deathPack = lostAny
+        ? { x: Math.round(this.player.cx), y: Math.round(this.player.cy), day: state.day, lost: { ...result.lost } }
+        : null;
       this.cameras.main.shake(320, 0.012);
       bus.emit('audio:play', { cue: 'death' });
     } else {
@@ -1701,6 +1769,7 @@ export class WorldScene extends Phaser.Scene {
       notes: run?.notesFound.length ?? 0,
       breakables: run?.breakables ?? 0,
       cause: reason === 'death' ? this.causeOfDeath() : '',
+      packLeft: reason === 'death' && !!state.map.deathPack,
     };
 
     const fade = reason === 'death' ? 700 : 340;

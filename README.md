@@ -96,6 +96,13 @@ and at the top there is a switch and a choice: end the winter, or keep the camp 
 and only the camp. The save remembers which, the title screen changes, and Mira has
 something to say about it either way. You can keep playing afterwards.
 
+## Where you fell
+
+Dying still costs part of the haul, but it is not gone: it is lying where you fell. From
+the next day it is out there as a grey pack with a light on it, marked on the minimap,
+and taking it gives back exactly what was lost. Die again before you reach it and the
+old pack is gone.
+
 ## The trader
 
 Some days from day 3 there are sled tracks on the road and the morning report says so.

@@ -26,6 +26,8 @@ export interface SummaryData {
   reason: 'return' | 'death';
   /** The death line, empty on a return. */
   cause?: string;
+  /** A pack was left where the player fell. */
+  packLeft?: boolean;
   day: number;
   banked: Record<ResourceId, number>;
   bonusNight: Record<ResourceId, number>;
@@ -98,7 +100,9 @@ export class SummaryScene extends Phaser.Scene {
           width / 2,
           49,
           FONT,
-          'Your camp, your tools and everything you have built are safe.',
+          this.summary.packLeft
+            ? 'Your camp is safe. What you were carrying is lying where you fell.'
+            : 'Your camp, your tools and everything you have built are safe.',
         )
         .setOrigin(0.5, 0)
         .setTint(hex(PAL.green));

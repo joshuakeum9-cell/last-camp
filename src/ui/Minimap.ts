@@ -45,7 +45,7 @@ export class Minimap {
     this.container.setVisible(on);
   }
 
-  update(playerX: number, playerY: number, time: number): void {
+  update(playerX: number, playerY: number, time: number, marks: Array<{ x: number; y: number; color: string }> = []): void {
     if (!this.container.visible) return;
     const known = state.map.discoveredAreas;
     const signature = known.join(',');
@@ -71,6 +71,10 @@ export class Minimap {
     const cz = RETURN_ZONE;
     d.fillStyle(hex(PAL.orange), 1);
     d.fillRect(this.ox + ((cz.x0 + cz.x1) / 2) * SCALE - 1, this.oy + ((cz.y0 + cz.y1) / 2) * SCALE - 1, 3, 3);
+    for (const m of marks) {
+      d.fillStyle(hex(m.color), 1);
+      d.fillRect(this.ox + (m.x / TILE_SIZE) * SCALE - 1, this.oy + (m.y / TILE_SIZE) * SCALE - 1, 3, 3);
+    }
     const blink = Math.floor(time / 300) % 2 === 0;
     d.fillStyle(hex(blink ? PAL.white : PAL.cyan), 1);
     d.fillRect(this.ox + (playerX / TILE_SIZE) * SCALE - 1, this.oy + (playerY / TILE_SIZE) * SCALE - 1, 3, 3);

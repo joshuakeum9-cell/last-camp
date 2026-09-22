@@ -476,7 +476,7 @@ export class HUDScene extends Phaser.Scene {
     this.pauseButton.setVisible(inWorld);
     this.compassHit.setVisible(inWorld);
     this.minimap.setVisible(inWorld && !hud.mapHidden);
-    this.minimap.update(hud.playerX, hud.playerY, _time);
+    this.minimap.update(hud.playerX, hud.playerY, _time, hud.marks);
     const next = nextObjective();
     this.objectiveTag.setVisible(next !== null);
     this.objective.setText(next ? next.text : '');

@@ -38,6 +38,8 @@ export interface HudState {
   dialogueOpen: boolean;
   /** The day's event, in capitals, or empty when the day is clear. */
   eventName: string;
+  /** Things worth a dot on the minimap: your pack, a crate, the trader. */
+  marks: Array<{ x: number; y: number; color: string }>;
   /** The player's world position, for the minimap. */
   playerX: number;
   playerY: number;
@@ -68,6 +70,7 @@ export const hud: HudState = {
   mapHidden: false,
   dialogueOpen: false,
   eventName: '',
+  marks: [],
   playerX: 0,
   playerY: 0,
 };
