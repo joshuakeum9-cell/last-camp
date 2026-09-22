@@ -27,7 +27,7 @@ export class PauseScene extends Phaser.Scene {
 
     const bw = 124;
     const bx = Math.round(width / 2 - bw / 2);
-    let by = 92;
+    let by = 80;
 
     new Button(
       this,
@@ -36,7 +36,19 @@ export class PauseScene extends Phaser.Scene {
       { width: bw, height: 20, text: 'RESUME', fill: PAL.rust, fillHover: PAL.ember, border: PAL.gold, textColor: PAL.cream },
       () => this.resumeWorld(),
     );
-    by += 26;
+    by += 24;
+    new Button(
+      this,
+      bx,
+      by,
+      { width: bw, height: 20, text: 'CONTROLS', fill: PAL.deep, border: PAL.cyan, textColor: PAL.white },
+      () => {
+        this.scene.stop();
+        this.scene.launch('Controls', { next: 'World' });
+        this.scene.bringToTop('Controls');
+      },
+    );
+    by += 24;
     new Button(
       this,
       bx,
@@ -48,7 +60,7 @@ export class PauseScene extends Phaser.Scene {
         this.scene.bringToTop('Settings');
       },
     );
-    by += 26;
+    by += 24;
     new Button(
       this,
       bx,

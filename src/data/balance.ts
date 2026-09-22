@@ -56,6 +56,8 @@ export const BAL = {
     shake: { hit: 2, crit: 4, kill: 6, boss: 8 },
     shakeMs: { hit: 80, crit: 120, kill: 140 },
     chargeTime: 0.55,
+    /** A press held this long is a charge, not a swing. Shorter is a tap. */
+    holdToCharge: 0.14,
     chargeDamageMult: 2.5,
     chargeKnockbackMult: 1.6,
     comboWindow: 0.45,

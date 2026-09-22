@@ -47,6 +47,11 @@ export class WeaponSystem {
   private charging = false;
   private chargeStart = 0;
   private queuedCharged = false;
+  /** When the attack button went down, while it is still undecided between tap and hold. */
+  private pressAt = -1;
+  /** A tap waiting for the swing to be free. */
+  private tapQueued = false;
+  private tapQueuedAt = 0;
   private chargeBar?: Phaser.GameObjects.Rectangle;
   private chargeBarBack?: Phaser.GameObjects.Rectangle;
   private aimX = 1;
@@ -171,10 +176,14 @@ export class WeaponSystem {
 
     this.handleCharge(input, now, w);
 
-    if (this.phase === 'ready' && (input.attackPressed || this.queuedCharged)) {
-      const charged = this.queuedCharged;
-      this.queuedCharged = false;
-      this.beginSwing(w, charged);
+    if (this.phase === 'ready') {
+      if (this.queuedCharged) {
+        this.queuedCharged = false;
+        this.beginSwing(w, true);
+      } else if (this.tapQueued) {
+        this.tapQueued = false;
+        if (now - this.tapQueuedAt <= BAL.inputBufferMs) this.beginSwing(w, false);
+      }
     }
 
     hud.weaponName = w.name.toUpperCase();
@@ -183,21 +192,46 @@ export class WeaponSystem {
     void dt;
   }
 
+  /**
+   * A press is either a tap or a hold, never both. It is undecided until it has
+   * been held for `holdToCharge`; released before that it is a tap, held past it
+   * it starts charging. Letting go of a charge before it is full still swings, so
+   * a nervous half-hold is never a wasted press.
+   */
   private handleCharge(input: InputState, now: number, w: ResolvedWeapon): void {
-    if (input.attackHeld && this.phase === 'ready') {
-      if (!this.charging) {
+    const holdMs = BAL.combat.holdToCharge * 1000;
+
+    if (input.attackPressed) this.pressAt = now;
+
+    if (this.pressAt >= 0) {
+      if (!input.attackHeld) {
+        this.pressAt = -1;
+        this.tapQueued = true;
+        this.tapQueuedAt = now;
+      } else if (now - this.pressAt >= holdMs && this.phase === 'ready') {
+        this.pressAt = -1;
         this.charging = true;
         this.chargeStart = now;
       }
-      const t = Phaser.Math.Clamp((now - this.chargeStart) / (BAL.combat.chargeTime * 1000), 0, 1);
+    }
+
+    if (!this.charging) return;
+
+    const t = Phaser.Math.Clamp((now - this.chargeStart) / (BAL.combat.chargeTime * 1000), 0, 1);
+    if (input.attackHeld) {
       hud.chargeAmount = t;
       this.drawChargeBar(t);
-    } else if (this.charging) {
-      const t = Phaser.Math.Clamp((now - this.chargeStart) / (BAL.combat.chargeTime * 1000), 0, 1);
-      this.charging = false;
-      hud.chargeAmount = 0;
-      this.hideChargeBar();
-      if (t >= 1) this.queuedCharged = true;
+      return;
+    }
+
+    this.charging = false;
+    hud.chargeAmount = 0;
+    this.hideChargeBar();
+    if (t >= 1) {
+      this.queuedCharged = true;
+    } else {
+      this.tapQueued = true;
+      this.tapQueuedAt = now;
     }
     void w;
   }
@@ -322,6 +356,28 @@ export class WeaponSystem {
     }
 
     if (w.def.shape === 'circle') {
+      // The blade goes the whole way round: a wide arc that spins a full turn,
+      // starting from wherever the player is aiming.
+      const cx = this.player.cx;
+      const cy = this.player.cy;
+      const angle = Math.atan2(this.aimY, this.aimX);
+      const blade = this.scene.add
+        .image(cx, cy, WFX.arcWide)
+        .setRotation(angle)
+        .setTint(hex(charged ? '#ffffff' : w.color))
+        .setDepth(this.player.sprite.y + 1)
+        .setScale((reach * 2.1) / 64)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      this.scene.tweens.add({
+        targets: blade,
+        rotation: angle + Math.PI * 2,
+        duration: charged ? 300 : 220,
+        ease: 'Quad.easeOut',
+        onComplete: () => blade.destroy(),
+      });
+      this.scene.tweens.add({ targets: blade, alpha: 0, delay: 120, duration: charged ? 180 : 100 });
+      bus.emit('audio:play', { cue: charged ? 'swingHeavy' : `swing-${w.def.id}` });
+
       const fx = this.scene.add
         .image(this.player.cx, this.player.cy, WFX.shock)
         .setTint(hex(w.color))

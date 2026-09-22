@@ -133,7 +133,8 @@ export class TitleScene extends Phaser.Scene {
           return;
         }
         SaveSystem.reset();
-        this.start();
+        this.weather.destroy();
+        this.scene.start('Controls', { next: 'Camp', first: true });
       },
     ).setDepth(600);
 
@@ -150,12 +151,16 @@ export class TitleScene extends Phaser.Scene {
 
     this.buildDifficultyRow(by + 72);
 
-    const hint = 'WASD move   Q or click attack   SPACE dash   E interact   F eat';
-    this.add
-      .bitmapText(Math.round(width / 2), height - 16, FONT, hint)
-      .setOrigin(0.5, 0)
-      .setTint(hex(PAL.grey))
-      .setDepth(600);
+    new Button(
+      this,
+      Math.round(width / 2 - 44),
+      height - 21,
+      { width: 88, height: 16, text: 'HOW TO PLAY', fill: PAL.deep, border: PAL.cyan, textColor: PAL.white },
+      () => {
+        this.weather.destroy();
+        this.scene.start('Controls', { next: 'Title' });
+      },
+    ).setDepth(600);
 
     this.add
       .bitmapText(4, height - 11, FONT, 'v0.1')
@@ -178,7 +183,7 @@ export class TitleScene extends Phaser.Scene {
     const { width } = BAL.view;
 
     this.add
-      .bitmapText(Math.round(width / 2), y - 11, FONT, 'HOW HARD IS THE WINTER?')
+      .bitmapText(Math.round(width / 2), y - 11, FONT, 'DIFFICULTY')
       .setOrigin(0.5, 0)
       .setTint(hex(PAL.uiDim))
       .setDepth(600);
@@ -212,12 +217,6 @@ export class TitleScene extends Phaser.Scene {
       ).setDepth(600);
       x += bw + gap;
     }
-
-    this.add
-      .bitmapText(Math.round(width / 2), y + 18, FONT, activeDifficulty(state.settings.difficulty).desc)
-      .setOrigin(0.5, 0)
-      .setTint(hex(PAL.uiMuted))
-      .setDepth(600);
   }
 
   /**
