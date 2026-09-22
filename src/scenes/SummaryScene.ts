@@ -5,6 +5,7 @@ import { state } from '../core/GameState';
 import { TITLES } from '../data/achievements';
 import { NOTE_LIST } from '../data/story';
 import { makeFrame } from '../ui/Frame';
+import { FocusNav } from '../ui/Focus';
 import { eventForDay } from '../data/events';
 import { CHALLENGES, CHALLENGE_IDS } from '../data/challenges';
 import { traderToday } from '../data/trader';
@@ -48,6 +49,8 @@ export interface SummaryData {
  * the next thing they can afford.
  */
 export class SummaryScene extends Phaser.Scene {
+  private focus: Button[] = [];
+  private nav?: FocusNav;
   private summary!: SummaryData;
   private lineY = 0;
   private delay = 0;
@@ -63,6 +66,7 @@ export class SummaryScene extends Phaser.Scene {
   create(): void {
     const { width, height } = BAL.view;
     const died = this.summary.reason === 'death';
+    this.focus = [];
     bus.emit('audio:music', { cue: null });
 
     this.add.rectangle(0, 0, width, height, hex(PAL.navy)).setOrigin(0).setAlpha(0.97);
@@ -128,16 +132,18 @@ export class SummaryScene extends Phaser.Scene {
       () => this.leave(),
     );
     cont.setDepth(50);
+    this.focus.push(cont);
 
     // A share line, Wordle-style: the day in one row of text, copied to the
     // clipboard with the link on the end. The cheapest way a game gets told about.
-    new Button(
+    const shareButton = new Button(
       this,
       30,
       height - 24,
       { width: 60, height: 18, text: 'SHARE', fill: PAL.deep, border: PAL.cyan, textColor: PAL.white },
       () => this.share(),
     ).setDepth(50);
+    this.focus.push(shareButton);
 
     // The rewarded-ad prototype. It never plays on its own and never blocks the game.
     const adUsedKey = `double-${this.summary.day}`;
@@ -196,8 +202,8 @@ export class SummaryScene extends Phaser.Scene {
       .bitmapText(30, height - 62, FONT, forecast)
       .setTint(hex(nextEvent.id === 'clear' ? PAL.cyan : PAL.gold));
 
-    this.input.keyboard?.once('keydown-ENTER', () => this.leave());
-    this.input.keyboard?.once('keydown-SPACE', () => this.leave());
+    // Enter, Space and the A button press whatever is lit; Continue starts lit.
+    this.nav = new FocusNav(this, this.focus, { start: 0 });
   }
 
   // --- lines -------------------------------------------------------------
@@ -463,6 +469,10 @@ export class SummaryScene extends Phaser.Scene {
     const maxHp = ResourceSystem.maxHp();
     state.player.hp = Math.max(state.player.hp, Math.round(maxHp * BAL.camp.wakeHpFraction));
     state.player.cold = Math.min(state.player.cold, BAL.camp.wakeColdMax);
+  }
+
+  update(): void {
+    this.nav?.update();
   }
 
   private share(): void {

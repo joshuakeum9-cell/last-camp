@@ -1557,6 +1557,7 @@ export class WorldScene extends Phaser.Scene {
     const area = areaAtTile(tx, ty);
     if (!area || area === this.currentArea) return;
     this.currentArea = area;
+    audio.setAmbience(area?.id ?? null);
     this.ambientTarget = area.tint;
 
     if (!state.map.discoveredAreas.includes(area.id)) {
@@ -1840,6 +1841,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private cleanup(): void {
+    audio.setAmbience(null);
     this.worldMap?.destroy();
     this.subs.dispose();
     for (const p of this.pickups) p.destroy();

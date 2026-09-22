@@ -11,6 +11,7 @@ import { SCENERY_KEYS } from '../art/sprites/scenery';
 import { FX } from '../art/sprites/fx';
 import { Weather } from '../systems/Weather';
 import { NOTE_LIST } from '../data/story';
+import { FocusNav } from '../ui/Focus';
 
 type Ending = 'shutdown' | 'kept';
 
@@ -101,6 +102,7 @@ export class EndingScene extends Phaser.Scene {
   private body: Label[] = [];
   private hint!: Phaser.GameObjects.BitmapText;
   private buttons: Button[] = [];
+  private nav?: FocusNav;
 
   constructor() {
     super('Ending');
@@ -155,8 +157,9 @@ export class EndingScene extends Phaser.Scene {
 
     this.input.on('pointerdown', () => this.advance());
     this.input.keyboard?.on('keydown-E', () => this.advance());
-    this.input.keyboard?.on('keydown-SPACE', () => this.advance());
-    this.input.keyboard?.on('keydown-ENTER', () => this.advance());
+    // Enter, Space and the A button go through the navigator, which also drives
+    // the choice buttons once they appear.
+    this.nav = new FocusNav(this, [], { onPress: () => this.advance() });
 
     bus.emit('audio:music', { cue: 'ending' });
     this.cameras.main.fadeIn(900, 0, 0, 0);
@@ -182,6 +185,11 @@ export class EndingScene extends Phaser.Scene {
       this.body.push(label);
       this.tweens.add({ targets: label.target, alpha: 1, duration: 420, delay: i * 240 });
     });
+  }
+
+  update(_time: number, delta: number): void {
+    this.nav?.update();
+    this.weather.update(delta, 0.2);
   }
 
   private advance(): void {
@@ -220,6 +228,7 @@ export class EndingScene extends Phaser.Scene {
       align: 'center',
     });
     this.body.push(prompt);
+    this.buttons = [];
 
     const bw = 180;
     this.buttons.push(
@@ -259,6 +268,7 @@ export class EndingScene extends Phaser.Scene {
       'Shut it down: the winter ends, and the camp loses its reason.',
       'Leave it running: the camp stays warm, and only the camp.',
     ];
+    this.nav?.setItems(this.buttons, false);
     notes.forEach((line, i) => {
       this.body.push(
         new Label(this, Math.round(width / 2), height - 36 + i * 11, line, {
@@ -282,6 +292,7 @@ export class EndingScene extends Phaser.Scene {
 
     for (const b of this.buttons) b.destroy();
     this.buttons = [];
+    this.nav?.setItems([], false);
     this.hint.setText('E or click to go on');
 
     this.glow.setTint(hex(ending === 'shutdown' ? PAL.gold : PAL.ice));
@@ -342,9 +353,7 @@ export class EndingScene extends Phaser.Scene {
         },
       ),
     );
+    this.nav?.setItems(this.buttons, false);
   }
 
-  update(_time: number, delta: number): void {
-    this.weather.update(delta, 0.2);
-  }
 }

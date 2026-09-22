@@ -114,6 +114,71 @@ export class AudioManager {
     this.windGain = gain;
   }
 
+  private ambienceTimer: number | null = null;
+  private ambienceDrone: { osc: OscillatorNode; gain: GainNode } | null = null;
+  private ambienceArea: string | null = null;
+
+  /**
+   * One sound per place, on top of the wind: the lake ticks as the ice moves,
+   * the pass whistles, the cabin creaks, the den hums low, the hollow rings.
+   * Changing area swaps it; leaving the world clears it.
+   */
+  setAmbience(area: string | null): void {
+    if (area === this.ambienceArea) return;
+    this.ambienceArea = area;
+    if (this.ambienceTimer !== null) {
+      window.clearInterval(this.ambienceTimer);
+      this.ambienceTimer = null;
+    }
+    if (this.ambienceDrone) {
+      this.ambienceDrone.gain.gain.setTargetAtTime(0.0001, this.ctx?.currentTime ?? 0, 0.4);
+      const d = this.ambienceDrone;
+      window.setTimeout(() => d.osc.stop(), 1200);
+      this.ambienceDrone = null;
+    }
+    const ctx = this.ensureContext();
+    if (!ctx || !area) return;
+
+    const every = (minMs: number, maxMs: number, fn: () => void) => {
+      const tick = () => {
+        if (this.ambienceArea !== area) return;
+        fn();
+        this.ambienceTimer = window.setTimeout(tick, minMs + Math.random() * (maxMs - minMs));
+      };
+      this.ambienceTimer = window.setTimeout(tick, minMs);
+    };
+    const v = state.settings.sfx;
+
+    switch (area) {
+      case 'lake':
+        every(4000, 10000, () => blip(ctx, this.sfxGain, ctx.currentTime, { freq: 1100, to: 260, dur: 0.35, type: 'sine', gain: 0.05 * v }));
+        break;
+      case 'cabin':
+        every(6000, 13000, () => thump(ctx, this.sfxGain, ctx.currentTime, { dur: 0.25, gain: 0.08 * v, cutoff: 500 }));
+        break;
+      case 'towerpass':
+        every(3000, 7000, () => blip(ctx, this.sfxGain, ctx.currentTime, { freq: 700, to: 1400, dur: 1.4, type: 'sine', gain: 0.025 * v }));
+        break;
+      case 'secret':
+        every(5000, 9000, () => blip(ctx, this.sfxGain, ctx.currentTime, { freq: 1568, to: 1568, dur: 1.2, type: 'sine', gain: 0.03 * v }));
+        break;
+      case 'bossden': {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 48;
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        gain.gain.setTargetAtTime(0.05 * v, ctx.currentTime, 1.2);
+        osc.connect(gain).connect(this.musicGain);
+        osc.start();
+        this.ambienceDrone = { osc, gain };
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
   setWindIntensity(t: number): void {
     if (!this.windGain || !this.ctx) return;
     this.windGain.gain.setTargetAtTime(0.025 + t * 0.06, this.ctx.currentTime, 0.6);
@@ -162,6 +227,7 @@ export class AudioManager {
   }
 
   destroy(): void {
+    this.setAmbience(null);
     this.subs.dispose();
     if (this.musicTimer !== null) window.clearInterval(this.musicTimer);
     void this.ctx?.close();

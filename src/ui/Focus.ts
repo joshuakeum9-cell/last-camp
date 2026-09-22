@@ -14,6 +14,8 @@ export interface FocusOptions {
   onBack?: () => void;
   /** Start with this one lit. */
   start?: number;
+  /** Pressed with no items to press: for screens that only need "go on". */
+  onPress?: () => void;
   /** Wrap round at the ends. Default true. */
   wrap?: boolean;
 }
@@ -82,6 +84,10 @@ export class FocusNav {
   }
 
   press(): void {
+    if (this.items.length === 0) {
+      this.opts.onPress?.();
+      return;
+    }
     this.items[this.index]?.activate();
   }
 

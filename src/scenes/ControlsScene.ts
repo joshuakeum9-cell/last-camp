@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { FONT, textWidth } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
 import { makeFrame } from '../ui/Frame';
+import { FocusNav } from '../ui/Focus';
 
 interface ControlsData {
   /** Where GOT IT goes. A paused scene is resumed; anything else is started. */
@@ -50,6 +51,7 @@ const TIPS: string[] = [
  * title and the pause menu whenever a key is forgotten.
  */
 export class ControlsScene extends Phaser.Scene {
+  private nav?: FocusNav;
   private next = 'Title';
   private first = false;
 
@@ -94,7 +96,7 @@ export class ControlsScene extends Phaser.Scene {
       .setTint(hex(PAL.cream));
 
     const bw = 104;
-    new Button(
+    const go = new Button(
       this,
       Math.round(width / 2 - bw / 2),
       height - 30,
@@ -109,9 +111,11 @@ export class ControlsScene extends Phaser.Scene {
       },
       () => this.leave(),
     );
+    this.nav = new FocusNav(this, [go], { onBack: () => this.leave() });
+  }
 
-    this.input.keyboard?.once('keydown-ENTER', () => this.leave());
-    this.input.keyboard?.once('keydown-ESC', () => this.leave());
+  update(): void {
+    this.nav?.update();
   }
 
   private column(x: number, y: number, w: number, title: string, rows: Row[], color: string): void {
