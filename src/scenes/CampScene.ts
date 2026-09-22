@@ -17,12 +17,11 @@ import { SCENERY_KEYS } from '../art/sprites/scenery';
 import { campfireKey, fireGlowName, PORTAL_FRAME_KEYS } from '../art/sprites/camp';
 import { FX } from '../art/sprites/fx';
 import { hex, PAL } from '../art/palette';
-import { FONT } from '../art/PixelFont';
 import { Rng } from '../core/Rng';
 import { hud, resetHud } from '../core/HudState';
 import { Label } from '../ui/Label';
 import { Prompt } from '../ui/Prompt';
-import { drawFrame } from '../ui/Frame';
+import { ChoiceList } from '../ui/ChoiceList';
 import { NPCMira } from '../entities/NPCMira';
 import { Pup } from '../entities/Pup';
 import { Dialogue } from '../ui/Dialogue';
@@ -610,9 +609,9 @@ export class CampScene extends Phaser.Scene {
     });
   }
 
-  private topicPanel: Phaser.GameObjects.GameObject[] | null = null;
-  private rematchPanel: Phaser.GameObjects.GameObject[] | null = null;
-  private pactPanel: Phaser.GameObjects.GameObject[] | null = null;
+  private topicPanel: ChoiceList | null = null;
+  private rematchPanel: ChoiceList | null = null;
+  private pactPanel: ChoiceList | null = null;
   private pactHandToday: PactId[] = [];
   private pendingRematch: string | null = null;
 
@@ -637,47 +636,13 @@ export class CampScene extends Phaser.Scene {
       this.dialogue.show(['A fang on a post. When there is more, this is where you will remember it.'], 'Trophy');
       return;
     }
-    const { width, height } = BAL.view;
-    const w = 268;
-    const h = 20 + list.length * 22 + 20;
-    const x = Math.round(width / 2 - w / 2);
-    const y = Math.round(height / 2 - h / 2) + 30;
-    const objects: Phaser.GameObjects.GameObject[] = [];
-    const frame = this.add.graphics().setScrollFactor(0).setDepth(8600);
-    drawFrame(frame, x, y, w, h, { edge: PAL.blood, alpha: 0.96 });
-    objects.push(
-      frame,
-      this.add.bitmapText(x + 8, y + 6, FONT, 'FIGHT IT AGAIN').setTint(hex(PAL.blood)).setScrollFactor(0).setDepth(8601),
-      this.add.bitmapText(x + w - 8, y + 6, FONT, 'E closes').setOrigin(1, 0).setTint(hex(PAL.uiMuted)).setScrollFactor(0).setDepth(8601),
-    );
-    list.forEach((b, i) => {
-      const ry = y + 20 + i * 22;
-      const hit = this.add
-        .rectangle(x + 6, ry - 2, w - 12, 20, hex(PAL.deep))
-        .setOrigin(0)
-        .setAlpha(0.3)
-        .setScrollFactor(0)
-        .setDepth(8601)
-        .setInteractive({ useHandCursor: true });
-      hit.on('pointerdown', () => {
-        this.input.stopPropagation();
-        this.pickRematch(i);
-      });
-      objects.push(
-        hit,
-        this.add.bitmapText(x + 10, ry, FONT, `${i + 1}  ${b.name}`).setTint(hex(PAL.cream)).setScrollFactor(0).setDepth(8602),
-        this.add.bitmapText(x + 10, ry + 9, FONT, b.where).setTint(hex(PAL.cyan)).setScrollFactor(0).setDepth(8602),
-      );
+    this.rematchPanel = new ChoiceList(this, {
+      title: 'FIGHT IT AGAIN',
+      edge: PAL.blood,
+      rows: list.map((b) => ({ label: b.name, boon: b.where })),
+      onPick: (i) => this.pickRematch(i),
+      onCancel: () => this.closeRematch(),
     });
-    objects.push(
-      this.add
-        .bitmapText(x + Math.round(w / 2), y + h - 13, FONT, 'Press 1, 2 or 3, or tap one')
-        .setOrigin(0.5, 0)
-        .setTint(hex(PAL.uiMuted))
-        .setScrollFactor(0)
-        .setDepth(8602),
-    );
-    this.rematchPanel = objects;
   }
 
   private pickRematch(i: number): void {
@@ -688,8 +653,7 @@ export class CampScene extends Phaser.Scene {
   }
 
   private closeRematch(): void {
-    if (!this.rematchPanel) return;
-    for (const o of this.rematchPanel) o.destroy();
+    this.rematchPanel?.destroy();
     this.rematchPanel = null;
   }
 
@@ -714,35 +678,15 @@ export class CampScene extends Phaser.Scene {
   private openTopics(): void {
     const topics = this.openTopicList();
     if (topics.length === 0 || this.topicPanel) return;
-    const { width, height } = BAL.view;
-    const w = 220;
-    const h = 20 + topics.length * 14 + 10;
-    const x = Math.round(width / 2 - w / 2);
-    const y = Math.round(height / 2 - h / 2) + 30;
-    const objects: Phaser.GameObjects.GameObject[] = [];
-    const frame = this.add.graphics().setScrollFactor(0).setDepth(8600);
-    drawFrame(frame, x, y, w, h, { edge: PAL.teal, alpha: 0.96 });
-    objects.push(
-      frame,
-      this.add.bitmapText(x + 8, y + 6, FONT, 'ASK MIRA').setTint(hex(PAL.teal)).setScrollFactor(0).setDepth(8601),
-      this.add.bitmapText(x + w - 8, y + 6, FONT, 'E closes').setOrigin(1, 0).setTint(hex(PAL.uiMuted)).setScrollFactor(0).setDepth(8601),
-    );
-    topics.forEach((t, i) => {
-      const ry = y + 20 + i * 14;
-      const hit = this.add
-        .rectangle(x + 6, ry - 2, w - 12, 13, hex(PAL.deep))
-        .setOrigin(0)
-        .setAlpha(0.3)
-        .setScrollFactor(0)
-        .setDepth(8601)
-        .setInteractive({ useHandCursor: true });
-      hit.on('pointerdown', () => {
-        this.input.stopPropagation();
-        this.pickTopic(i);
-      });
-      objects.push(hit, this.add.bitmapText(x + 10, ry, FONT, `${i + 1}  ${t.label}`).setTint(hex(PAL.cream)).setScrollFactor(0).setDepth(8602));
+    this.topicPanel = new ChoiceList(this, {
+      title: 'ASK MIRA',
+      edge: PAL.teal,
+      width: 220,
+      offsetY: 30,
+      rows: topics.map((t) => ({ label: t.label })),
+      onPick: (i) => this.pickTopic(i),
+      onCancel: () => this.closeTopics(),
     });
-    this.topicPanel = objects;
   }
 
   private pickTopic(i: number): void {
@@ -754,8 +698,7 @@ export class CampScene extends Phaser.Scene {
   }
 
   private closeTopics(): void {
-    if (!this.topicPanel) return;
-    for (const o of this.topicPanel) o.destroy();
+    this.topicPanel?.destroy();
     this.topicPanel = null;
   }
 
@@ -798,59 +741,15 @@ export class CampScene extends Phaser.Scene {
   private openPacts(rematch: string | null): void {
     this.pendingRematch = rematch;
     const hand = pactHand(state.day, state.stats.deaths);
-    const { width, height } = BAL.view;
-    const w = 280;
-    const h = 22 + hand.length * 28 + 22;
-    const x = Math.round(width / 2 - w / 2);
-    const y = Math.round(height / 2 - h / 2) + 20;
-    const objects: Phaser.GameObjects.GameObject[] = [];
-    const frame = this.add.graphics().setScrollFactor(0).setDepth(8600);
-    drawFrame(frame, x, y, w, h, { edge: PAL.gold, alpha: 0.96 });
-    objects.push(
-      frame,
-      this.add.bitmapText(x + 8, y + 6, FONT, 'WHAT YOU TAKE').setTint(hex(PAL.gold)).setScrollFactor(0).setDepth(8601),
-      this.add
-        .bitmapText(x + w - 8, y + 6, FONT, 'E steps back')
-        .setOrigin(1, 0)
-        .setTint(hex(PAL.uiMuted))
-        .setScrollFactor(0)
-        .setDepth(8601)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => {
-          this.input.stopPropagation();
-          this.closePacts();
-        }),
-    );
-    hand.forEach((p, i) => {
-      const ry = y + 22 + i * 28;
-      const hit = this.add
-        .rectangle(x + 6, ry - 2, w - 12, 26, hex(PAL.deep))
-        .setOrigin(0)
-        .setAlpha(0.3)
-        .setScrollFactor(0)
-        .setDepth(8601)
-        .setInteractive({ useHandCursor: true });
-      hit.on('pointerdown', () => {
-        this.input.stopPropagation();
-        this.pickPact(i, rematch);
-      });
-      objects.push(
-        hit,
-        this.add.bitmapText(x + 10, ry, FONT, `${i + 1}  ${p.name}`).setTint(hex(PAL.cream)).setScrollFactor(0).setDepth(8602),
-        this.add.bitmapText(x + 10, ry + 9, FONT, p.boon).setTint(hex(PAL.teal)).setScrollFactor(0).setDepth(8602),
-        this.add.bitmapText(x + 10, ry + 18, FONT, p.cost).setTint(hex(PAL.blood)).setScrollFactor(0).setDepth(8602),
-      );
-    });
-    objects.push(
-      this.add
-        .bitmapText(x + Math.round(w / 2), y + h - 13, FONT, 'Press 1, 2 or 3, or tap one')
-        .setOrigin(0.5, 0)
-        .setTint(hex(PAL.uiMuted))
-        .setScrollFactor(0)
-        .setDepth(8602),
-    );
-    this.pactPanel = objects;
     this.pactHandToday = hand.map((p) => p.id);
+    this.pactPanel = new ChoiceList(this, {
+      title: 'WHAT YOU TAKE',
+      edge: PAL.gold,
+      width: 280,
+      rows: hand.map((p) => ({ label: p.name, boon: p.boon, cost: p.cost })),
+      onPick: (i) => this.pickPact(i, rematch),
+      onCancel: () => this.closePacts(),
+    });
     bus.emit('audio:play', { cue: 'open' });
   }
 
@@ -863,8 +762,7 @@ export class CampScene extends Phaser.Scene {
   }
 
   private closePacts(): void {
-    if (!this.pactPanel) return;
-    for (const o of this.pactPanel) o.destroy();
+    this.pactPanel?.destroy();
     this.pactPanel = null;
   }
 
@@ -936,25 +834,19 @@ export class CampScene extends Phaser.Scene {
       return;
     }
 
-    if (this.pactPanel) {
+    // Every pick-one list takes the same keys through the same component.
+    const list = this.pactPanel ?? this.rematchPanel ?? this.topicPanel;
+    if (list) {
       this.prompt.hide();
-      if (input.slotPressed) this.pickPact(input.slotPressed - 1, this.pendingRematch);
-      else if (input.interactPressed) this.closePacts();
-      return;
-    }
-
-    if (this.rematchPanel) {
-      this.prompt.hide();
-      if (input.slotPressed) this.pickRematch(input.slotPressed - 1);
-      else if (input.interactPressed) this.closeRematch();
-      return;
-    }
-
-    if (this.topicPanel) {
-      this.prompt.hide();
-      if (input.slotPressed) this.pickTopic(input.slotPressed - 1);
-      else if (input.interactPressed) this.closeTopics();
-      else if (!this.mira || Phaser.Math.Distance.Between(this.player.cx, this.player.cy, this.mira.cx, this.mira.cy) > 40) this.closeTopics();
+      // Walking away from Mira is also an answer.
+      if (
+        list === this.topicPanel &&
+        (!this.mira || Phaser.Math.Distance.Between(this.player.cx, this.player.cy, this.mira.cx, this.mira.cy) > 40)
+      ) {
+        this.closeTopics();
+        return;
+      }
+      list.handle(input.slotPressed, input.interactPressed);
       return;
     }
 
