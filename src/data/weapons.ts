@@ -141,7 +141,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     ...base,
     id: 'antler',
     name: 'Hollow Antler',
-    desc: 'Torn from the Stag. The cold still lives in it.',
+    desc: 'Torn from the Stag. The cold lives in it.',
     color: PAL.ice,
     damage: [11, 11, 16],
     windup: 0.1,

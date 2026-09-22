@@ -22,6 +22,29 @@ import { dailyChallenge } from '../systems/DailyChallengeSystem';
 import { ACHIEVEMENT_LIST, TITLES } from '../data/achievements';
 import { RESOURCE_ICON } from '../art/sprites/icons';
 import { ENEMIES, ENEMY_IDS } from '../data/enemies';
+import { ENEMY_SPRITE_KEY } from '../art/sprites/enemies';
+import { CAMP_KEYS, campfireSprite } from '../art/sprites/camp';
+import { WEAPON_ICON_KEY } from '../art/sprites/weapons';
+
+/** Which picture stands for each camp upgrade in the list. */
+const UPGRADE_ICON: Record<string, string> = {
+  fire1: campfireSprite.key,
+  fire2: campfireSprite.key,
+  shelter1: CAMP_KEYS.tentPatched,
+  shelter2: CAMP_KEYS.cabin,
+  workbench: CAMP_KEYS.workbench,
+  storage1: CAMP_KEYS.crateStack,
+  storage2: CAMP_KEYS.crateStack,
+  cookpot: CAMP_KEYS.cookingPot,
+  scavrack: CAMP_KEYS.dryingRack,
+  medtable: CAMP_KEYS.medicalTable,
+  weaponrack: CAMP_KEYS.weaponRack,
+  watchtower: CAMP_KEYS.watchtower,
+  lantern: CAMP_KEYS.lanternPost,
+  signaltable: CAMP_KEYS.signalTable,
+  trophy: CAMP_KEYS.trophy,
+};
+const BOSS_SPRITE_KEY: Record<string, string> = { maw: 'boss-maw', stag: 'boss-stag', ranger: 'boss-ranger' };
 
 type Tab = 'camp' | 'survivor' | 'weapons' | 'inventory' | 'goals' | 'beasts' | 'store';
 
@@ -191,6 +214,7 @@ export class MenuScene extends Phaser.Scene {
         effect: status.owned ? def.campChange : def.effect,
         cost: costLabel(def.cost),
         costItems: def.cost,
+        icon: { key: UPGRADE_ICON[def.id] ?? CAMP_KEYS.crateStack },
         blockedBy: status.owned ? null : status.blockedBy,
         state: status.owned ? 'owned' : status.reason === 'affordable' ? 'affordable' : 'blocked',
         onClick:
@@ -290,10 +314,13 @@ export class MenuScene extends Phaser.Scene {
       const resolved = WeaponSystem.resolve(instance);
       const equipped = state.player.equipped.includes(instance.uid);
 
+      const stats = `${resolved.damage[0]} dmg / ${resolved.reach} reach. `;
       rows.push({
-        title: `${resolved.name}${equipped ? '  (carried)' : ''}`,
-        effect: resolved.def.desc,
+        title: resolved.name,
+        effect: stats + resolved.def.desc,
         cost: '',
+        ownedLabel: 'CARRIED',
+        icon: { key: WEAPON_ICON_KEY[instance.base] ?? WEAPON_ICON_KEY.axe },
         state: equipped ? 'owned' : 'affordable',
         onClick: equipped
           ? undefined
@@ -450,6 +477,7 @@ export class MenuScene extends Phaser.Scene {
         title: met ? def.name : '???',
         effect: met ? def.teaches : 'Not met yet.',
         cost: killed > 0 ? `${killed} killed` : met ? 'Seen' : '',
+        icon: met ? { key: ENEMY_SPRITE_KEY[id] } : undefined,
         state: met ? 'affordable' : 'blocked',
       });
     }
@@ -480,6 +508,7 @@ export class MenuScene extends Phaser.Scene {
         title: met ? b.name : '???',
         effect: met ? b.teaches : 'Something big. Not met yet.',
         cost: b.dead ? 'Dead' : met ? 'Seen' : '',
+        icon: met ? { key: BOSS_SPRITE_KEY[b.id] } : undefined,
         state: met ? 'affordable' : 'blocked',
       });
     }

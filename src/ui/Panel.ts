@@ -14,6 +14,8 @@ export interface RowSpec {
   ownedLabel?: string;
   /** A resource cost, drawn as icons and numbers instead of the `cost` text. */
   costItems?: Partial<Record<ResourceId, number>>;
+  /** A picture of the thing, at the left of the row. Text moves over to make room. */
+  icon?: { key: string; scale?: number };
   /** Shown under the effect when the row cannot be taken. */
   blockedBy?: string | null;
   state: 'affordable' | 'blocked' | 'owned';
@@ -84,10 +86,24 @@ export class RowList {
       .setAlpha(spec.state === 'blocked' ? 0.55 : 0.9);
     row.add(bg);
 
+    // The picture. Rows with one start their text further in, so the two columns
+    // line up down the whole list.
+    const textX = spec.icon ? 32 : 6;
+    if (spec.icon && this.scene.textures.exists(spec.icon.key)) {
+      const img = this.scene.add
+        .image(17, h / 2, spec.icon.key)
+        .setOrigin(0.5)
+        .setAlpha(spec.state === 'blocked' ? 0.5 : 1);
+      // Fit inside a 24 pixel box whatever the source size.
+      const fit = 22 / Math.max(img.width, img.height);
+      img.setScale(Math.min(fit, spec.icon.scale ?? fit));
+      row.add(img);
+    }
+
     const titleColor =
       spec.state === 'owned' ? PAL.green : spec.state === 'affordable' ? PAL.gold : PAL.grey;
     const title = this.scene.add
-      .bitmapText(6, 3, FONT, spec.title)
+      .bitmapText(textX, 3, FONT, spec.title)
       .setTint(hex(titleColor));
     row.add(title);
 
@@ -113,14 +129,14 @@ export class RowList {
 
     row.add(
       this.scene.add
-        .bitmapText(6, 13, FONT, spec.effect)
+        .bitmapText(textX, 13, FONT, spec.effect)
         .setTint(hex(spec.state === 'blocked' ? PAL.greyDark : PAL.cyan)),
     );
 
     if (spec.blockedBy) {
       row.add(
         this.scene.add
-          .bitmapText(6, 23, FONT, spec.blockedBy)
+          .bitmapText(textX, 23, FONT, spec.blockedBy)
           .setTint(hex(PAL.rust)),
       );
     }

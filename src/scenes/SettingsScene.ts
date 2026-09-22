@@ -8,6 +8,7 @@ import { SaveFile } from '../core/SaveFile';
 import { DIFFICULTY_IDS, activeDifficulty } from '../data/difficulty';
 import { FONT } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
+import { makeFrame } from '../ui/Frame';
 
 interface Row {
   label: string;
@@ -41,10 +42,7 @@ export class SettingsScene extends Phaser.Scene {
   create(): void {
     const { width, height } = BAL.view;
     this.add.rectangle(0, 0, width, height, hex(PAL.black)).setOrigin(0).setAlpha(0.92);
-    this.add
-      .rectangle(30, 14, width - 60, height - 28, hex(PAL.navy))
-      .setOrigin(0)
-      .setStrokeStyle(1, hex(PAL.blueDark));
+    makeFrame(this, 30, 14, width - 60, height - 28, { edge: PAL.gold, alpha: 0.97 });
 
     this.add.bitmapText(40, 22, FONT, 'SETTINGS').setScale(1.5).setTint(hex(PAL.gold));
 

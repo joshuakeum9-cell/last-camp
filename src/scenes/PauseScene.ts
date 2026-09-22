@@ -4,6 +4,7 @@ import { SaveSystem } from '../core/SaveSystem';
 import { Button } from '../ui/Button';
 import { FONT } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
+import { makeFrame } from '../ui/Frame';
 
 /**
  * The pause menu, over a frozen expedition. Resume, settings, or save and leave
@@ -19,6 +20,7 @@ export class PauseScene extends Phaser.Scene {
     this.scene.pause('World');
 
     this.add.rectangle(0, 0, width, height, hex(PAL.black)).setOrigin(0).setAlpha(0.72);
+    makeFrame(this, Math.round(width / 2) - 84, 40, 168, 176, { edge: PAL.gold, alpha: 0.95 });
     this.add
       .bitmapText(Math.round(width / 2), 52, FONT, 'PAUSED')
       .setOrigin(0.5, 0)

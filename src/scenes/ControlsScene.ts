@@ -3,6 +3,7 @@ import { BAL } from '../data/balance';
 import { Button } from '../ui/Button';
 import { FONT, textWidth } from '../art/PixelFont';
 import { hex, PAL } from '../art/palette';
+import { makeFrame } from '../ui/Frame';
 
 interface ControlsData {
   /** Where GOT IT goes. A paused scene is resumed; anything else is started. */
@@ -114,11 +115,7 @@ export class ControlsScene extends Phaser.Scene {
 
   private column(x: number, y: number, w: number, title: string, rows: Row[], color: string): void {
     const rowH = 15;
-    this.add
-      .rectangle(x, y, w, rows.length * rowH + 20, hex(PAL.navy))
-      .setOrigin(0)
-      .setAlpha(0.9)
-      .setStrokeStyle(1, hex(color), 0.8);
+    makeFrame(this, x, y, w, rows.length * rowH + 20, { edge: color, alpha: 0.92 });
     this.add.bitmapText(x + 6, y + 4, FONT, title).setTint(hex(color));
 
     let ry = y + 17;
@@ -134,11 +131,7 @@ export class ControlsScene extends Phaser.Scene {
 
   private tips(x: number, y: number, w: number): void {
     const rowH = 13;
-    this.add
-      .rectangle(x, y, w, TIPS.length * rowH + 20, hex(PAL.navy))
-      .setOrigin(0)
-      .setAlpha(0.9)
-      .setStrokeStyle(1, hex(PAL.green), 0.8);
+    makeFrame(this, x, y, w, TIPS.length * rowH + 20, { edge: PAL.green, alpha: 0.92 });
     this.add.bitmapText(x + 6, y + 4, FONT, 'WORTH KNOWING').setTint(hex(PAL.green));
     let ry = y + 17;
     for (const tip of TIPS) {
