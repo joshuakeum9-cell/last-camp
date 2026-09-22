@@ -103,6 +103,8 @@ export interface GameState {
     alphaDefeated: boolean;
     mawDefeated: boolean;
     mawAttempts: number;
+    stagDefeated: boolean;
+    stagAttempts: number;
   };
 
   challenge: {
@@ -182,7 +184,7 @@ export function newGameState(): GameState {
       reportSeenDay: 0,
       hints: [],
     },
-    bosses: { alphaDefeated: false, mawDefeated: false, mawAttempts: 0 },
+    bosses: { alphaDefeated: false, mawDefeated: false, mawAttempts: 0, stagDefeated: false, stagAttempts: 0 },
     challenge: { id: '', dayIssued: 0, progress: 0, claimed: false, source: 'local' },
     achievements: {},
     stats: {

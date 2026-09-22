@@ -232,7 +232,176 @@ export const spitterSprite: PixelSprite = {
   fpsOverride: { idle: 3, run: 8, windup: 8 },
 };
 
-export const ENEMY_SPRITES = [ratSprite, wolfSprite, walkerSprite, spitterSprite];
+// --- Ice Skater: wide, low, and always sliding ---------------------------
+
+const SKATER = [
+  '........................',
+  '..........oooo..........',
+  '.........oRRRRo.........',
+  '........oRRcRRRo........',
+  '.......oRRRRRRRRo.......',
+  '......oRRRRRRRRRRo......',
+  '.......oRRRRRRRRo.......',
+  '........oRRRRRRo........',
+  '.........oooooo.........',
+  '....oo...o....o...oo....',
+  '...o..ooo......ooo..o...',
+  '..o..................o..',
+  '.o....................o.',
+  '........................',
+];
+
+const SKATER_LEGS = [
+  ...SKATER.slice(0, 9),
+  '.....o...o....o...o.....',
+  '....o.ooo......ooo.o....',
+  '...o..................o.',
+  '..o....................o',
+  '........................',
+];
+
+export const skaterSprite: PixelSprite = {
+  key: 'enemy-skater',
+  fps: 10,
+  palette: P,
+  anims: {
+    idle: [SKATER, bob(SKATER, 1)],
+    run: [SKATER, SKATER_LEGS],
+    windup: [bob(SKATER, 1), SKATER],
+    attack: [SKATER_LEGS],
+  },
+  fpsOverride: { idle: 3, run: 12, windup: 6 },
+};
+
+// --- Ridge Crow: black on white, wings open, always above its shadow -----
+
+const CROW_UP = [
+  '....oo........oo....',
+  '...oooo......oooo...',
+  '..oootto....ottooo..',
+  '.oot..ooo..ooo..too.',
+  '.o.....ooooooo.....o',
+  '........ooPoo.......',
+  '.........oooo.......',
+  '..........oo........',
+  '..........oo........',
+  '.........o..o.......',
+  '....................',
+  '....................',
+  '....................',
+  '....................',
+  '....................',
+  '....................',
+  '....................',
+  '....................',
+];
+
+const CROW_DOWN = [
+  '....................',
+  '....................',
+  '.........oooo.......',
+  '........ooPooo......',
+  '.oooooooooooooooooo.',
+  'oott..ooooooooo..tto',
+  '.o.....ooooooo.....o',
+  '.........oooo.......',
+  '..........oo........',
+  '.........o..o.......',
+  '....................',
+  '....................',
+  '....................',
+  '....................',
+  '....................',
+  '....................',
+  '....................',
+  '....................',
+];
+
+export const crowSprite: PixelSprite = {
+  key: 'enemy-crow',
+  fps: 8,
+  palette: P,
+  anims: {
+    idle: [CROW_UP, CROW_DOWN],
+    run: [CROW_UP, CROW_DOWN],
+    windup: [CROW_DOWN, CROW_DOWN],
+    attack: [CROW_UP],
+  },
+  fpsOverride: { idle: 5, run: 9, windup: 4 },
+};
+
+// --- Drift Brute: a hulk under a foot of snow ----------------------------
+
+const BRUTE = [
+  '........oooooooo........',
+  '......ooWWWWWWWWoo......',
+  '.....oWWWWWWWWWWWWo.....',
+  '....oWWWWWWWWWWWWWWo....',
+  '...oWWWWoooWWWWoooWWo...',
+  '...oWWWocccoWWoccoWWo...',
+  '...oWWWWoooWWWWoooWWo...',
+  '..oWWWWWWWWWWWWWWWWWWo..',
+  '..oWWRRWWWWWWWWWWRRWWo..',
+  '.oWWRRRRWWWWWWWWRRRRWWo.',
+  '.oWRRRRRWWWWWWWWRRRRRWo.',
+  'oWRRRRRRWWWWWWWWRRRRRRWo',
+  'oRRRRRRoWWWWWWWWoRRRRRRo',
+  'oRRRRRoWWWWWWWWWWoRRRRRo',
+  'oRRRRoWWWWWWWWWWWWoRRRRo',
+  'oRRRoWWWWWWWWWWWWWWoRRRo',
+  '.oooWWWWWWWWWWWWWWWWooo.',
+  '...oWWWWWWWWWWWWWWWWo...',
+  '...oWWWWWWWoWWWWWWWWo...',
+  '...oWWWWWWWooWWWWWWWo...',
+  '...oRRRRRRRooRRRRRRRo...',
+  '...oRRRRRRRooRRRRRRRo...',
+  '...oRRRRRRo..oRRRRRRo...',
+  '...oRRRRRo....oRRRRRo...',
+  '...oooooo......oooooo...',
+];
+
+const BRUTE_RAISED = [
+  'oooo................oooo',
+  'oRRRo..............oRRRo',
+  'oRRRRo....oooooo..oRRRRo',
+  'oRRRRRo.ooWWWWWWoooRRRRo',
+  '.oRRRRoWWWWWWWWWWWoRRRRo',
+  '.oRRRoWWWWWWWWWWWWWoRRRo',
+  '..oRRoWWWoooWWWoooWWoRo.',
+  '..oRRoWWocccoWoccoWWoRo.',
+  '...ooWWWWoooWWWWoooWWoo.',
+  '...oWWWWWWWWWWWWWWWWWWo.',
+  '..oWWWWWWWWWWWWWWWWWWWo.',
+  '..oWWWWWWWWWWWWWWWWWWWo.',
+  '..oWWWWWWWWWWWWWWWWWWWo.',
+  '..oWWWWWWWWWWWWWWWWWWWo.',
+  '..oWWWWWWWWWWWWWWWWWWWo.',
+  '...oWWWWWWWWWWWWWWWWWo..',
+  '...oWWWWWWWWWWWWWWWWo...',
+  '...oWWWWWWWWWWWWWWWWo...',
+  '...oWWWWWWWoWWWWWWWWo...',
+  '...oWWWWWWWooWWWWWWWo...',
+  '...oRRRRRRRooRRRRRRRo...',
+  '...oRRRRRRRooRRRRRRRo...',
+  '...oRRRRRRo..oRRRRRRo...',
+  '...oRRRRRo....oRRRRRo...',
+  '...oooooo......oooooo...',
+];
+
+export const bruteSprite: PixelSprite = {
+  key: 'enemy-brute',
+  fps: 6,
+  palette: P,
+  anims: {
+    idle: [BRUTE, bob(BRUTE, 1)],
+    run: [BRUTE, bob(BRUTE, 1), BRUTE, bob(BRUTE, 2)],
+    windup: [BRUTE_RAISED],
+    attack: [BRUTE],
+  },
+  fpsOverride: { idle: 2, run: 5, windup: 1 },
+};
+
+export const ENEMY_SPRITES = [ratSprite, wolfSprite, walkerSprite, spitterSprite, skaterSprite, crowSprite, bruteSprite];
 
 export const ENEMY_SPRITE_KEY: Record<string, string> = {
   rat: ratSprite.key,
@@ -241,6 +410,9 @@ export const ENEMY_SPRITE_KEY: Record<string, string> = {
   spitter: spitterSprite.key,
   stalker: wolfSprite.key,
   alpha: wolfSprite.key,
+  skater: skaterSprite.key,
+  crow: crowSprite.key,
+  brute: bruteSprite.key,
 };
 
 export function buildEnemyArt(scene: Phaser.Scene): void {

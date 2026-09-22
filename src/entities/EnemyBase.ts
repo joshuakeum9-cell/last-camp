@@ -106,6 +106,8 @@ export class EnemyBase {
     this.body.setOffset((this.sprite.width - w) / 2, this.sprite.height - h);
     this.body.setCollideWorldBounds(true);
     this.body.setMass(def.mass);
+    // Fliers pass over everything; only their shadow touches the ground.
+    if (def.flies) this.body.checkCollision.none = true;
 
     this.play('idle');
   }

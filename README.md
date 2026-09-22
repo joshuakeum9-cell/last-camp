@@ -68,6 +68,16 @@ what the nodes give, how fast the cold climbs, how far you can see. Every area h
 own scenery too. Lamps light the road at night, thin ice on the lake gives way if you
 stand on a crack, and old fire pits can be lit with two wood to shed cold mid-trip.
 
+## What lives where
+
+Frost rats and ice wolves in the forest. Crows that wheel over the road and the tower
+pass and dive straight through you. Skaters on the lake that slide at full speed and
+never slow down. Drift brutes at the cabin and the den, hulks under a foot of snow with
+a slam that has no safe side. The stalker comes at night, and in a whiteout it comes by
+day. Two bosses: the White Maw in its den past the snowbank, and the Hollow Stag pacing
+the tower pass past the ice, with a charge to sidestep, a ring to dash through, and an
+ice fall that punishes standing still.
+
 ## Difficulty
 
 Three settings, chosen on the title screen and changeable at any time.

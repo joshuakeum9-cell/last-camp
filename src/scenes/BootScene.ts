@@ -12,6 +12,7 @@ import { buildCacheArt } from '../entities/Cache';
 import { buildNoteArt } from '../entities/WorldNote';
 import { buildMiraArt } from '../entities/NPCMira';
 import { buildMawArt } from '../entities/BossWhiteMaw';
+import { buildStagArt } from '../entities/BossHollowStag';
 import { buildResourceIcons } from '../art/sprites/icons';
 import { SaveSystem } from '../core/SaveSystem';
 import { state } from '../core/GameState';
@@ -39,6 +40,7 @@ export class BootScene extends Phaser.Scene {
     buildNoteArt(this);
     buildMiraArt(this);
     buildMawArt(this);
+    buildStagArt(this);
     buildResourceIcons(this);
     for (const sprite of PLAYER_SPRITES) PixelFactory.build(this, sprite);
 

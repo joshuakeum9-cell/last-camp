@@ -44,6 +44,9 @@ export class HUDScene extends Phaser.Scene {
   private pauseButton!: Phaser.GameObjects.Rectangle;
   private compassHit!: Phaser.GameObjects.Rectangle;
   private pauseGlyph!: Phaser.GameObjects.BitmapText;
+  private bossBack!: Phaser.GameObjects.Rectangle;
+  private bossFill!: Phaser.GameObjects.Rectangle;
+  private bossLabel!: Label;
 
   constructor() {
     super('HUD');
@@ -97,6 +100,24 @@ export class HUDScene extends Phaser.Scene {
       color: PAL.cyan,
       originX: 0.5,
     }).setScrollFactor(0);
+
+    // --- boss bar, top centre, only in a fight ----------------------------
+    const bossW = 160;
+    this.bossBack = this.add
+      .rectangle(Math.round(width / 2), 34, bossW, 5, hex(PAL.black))
+      .setOrigin(0.5, 0)
+      .setAlpha(0.7)
+      .setStrokeStyle(1, hex(PAL.blood), 0.9)
+      .setScrollFactor(0)
+      .setVisible(false);
+    this.bossFill = this.add
+      .rectangle(Math.round(width / 2 - bossW / 2), 34, bossW, 5, hex(PAL.blood))
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setVisible(false);
+    this.bossLabel = new Label(this, Math.round(width / 2), 40, '', { color: PAL.blood, originX: 0.5 })
+      .setScrollFactor(0)
+      .setVisible(false);
 
     // --- weapon and dash, bottom right -----------------------------------
     // The weapon's name sits just above its slot, so the icon never has to be
@@ -345,6 +366,14 @@ export class HUDScene extends Phaser.Scene {
     this.comboLabel.setVisible(hud.comboCount >= 3);
     if (hud.comboCount >= 3) this.comboLabel.setText(`x${hud.comboCount}`);
 
+    const inFight = inWorld && hud.bossName !== null;
+    this.bossBack.setVisible(inFight);
+    this.bossFill.setVisible(inFight);
+    this.bossLabel.setVisible(inFight);
+    if (inFight) {
+      this.bossFill.width = Math.max(0, Math.round(160 * (hud.bossHp / Math.max(1, hud.bossMaxHp))));
+      this.bossLabel.setText((hud.bossName ?? '').toUpperCase());
+    }
     this.pauseButton.setVisible(inWorld);
     this.compassHit.setVisible(inWorld);
     this.pauseGlyph.setVisible(inWorld);

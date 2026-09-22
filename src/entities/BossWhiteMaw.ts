@@ -10,6 +10,7 @@ import { FX } from '../art/sprites/fx';
 import { WFX } from '../art/sprites/weapons';
 import { Juice } from '../systems/Juice';
 import type { Player } from './Player';
+import type { Boss } from './Boss';
 
 const P: Record<string, string | null> = {
   '.': null,
@@ -128,7 +129,8 @@ export interface MawHitbox {
  * difficult because of its health bar: every pattern has a tell, and every pattern has
  * a window afterwards that belongs to the player.
  */
-export class BossWhiteMaw {
+export class BossWhiteMaw implements Boss {
+  readonly name = 'The White Maw';
   readonly sprite: Phaser.Physics.Arcade.Sprite;
   readonly body: Phaser.Physics.Arcade.Body;
   readonly id = 'maw';

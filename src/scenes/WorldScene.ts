@@ -24,6 +24,8 @@ import { WorldNote } from '../entities/WorldNote';
 import { Gate } from '../entities/Gate';
 import { NPCMira } from '../entities/NPCMira';
 import { BossWhiteMaw } from '../entities/BossWhiteMaw';
+import { BossHollowStag } from '../entities/BossHollowStag';
+import type { Boss } from '../entities/Boss';
 import { Dialogue } from '../ui/Dialogue';
 import { TouchControls } from '../ui/TouchControls';
 import { GATE_IDS } from '../data/areas';
@@ -121,7 +123,7 @@ export class WorldScene extends Phaser.Scene {
   private notes: WorldNote[] = [];
   private gates: Gate[] = [];
   private mira: NPCMira | null = null;
-  private boss: BossWhiteMaw | null = null;
+  private bosses: Boss[] = [];
   private subs = new Subscriptions();
 
   private mapData!: WorldMapData;
@@ -157,7 +159,7 @@ export class WorldScene extends Phaser.Scene {
     this.notes = [];
     this.gates = [];
     this.mira = null;
-    this.boss = null;
+    this.bosses = [];
     this.currentArea = null;
     this.canInteract = false;
     this.warmSpots = [];
@@ -214,6 +216,11 @@ export class WorldScene extends Phaser.Scene {
 
     this.weather.setStorm(state.run.storm);
     const event = activeEvent(state.run.event);
+    if (event.id === 'whiteout') {
+      this.time.delayedCall(4000, () => {
+        if (!this.ending) this.enemyManager.summonStalker(this.player.cx, this.player.cy);
+      });
+    }
     if (event.id !== 'clear' && state.run.timeSec < 1) {
       this.time.delayedCall(700, () => {
         this.announce(event.name);
@@ -248,7 +255,7 @@ export class WorldScene extends Phaser.Scene {
       }),
     );
     this.subs.add(bus.on('enemy:killed', (e) => this.onEnemyKilled(e.type, e.x, e.y)));
-    this.subs.add(bus.on('boss:defeated', () => this.onBossDefeated()));
+    this.subs.add(bus.on('boss:defeated', ({ id }) => this.onBossDefeated(id)));
     this.subs.add(bus.on('player:hit', ({ damage }) => {
       if (state.run) state.run.damageTaken += damage;
     }));
@@ -631,7 +638,7 @@ export class WorldScene extends Phaser.Scene {
     }
 
     if (!state.bosses.mawDefeated) {
-      this.boss = new BossWhiteMaw(
+      const maw = new BossWhiteMaw(
         this,
         88 * TILE_SIZE,
         44 * TILE_SIZE,
@@ -647,10 +654,18 @@ export class WorldScene extends Phaser.Scene {
           }
         },
       );
-      this.combat.boss = this.boss;
-      this.physics.add.collider(this.boss.sprite, this.layer);
-      this.bossMusicOn = false;
+      this.bosses.push(maw);
+      this.physics.add.collider(maw.sprite, this.layer);
     }
+
+    // The second boss paces the tower pass, past the ice the gate breaks through.
+    if (!state.bosses.stagDefeated) {
+      const stag = new BossHollowStag(this, 92 * TILE_SIZE, 20 * TILE_SIZE, this.player, this.juice);
+      this.bosses.push(stag);
+      this.physics.add.collider(stag.sprite, this.layer);
+    }
+    this.combat.bosses = this.bosses;
+    this.bossMusicOn = false;
   }
 
   private onWeaponFound(name: string, rarity: string): void {
@@ -721,7 +736,7 @@ export class WorldScene extends Phaser.Scene {
     if (input.eatPressed) this.eat();
 
     this.enemyManager.update(dt, this.player.cx, this.player.cy);
-    this.boss?.update(dt);
+    for (const boss of this.bosses) boss.update(dt);
     this.updateBossMusic();
     this.combat.update();
     this.enemyManager.sweep();
@@ -864,7 +879,11 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /** Killing the Maw is the closing beat of this version. */
-  private onBossDefeated(): void {
+  private onBossDefeated(id: string): void {
+    if (id === 'stag') {
+      this.onStagDefeated();
+      return;
+    }
     state.bosses.mawDefeated = true;
     UpgradeSystem.award('trophy');
     const night = this.clock.bountyActive;
@@ -886,23 +905,56 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  /** The music changes when the den does, and counts the attempt. */
-  private updateBossMusic(): void {
-    if (!this.boss?.alive) {
-      if (this.bossMusicOn) {
-        this.bossMusicOn = false;
-        bus.emit('audio:music', { cue: null });
+  private onStagDefeated(): void {
+    state.bosses.stagDefeated = true;
+    const night = this.clock.bountyActive;
+    ResourceSystem.collect('crystal', 12, night);
+    ResourceSystem.collect('medical', 3, night);
+    ResourceSystem.collect('scrap', 25, night);
+    if (state.run) state.run.rareFinds += 2;
+
+    bus.emit('juice:toast', { text: 'The Hollow Stag comes apart.', color: '#7bf3ff' });
+    this.time.delayedCall(1400, () => {
+      this.dialogue.show(
+        [
+          'The ice in it goes dull as it falls. Under the frost, the bones are old.',
+          'Something tied a strip of orange cloth round one antler. The same cloth as the tower.',
+          'Whoever climbed it wanted this thing kept here. Or kept out.',
+        ],
+        'The Pass',
+      );
+    });
+  }
+
+  /** The boss you are nearest to, if you are in its fight. */
+  private nearBoss(): Boss | null {
+    let best: Boss | null = null;
+    let bestDist = 260;
+    for (const boss of this.bosses) {
+      if (!boss.alive) continue;
+      const d = Math.hypot(boss.cx - this.player.cx, boss.cy - this.player.cy);
+      if (d < bestDist) {
+        best = boss;
+        bestDist = d;
       }
-      return;
     }
-    const near =
-      Math.hypot(this.boss.cx - this.player.cx, this.boss.cy - this.player.cy) < 260;
-    if (near && !this.bossMusicOn) {
+    return best;
+  }
+
+  /** The music changes when a den does, and counts the attempt. */
+  private updateBossMusic(): void {
+    const boss = this.nearBoss();
+    hud.bossName = boss ? boss.name : null;
+    hud.bossHp = boss ? boss.hp : 0;
+    hud.bossMaxHp = boss ? boss.maxHp : 1;
+
+    if (boss && !this.bossMusicOn) {
       this.bossMusicOn = true;
-      state.bosses.mawAttempts++;
-      bus.emit('boss:attempted', { id: 'maw' });
+      if (boss.id === 'maw') state.bosses.mawAttempts++;
+      else state.bosses.stagAttempts++;
+      bus.emit('boss:attempted', { id: boss.id });
       bus.emit('audio:music', { cue: 'boss' });
-    } else if (!near && this.bossMusicOn) {
+    } else if (!boss && this.bossMusicOn) {
       this.bossMusicOn = false;
       bus.emit('audio:music', { cue: null });
     }
@@ -1124,7 +1176,8 @@ export class WorldScene extends Phaser.Scene {
     this.caches = [];
     this.notes = [];
     this.mira?.destroy();
-    this.boss?.destroy();
+    for (const boss of this.bosses) boss.destroy();
+    this.bosses = [];
     this.dialogue?.close();
     this.lighting?.destroy();
     this.enemyManager?.destroy();

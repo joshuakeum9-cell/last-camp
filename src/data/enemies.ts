@@ -1,7 +1,7 @@
 import { PAL } from '../art/palette';
 import type { ResourceId } from './resources';
 
-export const ENEMY_IDS = ['rat', 'wolf', 'walker', 'spitter', 'alpha', 'stalker'] as const;
+export const ENEMY_IDS = ['rat', 'wolf', 'walker', 'spitter', 'alpha', 'stalker', 'skater', 'crow', 'brute'] as const;
 export type EnemyId = (typeof ENEMY_IDS)[number];
 
 export type TelegraphShape = 'line' | 'circle' | 'mark';
@@ -47,6 +47,8 @@ export interface EnemyDef {
   drops: DropChance[];
   /** What this enemy exists to teach the player. Shown in the dev screen. */
   teaches: string;
+  /** Fliers ignore trees, rocks and drifts. */
+  flies?: boolean;
 }
 
 export const ENEMIES: Record<EnemyId, EnemyDef> = {
@@ -209,6 +211,85 @@ export const ENEMIES: Record<EnemyId, EnemyDef> = {
     ],
     teaches: 'The night has something in it that the day does not.',
   },
+  skater: {
+    id: 'skater',
+    name: 'Ice Skater',
+    color: PAL.blueDark,
+    accent: PAL.cyan,
+    hp: 18,
+    damage: 7,
+    speed: 150,
+    rushSpeed: 270,
+    attackRange: 130,
+    keepDistance: 70,
+    aggroRange: 180,
+    windup: 0.4,
+    active: 0.55,
+    recovery: 0.7,
+    cooldown: 1.5,
+    telegraph: 'line',
+    telegraphSize: 150,
+    interruptible: true,
+    mass: 0.6,
+    pack: [1, 2],
+    drops: [
+      { id: 'crystal', chance: 0.25, min: 1, max: 1 },
+      { id: 'food', chance: 0.25, min: 1, max: 1 },
+    ],
+    teaches: 'Sidestep. Its line is everything; a step off it is a whole miss.',
+  },
+  crow: {
+    id: 'crow',
+    name: 'Ridge Crow',
+    color: PAL.black,
+    accent: PAL.blood,
+    hp: 12,
+    damage: 6,
+    speed: 125,
+    rushSpeed: 300,
+    attackRange: 150,
+    keepDistance: 95,
+    aggroRange: 210,
+    windup: 0.5,
+    active: 0.5,
+    recovery: 0.9,
+    cooldown: 1.9,
+    telegraph: 'line',
+    telegraphSize: 170,
+    interruptible: true,
+    mass: 0.4,
+    pack: [2, 3],
+    drops: [{ id: 'food', chance: 0.4, min: 1, max: 1 }],
+    teaches: 'Timing. Swing as it arrives, not after.',
+    flies: true,
+  },
+  brute: {
+    id: 'brute',
+    name: 'Drift Brute',
+    color: PAL.snow,
+    accent: PAL.cyan,
+    hp: 90,
+    damage: 16,
+    speed: 52,
+    rushSpeed: 52,
+    attackRange: 34,
+    keepDistance: 0,
+    aggroRange: 150,
+    windup: 0.85,
+    active: 0.2,
+    recovery: 1.0,
+    cooldown: 1.6,
+    telegraph: 'circle',
+    telegraphSize: 38,
+    interruptible: false,
+    mass: 3,
+    pack: [1, 1],
+    drops: [
+      { id: 'scrap', chance: 0.85, min: 2, max: 4 },
+      { id: 'medical', chance: 0.2, min: 1, max: 1 },
+    ],
+    teaches: 'Kite. There is no safe side, only distance.',
+  },
 };
 
 /** Which enemies can appear in which area, and from which day. */
@@ -226,22 +307,28 @@ export const AREA_SPAWNS: Record<string, SpawnRule[]> = {
   ],
   road: [
     { id: 'rat', fromDay: 1, weight: 30 },
-    { id: 'wolf', fromDay: 2, weight: 40 },
-    { id: 'walker', fromDay: 3, weight: 30 },
+    { id: 'wolf', fromDay: 2, weight: 35 },
+    { id: 'walker', fromDay: 3, weight: 20 },
+    { id: 'crow', fromDay: 3, weight: 15 },
   ],
   cabin: [
-    { id: 'wolf', fromDay: 2, weight: 35 },
-    { id: 'walker', fromDay: 3, weight: 45 },
-    { id: 'spitter', fromDay: 4, weight: 20 },
+    { id: 'wolf', fromDay: 2, weight: 30 },
+    { id: 'walker', fromDay: 3, weight: 35 },
+    { id: 'spitter', fromDay: 4, weight: 15 },
+    { id: 'brute', fromDay: 4, weight: 20 },
   ],
   lake: [
-    { id: 'spitter', fromDay: 1, weight: 45 },
-    { id: 'wolf', fromDay: 2, weight: 25 },
-    { id: 'walker', fromDay: 3, weight: 30 },
+    { id: 'spitter', fromDay: 1, weight: 35 },
+    { id: 'skater', fromDay: 2, weight: 40 },
+    { id: 'wolf', fromDay: 2, weight: 10 },
+    { id: 'walker', fromDay: 3, weight: 15 },
   ],
   secret: [{ id: 'spitter', fromDay: 1, weight: 100 }],
-  bossden: [{ id: 'walker', fromDay: 1, weight: 100 }],
-  towerpass: [],
+  bossden: [
+    { id: 'walker', fromDay: 1, weight: 70 },
+    { id: 'brute', fromDay: 3, weight: 30 },
+  ],
+  towerpass: [{ id: 'crow', fromDay: 1, weight: 100 }],
 };
 
 /**

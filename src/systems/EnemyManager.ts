@@ -9,6 +9,9 @@ import { frostRatBehavior } from '../entities/enemies/FrostRat';
 import { iceWolfBehavior } from '../entities/enemies/IceWolf';
 import { frozenWalkerBehavior } from '../entities/enemies/FrozenWalker';
 import { snowSpitterBehavior } from '../entities/enemies/SnowSpitter';
+import { iceSkaterBehavior } from '../entities/enemies/IceSkater';
+import { ridgeCrowBehavior } from '../entities/enemies/RidgeCrow';
+import { driftBruteBehavior } from '../entities/enemies/DriftBrute';
 import { Rng, subSeed } from '../core/Rng';
 import { activeDifficulty } from '../data/difficulty';
 import { SOLID_TILES, TILE_SIZE } from '../art/sprites/tiles';
@@ -22,6 +25,9 @@ const BEHAVIORS: Record<EnemyId, EnemyBehavior> = {
   spitter: snowSpitterBehavior,
   stalker: iceWolfBehavior,
   alpha: iceWolfBehavior,
+  skater: iceSkaterBehavior,
+  crow: ridgeCrowBehavior,
+  brute: driftBruteBehavior,
 };
 
 /**
@@ -132,6 +138,12 @@ export class EnemyManager {
     if (this.night === on) return;
     this.night = on;
     if (!on || this.stalkerSpawned) return;
+    this.summonStalker(playerX, playerY);
+  }
+
+  /** The stalker, out of sight. A whiteout brings it in daylight. */
+  summonStalker(playerX: number, playerY: number): void {
+    if (this.stalkerSpawned) return;
     this.stalkerSpawned = true;
 
     // Spawn it out of sight, so it arrives rather than appears.

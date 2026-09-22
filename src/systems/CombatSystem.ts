@@ -5,7 +5,7 @@ import { BAL } from '../data/balance';
 import type { EnemyBase } from '../entities/EnemyBase';
 import type { ResourceNode } from '../entities/ResourceNode';
 import type { Breakable } from '../entities/Breakable';
-import type { BossWhiteMaw } from '../entities/BossWhiteMaw';
+import type { Boss, BossHitbox } from '../entities/Boss';
 import type { Player } from '../entities/Player';
 import type { SwingShape, WeaponDef } from '../data/weapons';
 import { UPGRADES } from '../data/upgrades';
@@ -47,7 +47,7 @@ export class CombatSystem {
   nodes: ResourceNode[] = [];
   breakables: Breakable[] = [];
   /** The Maw is its own controller, so it is checked alongside the enemy list. */
-  boss: BossWhiteMaw | null = null;
+  bosses: Boss[] = [];
 
   constructor(
     private scene: Phaser.Scene,
@@ -102,14 +102,15 @@ export class CombatSystem {
       if (!req.pierce) break;
     }
 
-    if (this.boss?.alive && this.inSwing({ ...req, reach: req.reach + 20 }, this.boss.cx, this.boss.cy)) {
+    for (const boss of this.bosses) {
+      if (!boss.alive || !this.inSwing({ ...req, reach: req.reach + 20 }, boss.cx, boss.cy)) continue;
       const crit = perfectCrit || Math.random() < req.crit;
       const damage = Math.max(
         1,
         Math.round(req.damage * this.damageMultiplier() * (crit ? BAL.combat.critMultiplier : 1)),
       );
-      this.boss.takeDamage(damage, req.x, req.y, req.knockback, crit);
-      if (req.stun > 0) this.boss.applyStun(req.stun);
+      boss.takeDamage(damage, req.x, req.y, req.knockback, crit);
+      if (req.stun > 0) boss.applyStun(req.stun);
       if (req.flags.includes('lifesteal')) this.player.heal(Math.max(1, Math.round(damage * 0.1)), 'lifesteal');
       result.hits++;
       if (crit) result.crits++;
@@ -178,7 +179,9 @@ export class CombatSystem {
     const px = this.player.cx;
     const py = this.player.cy;
 
-    if (this.boss?.hitbox) this.checkHitbox(this.boss.hitbox, 'maw', now, px, py);
+    for (const boss of this.bosses) {
+      if (boss.hitbox) this.checkHitbox(boss.hitbox, boss.id, now, px, py);
+    }
 
     for (const enemy of this.enemies) {
       if (enemy.hitbox) this.checkHitbox(enemy.hitbox, enemy.def.id, now, px, py);
@@ -186,16 +189,12 @@ export class CombatSystem {
   }
 
   /** Shared between ordinary enemies and the boss. */
-  private checkHitbox(
-    box: { x: number; y: number; radius: number; damage: number; until: number; spent: boolean; bornAt: number },
-    source: string,
-    now: number,
-    px: number,
-    py: number,
-  ): void {
+  private checkHitbox(box: BossHitbox, source: string, now: number, px: number, py: number): void {
     if (box.spent || now > box.until) return;
     const dist = Math.hypot(px - box.x, py - box.y);
     if (dist > box.radius + BAL.player.bodyRadius) return;
+    // A ring: inside the band is safe, which is what makes it something to dash through.
+    if (box.innerRadius !== undefined && dist < box.innerRadius - BAL.player.bodyRadius) return;
 
     // A dash started just as the box opened is a read, not luck. Reward it.
     const dashedInTime =

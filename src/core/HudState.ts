@@ -28,6 +28,10 @@ export interface HudState {
   carried: Record<ResourceId, number>;
   /** Direction to camp, shown from nightfall. Null hides the compass. */
   homeAngle: number | null;
+  /** The boss in the fight, or null. */
+  bossName: string | null;
+  bossHp: number;
+  bossMaxHp: number;
 }
 
 export const hud: HudState = {
@@ -49,6 +53,9 @@ export const hud: HudState = {
   chargeAmount: 0,
   carried: emptyResources(),
   homeAngle: null,
+  bossName: null,
+  bossHp: 0,
+  bossMaxHp: 1,
 };
 
 export function resetHud(): void {
