@@ -15,7 +15,7 @@ export interface InputState {
   interactPressed: boolean;
   swapPressed: boolean;
   eatPressed: boolean;
-  slotPressed: 0 | 1 | 2;
+  slotPressed: 0 | 1 | 2 | 3;
   menuPressed: boolean;
   mapPressed: boolean;
 }
@@ -91,6 +91,7 @@ export class InputSystem {
       kb.on('keydown-F', () => this.press('eat'));
       kb.on('keydown-ONE', () => this.press('slot1'));
       kb.on('keydown-TWO', () => this.press('slot2'));
+      kb.on('keydown-THREE', () => this.press('slot3'));
       kb.on('keydown-ESC', () => this.press('menu'));
       kb.on('keydown-M', () => this.press('map'));
     } else {
@@ -198,7 +199,7 @@ export class InputSystem {
     o.interactPressed = this.take('interact');
     o.swapPressed = this.take('swap');
     o.eatPressed = this.take('eat');
-    o.slotPressed = this.take('slot1') ? 1 : this.take('slot2') ? 2 : 0;
+    o.slotPressed = this.take('slot1') ? 1 : this.take('slot2') ? 2 : this.take('slot3') ? 3 : 0;
     o.menuPressed = this.take('menu');
     o.mapPressed = this.take('map');
     o.attackHeld = touchInput.active ? touchInput.attackHeld : this.pointerDown || down(k.Q);

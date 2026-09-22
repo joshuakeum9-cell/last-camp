@@ -6,6 +6,7 @@ import { TITLES } from '../data/achievements';
 import { makeFrame } from '../ui/Frame';
 import { eventForDay } from '../data/events';
 import { CHALLENGES, CHALLENGE_IDS } from '../data/challenges';
+import { traderToday } from '../data/trader';
 import { renderCost } from '../ui/Panel';
 import { SaveSystem } from '../core/SaveSystem';
 import { ResourceSystem } from '../systems/ResourceSystem';
@@ -169,10 +170,11 @@ export class SummaryScene extends Phaser.Scene {
     const tomorrow = this.summary.reason === 'death' ? state.day + 1 : state.day + 1;
     const nextEvent = eventForDay(tomorrow, state.stats.deaths);
     const nextChallenge = CHALLENGES[CHALLENGE_IDS[(tomorrow - 1) % CHALLENGE_IDS.length]];
+    const sled = traderToday(tomorrow, nextEvent.id) ? ' The trader is on the road.' : '';
     const forecast =
       nextEvent.id === 'clear'
-        ? `Tomorrow: clear. ${nextChallenge.label}.`
-        : `Tomorrow: ${nextEvent.name.toUpperCase()}. ${nextChallenge.label}.`;
+        ? `Tomorrow: clear. ${nextChallenge.label}.${sled}`
+        : `Tomorrow: ${nextEvent.name.toUpperCase()}. ${nextChallenge.label}.${sled}`;
     this.add
       .bitmapText(30, height - 62, FONT, forecast)
       .setTint(hex(nextEvent.id === 'clear' ? PAL.cyan : PAL.gold));

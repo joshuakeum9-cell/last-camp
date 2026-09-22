@@ -96,6 +96,13 @@ and at the top there is a switch and a choice: end the winter, or keep the camp 
 and only the camp. The save remembers which, the title screen changes, and Mira has
 something to say about it either way. You can keep playing afterwards.
 
+## The trader
+
+Some days from day 3 there are sled tracks on the road and the morning report says so.
+The trader stands by her sled with three offers, paid from what you are carrying:
+common things for medical kits, crystal, dried fish, or a weapon with a story. One of
+each per visit. The summary tells you the night before if she will be out tomorrow.
+
 ## Ice fishing
 
 Holes are cut in the lake ice. Stand at one, press E, and a marker runs along a bar:

@@ -27,6 +27,8 @@ import { BossWhiteMaw } from '../entities/BossWhiteMaw';
 import { BossHollowStag } from '../entities/BossHollowStag';
 import { BossRanger } from '../entities/BossRanger';
 import { MiraCompanion } from '../entities/MiraCompanion';
+import { Trader } from '../entities/Trader';
+import { traderToday, type TradeOffer } from '../data/trader';
 import type { Boss } from '../entities/Boss';
 import { Dialogue } from '../ui/Dialogue';
 import { TouchControls } from '../ui/TouchControls';
@@ -150,6 +152,9 @@ export class WorldScene extends Phaser.Scene {
   private bosses: Boss[] = [];
   private ranger: BossRanger | null = null;
   private companion: MiraCompanion | null = null;
+  private trader: Trader | null = null;
+  private tradePanel: { objects: Phaser.GameObjects.GameObject[]; offers: TradeOffer[] } | null = null;
+  private tradeOverride: TradeOffer[] | null = null;
   private towerX = 0;
   private towerY = 0;
   private subs = new Subscriptions();
@@ -192,6 +197,8 @@ export class WorldScene extends Phaser.Scene {
     this.bosses = [];
     this.ranger = null;
     this.companion = null;
+    this.trader = null;
+    this.tradePanel = null;
     this.currentArea = null;
     this.canInteract = false;
     this.warmSpots = [];
@@ -529,6 +536,117 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /**
+   * The trader's sled: three offers, taken with 1, 2, 3 or a click, paid from what
+   * you are carrying. E or walking away closes it.
+   */
+  private openTrade(): void {
+    const offers = this.tradeOverride ?? traderToday(state.day, state.run?.event);
+    if (!offers || !this.trader) return;
+    const { width, height } = BAL.view;
+    const w = 300;
+    const h = 20 + offers.length * 22 + 14;
+    const x = Math.round(width / 2 - w / 2);
+    const y = Math.round(height / 2 - h / 2) + 20;
+    const objects: Phaser.GameObjects.GameObject[] = [];
+    const frame = this.add.graphics().setScrollFactor(0).setDepth(8600);
+    drawFrame(frame, x, y, w, h, { edge: PAL.gold, alpha: 0.96 });
+    objects.push(frame);
+    objects.push(
+      this.add.bitmapText(x + 8, y + 6, FONT, 'THE SLED').setTint(hex(PAL.gold)).setScrollFactor(0).setDepth(8601),
+      this.add
+        .bitmapText(x + w - 8, y + 6, FONT, 'E closes')
+        .setOrigin(1, 0)
+        .setTint(hex(PAL.uiMuted))
+        .setScrollFactor(0)
+        .setDepth(8601),
+    );
+    offers.forEach((offer, i) => {
+      const ry = y + 20 + i * 22;
+      const can = this.canPay(offer);
+      const give = Object.entries(offer.give)
+        .map(([id, n]) => `${n} ${RESOURCES[id as keyof typeof RESOURCES].short.toLowerCase()}`)
+        .join(' + ');
+      const get = offer.weapon
+        ? `a ${offer.weapon}`
+        : Object.entries(offer.get)
+            .map(([id, n]) => `${n} ${RESOURCES[id as keyof typeof RESOURCES].short.toLowerCase()}`)
+            .join(' + ');
+      const hit = this.add
+        .rectangle(x + 6, ry - 2, w - 12, 20, hex(PAL.deep))
+        .setOrigin(0)
+        .setAlpha(can ? 0.35 : 0.12)
+        .setScrollFactor(0)
+        .setDepth(8601)
+        .setInteractive({ useHandCursor: can });
+      hit.on('pointerdown', () => {
+        this.input.stopPropagation();
+        this.acceptTrade(i);
+      });
+      objects.push(
+        hit,
+        this.add
+          .bitmapText(x + 10, ry, FONT, `${i + 1}  ${give}  for  ${get}`)
+          .setTint(hex(can ? PAL.cream : PAL.greyDark))
+          .setScrollFactor(0)
+          .setDepth(8602),
+        this.add
+          .bitmapText(x + 10, ry + 9, FONT, offer.line)
+          .setTint(hex(can ? PAL.cyan : PAL.greyDark))
+          .setScrollFactor(0)
+          .setDepth(8602),
+      );
+    });
+    this.tradePanel = { objects, offers };
+    bus.emit('audio:play', { cue: 'cache', volume: 0.6 });
+  }
+
+  private canPay(offer: TradeOffer): boolean {
+    const bag = state.run?.collected;
+    if (!bag) return false;
+    return Object.entries(offer.give).every(([id, n]) => (bag[id as keyof typeof bag] ?? 0) >= (n ?? 0));
+  }
+
+  private acceptTrade(index: number): void {
+    const panel = this.tradePanel;
+    const offer = panel?.offers[index];
+    const bag = state.run?.collected;
+    if (!panel || !offer || !bag) return;
+    if (!this.canPay(offer)) {
+      bus.emit('juice:toast', { text: 'You are not carrying enough for that.', color: PAL.grey });
+      bus.emit('audio:play', { cue: 'empty' });
+      return;
+    }
+    for (const [id, n] of Object.entries(offer.give)) bag[id as keyof typeof bag] -= n ?? 0;
+    const night = this.clock.bountyActive;
+    for (const [id, n] of Object.entries(offer.get)) ResourceSystem.collect(id as keyof typeof bag, n ?? 0, night);
+    if (offer.weapon) {
+      const weapon = LootSystem.makeWeapon(offer.weapon, 'uncommon', new Rng(hashString(`trade:${state.day}:${offer.id}`)));
+      LootSystem.takeWeapon(weapon);
+      this.onWeaponFound(WEAPONS[offer.weapon].name, 'uncommon');
+    }
+    bus.emit('audio:play', { cue: 'upgrade' });
+    bus.emit('juice:toast', { text: 'Done. She does not shake hands.', color: PAL.gold });
+    // One of each per visit: the stock is a sled, not a shop.
+    panel.offers.splice(index, 1);
+    this.closeTrade();
+    if (panel.offers.length > 0) this.openTradeWith(panel.offers);
+  }
+
+  private openTradeWith(offers: TradeOffer[]): void {
+    // Re-open with what is left, by temporarily standing in for today's stock.
+    const saved = this.tradeOverride;
+    this.tradeOverride = offers;
+    this.openTrade();
+    this.tradeOverride = saved;
+  }
+
+  private closeTrade(): void {
+    if (!this.tradePanel) return;
+    for (const o of this.tradePanel.objects) o.destroy();
+    this.tradePanel = null;
+  }
+
+  /**
    * Ice fishing. A marker runs up and down a bar; press when it is in the lit
    * band and something comes up. The lake is the one place with nothing to chop,
    * so this is what it gives instead, and standing still on the ice is its own
@@ -773,6 +891,15 @@ export class WorldScene extends Phaser.Scene {
       this.companion = new MiraCompanion(this, this.player.cx - 18, this.player.sprite.y + 2);
     }
 
+    // Some days the trader's sled is on the road.
+    const stock = traderToday(state.day, state.run?.event);
+    if (stock) {
+      this.trader = new Trader(this, 46 * TILE_SIZE, 19 * TILE_SIZE + TILE_SIZE);
+      this.time.delayedCall(1200, () =>
+        bus.emit('juice:toast', { text: 'A sled on the road. The trader is out today.', color: PAL.gold }),
+      );
+    }
+
     if (!state.bosses.mawDefeated) {
       const maw = new BossWhiteMaw(
         this,
@@ -930,7 +1057,8 @@ export class WorldScene extends Phaser.Scene {
     if (input.mapPressed && WINTER.mapHidden()) bus.emit('juice:toast', { text: 'No map this winter.', color: PAL.grey });
     this.worldMap.update(this.player.cx, this.player.cy);
     if (input.swapPressed) this.weapons.swap();
-    if (input.slotPressed) this.weapons.select(input.slotPressed);
+    if (input.slotPressed && this.tradePanel) this.acceptTrade(input.slotPressed - 1);
+    else if (input.slotPressed === 1 || input.slotPressed === 2) this.weapons.select(input.slotPressed);
     if (input.eatPressed) this.eat();
 
     this.enemyManager.update(dt, this.player.cx, this.player.cy);
@@ -1064,6 +1192,7 @@ export class WorldScene extends Phaser.Scene {
     const lantern = this.ranger?.light;
     if (lantern) lights.push(lantern);
     if (this.companion) lights.push(this.companion.light);
+    if (this.trader) lights.push(this.trader.light);
 
     // Home always shows, so the way back is never guesswork.
     lights.push({
@@ -1319,6 +1448,19 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
+    if (this.tradePanel) {
+      this.prompt.hide();
+      if (pressed) this.closeTrade();
+      if (!this.trader || !this.trader.inRange(this.player.cx, this.player.cy)) this.closeTrade();
+      return;
+    }
+
+    if (this.trader && this.trader.inRange(this.player.cx, this.player.cy)) {
+      this.showPrompt('Trade');
+      if (pressed) this.openTrade();
+      return;
+    }
+
     for (const hole of this.fishHoles) {
       if (Math.hypot(hole.x - this.player.cx, hole.y - this.player.cy) > 22) continue;
       const ready = this.time.now >= hole.readyAt;
@@ -1455,6 +1597,8 @@ export class WorldScene extends Phaser.Scene {
     this.notes = [];
     this.mira?.destroy();
     this.companion?.destroy();
+    this.trader?.destroy();
+    this.closeTrade();
     for (const boss of this.bosses) boss.destroy();
     this.bosses = [];
     this.dialogue?.close();
