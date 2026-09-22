@@ -446,16 +446,17 @@ export class CampScene extends Phaser.Scene {
     const text = lines.join('\n');
     const lineCount = lines.length;
     // A panel behind it, because this lands over open snow and a thin outline is not
-    // enough for a sentence you are meant to actually read.
+    // enough for a sentence you are meant to actually read. It sits below the HUD's
+    // NEXT line, which is permanent and was being covered by it.
     const panel = this.add
-      .rectangle(Math.round(width / 2), 36, width - 60, 10 + lineCount * 11, hex(PAL.black))
+      .rectangle(Math.round(width / 2), 48, width - 60, 10 + lineCount * 11, hex(PAL.black))
       .setOrigin(0.5, 0)
       .setAlpha(0)
       .setStrokeStyle(1, hex(PAL.blueDark), 0.8)
       .setScrollFactor(0)
       .setDepth(7599);
 
-    const label = new Label(this, Math.round(width / 2), 41, text, {
+    const label = new Label(this, Math.round(width / 2), 53, text, {
       color: PAL.cream,
       originX: 0.5,
       align: 'center',
@@ -638,7 +639,7 @@ export class CampScene extends Phaser.Scene {
     }
     const { width, height } = BAL.view;
     const w = 268;
-    const h = 20 + list.length * 22 + 10;
+    const h = 20 + list.length * 22 + 20;
     const x = Math.round(width / 2 - w / 2);
     const y = Math.round(height / 2 - h / 2) + 30;
     const objects: Phaser.GameObjects.GameObject[] = [];
@@ -668,6 +669,14 @@ export class CampScene extends Phaser.Scene {
         this.add.bitmapText(x + 10, ry + 9, FONT, b.where).setTint(hex(PAL.cyan)).setScrollFactor(0).setDepth(8602),
       );
     });
+    objects.push(
+      this.add
+        .bitmapText(x + Math.round(w / 2), y + h - 13, FONT, 'Press 1, 2 or 3, or tap one')
+        .setOrigin(0.5, 0)
+        .setTint(hex(PAL.uiMuted))
+        .setScrollFactor(0)
+        .setDepth(8602),
+    );
     this.rematchPanel = objects;
   }
 
@@ -791,7 +800,7 @@ export class CampScene extends Phaser.Scene {
     const hand = pactHand(state.day, state.stats.deaths);
     const { width, height } = BAL.view;
     const w = 280;
-    const h = 22 + hand.length * 28 + 12;
+    const h = 22 + hand.length * 28 + 22;
     const x = Math.round(width / 2 - w / 2);
     const y = Math.round(height / 2 - h / 2) + 20;
     const objects: Phaser.GameObjects.GameObject[] = [];
@@ -832,6 +841,14 @@ export class CampScene extends Phaser.Scene {
         this.add.bitmapText(x + 10, ry + 18, FONT, p.cost).setTint(hex(PAL.blood)).setScrollFactor(0).setDepth(8602),
       );
     });
+    objects.push(
+      this.add
+        .bitmapText(x + Math.round(w / 2), y + h - 13, FONT, 'Press 1, 2 or 3, or tap one')
+        .setOrigin(0.5, 0)
+        .setTint(hex(PAL.uiMuted))
+        .setScrollFactor(0)
+        .setDepth(8602),
+    );
     this.pactPanel = objects;
     this.pactHandToday = hand.map((p) => p.id);
     bus.emit('audio:play', { cue: 'open' });
@@ -859,8 +876,6 @@ export class CampScene extends Phaser.Scene {
     state.run = newRunState(Date.now() & 0xffffff, ResourceSystem.maxHp(), event.storm, event.id);
     state.run.rematch = rematch;
     state.run.pact = pact;
-    // The pact can change what full health means, so fill up after taking it.
-    state.run.hp = ResourceSystem.maxHp();
     SaveSystem.save();
     bus.emit('day:started', { day: state.day });
     bus.emit('audio:play', { cue: 'portal' });

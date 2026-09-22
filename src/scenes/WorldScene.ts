@@ -232,7 +232,10 @@ export class WorldScene extends Phaser.Scene {
     this.player.setMaxHp(ResourceSystem.maxHp(), false);
     // Health carries over from wherever you were. A fresh run starts with whatever the
     // fire gave you, not a free full bar.
-    const carried = state.run.timeSec > 0 ? state.run.hp : state.player.hp;
+    // A pact that gives health gives it on the morning it is taken, not as an
+    // empty bar you still have to fill.
+    const fresh = state.run.timeSec === 0;
+    const carried = (fresh ? state.player.hp + PACT.maxHpBonus() : state.run.hp);
     this.player.hp = Math.max(1, Math.min(carried, this.player.maxHp));
     state.run.cold = state.run.timeSec > 0 ? state.run.cold : state.player.cold;
     this.physics.add.collider(this.player.sprite, this.layer);
