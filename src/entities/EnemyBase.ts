@@ -9,6 +9,8 @@ import { hex, PAL } from '../art/palette';
 import { Juice } from '../systems/Juice';
 import { FX } from '../art/sprites/fx';
 import { WINTER } from '../data/winter';
+import { litFires } from '../systems/EnemyManager';
+import { activeEvent } from '../data/events';
 
 export type EnemyState = 'idle' | 'chase' | 'windup' | 'attack' | 'recover' | 'hurt' | 'dead';
 
@@ -187,13 +189,29 @@ export class EnemyBase {
     }
 
     switch (this.state) {
-      case 'idle':
+      case 'idle': {
         this.body.setVelocity(0, 0);
-        if (dist < this.def.aggroRange) this.enter('chase');
+        // In a whiteout they cannot see you from as far either.
+        const sight = activeEvent(state.run?.event).id === 'whiteout' ? 0.6 : 1;
+        if (dist < this.def.aggroRange * sight) this.enter('chase');
         break;
+      }
 
       case 'chase': {
-        const { vx, vy } = this.behavior.steer(this, this.to);
+        let { vx, vy } = this.behavior.steer(this, this.to);
+        // The stalker will not cross firelight. A lit pit pushes it back out.
+        if (this.def.id === 'stalker') {
+          for (const f of litFires) {
+            const fx = this.cx - f.x;
+            const fy = this.cy - f.y;
+            const fd = Math.hypot(fx, fy) || 1;
+            if (fd < f.radius + 20) {
+              const push = (f.radius + 20 - fd) / (f.radius + 20);
+              vx += (fx / fd) * this.moveSpeed * 2 * push;
+              vy += (fy / fd) * this.moveSpeed * 2 * push;
+            }
+          }
+        }
         const slow = this.now < this.slowUntil ? 1 - this.slowAmount : 1;
         this.body.setVelocity(vx * slow, vy * slow);
         this.play(Math.hypot(vx, vy) > 6 ? 'run' : 'idle');

@@ -53,6 +53,7 @@ import { WorldMap } from '../ui/WorldMap';
 import { drawFrame } from '../ui/Frame';
 import { WEAPONS, type WeaponId } from '../data/weapons';
 import { activeEvent } from '../data/events';
+import { litFires } from '../systems/EnemyManager';
 import { WINTER, winterActiveCount, winterLootMult } from '../data/winter';
 import { Rng, hashString, subSeed } from '../core/Rng';
 import { ENEMIES, type EnemyId } from '../data/enemies';
@@ -891,7 +892,7 @@ export class WorldScene extends Phaser.Scene {
     this.juice.sparks(spot.x, spot.y - 4, PAL.gold, 14, 120);
     bus.emit('audio:play', { cue: 'warm' });
     bus.emit('juice:toast', { text: 'The fire takes. Warm here until dark.', color: PAL.gold });
-    this.hint('warmspot', 'Cold drains off beside any lit fire.');
+    this.hint('warmspot', 'Cold drains off beside any lit fire, and the stalker will not cross the light.');
   }
 
   private nearLitFire(): boolean {
@@ -1175,6 +1176,13 @@ export class WorldScene extends Phaser.Scene {
     const input = this.input$.update(this.player.cx, this.player.cy);
 
     this.player.update(dt, input);
+    // A blizzard leans on you. Not much, and always from the east, so a day out
+    // in one is a day of walking into it or being carried home.
+    if (state.run?.storm && !this.player.isDashing) {
+      this.player.body.velocity.x -= 16;
+      this.player.body.velocity.y += 4;
+      this.hint('blizzard', 'The wind is pushing you west. Lean into it.');
+    }
     this.weapons.update(dt, input);
     if (input.menuPressed) {
       if (this.worldMap.visible) this.worldMap.hide();
@@ -1189,6 +1197,9 @@ export class WorldScene extends Phaser.Scene {
     else if (input.slotPressed === 1 || input.slotPressed === 2) this.weapons.select(input.slotPressed);
     if (input.eatPressed) this.eat();
 
+    litFires.length = 0;
+    for (const s of this.warmSpots) if (s.lit) litFires.push({ x: s.x, y: s.y, radius: BAL.warmSpot.radius });
+    litFires.push({ x: WORLD_SPAWN.x * TILE_SIZE, y: WORLD_SPAWN.y * TILE_SIZE, radius: 90 });
     this.enemyManager.update(dt, this.player.cx, this.player.cy);
     this.ranger?.setNight(this.clock.isNight);
     for (const boss of this.bosses) boss.update(dt);

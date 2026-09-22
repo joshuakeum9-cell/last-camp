@@ -19,6 +19,12 @@ import { SOLID_TILES, TILE_SIZE } from '../art/sprites/tiles';
 import type { Juice } from './Juice';
 import type { WorldMapData } from './MapGen';
 
+/**
+ * Every fire burning in the world right now, written by the scene each frame.
+ * Things that hunt by night keep out of the light; a lit pit is a wall to them.
+ */
+export const litFires: Array<{ x: number; y: number; radius: number }> = [];
+
 const BEHAVIORS: Record<EnemyId, EnemyBehavior> = {
   rat: frostRatBehavior,
   wolf: iceWolfBehavior,
