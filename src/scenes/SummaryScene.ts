@@ -3,6 +3,7 @@ import { BAL } from '../data/balance';
 import { bus } from '../core/EventBus';
 import { state } from '../core/GameState';
 import { TITLES } from '../data/achievements';
+import { NOTE_LIST } from '../data/story';
 import { makeFrame } from '../ui/Frame';
 import { eventForDay } from '../data/events';
 import { CHALLENGES, CHALLENGE_IDS } from '../data/challenges';
@@ -127,6 +128,16 @@ export class SummaryScene extends Phaser.Scene {
       () => this.leave(),
     );
     cont.setDepth(50);
+
+    // A share line, Wordle-style: the day in one row of text, copied to the
+    // clipboard with the link on the end. The cheapest way a game gets told about.
+    new Button(
+      this,
+      30,
+      height - 24,
+      { width: 60, height: 18, text: 'SHARE', fill: PAL.deep, border: PAL.cyan, textColor: PAL.white },
+      () => this.share(),
+    ).setDepth(50);
 
     // The rewarded-ad prototype. It never plays on its own and never blocks the game.
     const adUsedKey = `double-${this.summary.day}`;
@@ -452,6 +463,36 @@ export class SummaryScene extends Phaser.Scene {
     const maxHp = ResourceSystem.maxHp();
     state.player.hp = Math.max(state.player.hp, Math.round(maxHp * BAL.camp.wakeHpFraction));
     state.player.cold = Math.min(state.player.cold, BAL.camp.wakeColdMax);
+  }
+
+  private share(): void {
+    const kills = Object.values(state.stats.enemiesKilled).reduce((a, b) => a + b, 0);
+    const worn = state.player.cosmetics.title;
+    const title = worn && worn !== 'none' && TITLES[worn] ? ` as ${TITLES[worn]}` : '';
+    const line = [
+      `LAST CAMP: day ${this.summary.day} ${this.summary.reason === 'death' ? 'survived' : 'complete'}${title}.`,
+      `${kills} things killed, ${state.story.notesFound.length}/${NOTE_LIST.length} notes, ${state.meta.streak} day streak.`,
+      'https://joshuakeum9-cell.github.io/last-camp/',
+    ].join(' ');
+    const done = () => bus.emit('juice:toast', { text: 'Copied. Paste it anywhere.', color: '#3ff07f' });
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(line).then(done, () => this.showShareText(line));
+    } else {
+      this.showShareText(line);
+    }
+    bus.emit('audio:play', { cue: 'pickup' });
+  }
+
+  /** When the clipboard is refused, the text is shown so it can be copied by hand. */
+  private showShareText(line: string): void {
+    const { width, height } = BAL.view;
+    const t = this.add
+      .bitmapText(Math.round(width / 2), height - 56, FONT, line)
+      .setOrigin(0.5, 0)
+      .setTint(hex(PAL.cream))
+      .setMaxWidth(width - 40)
+      .setDepth(60);
+    this.time.delayedCall(6000, () => t.destroy());
   }
 
   private leave(): void {

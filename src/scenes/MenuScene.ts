@@ -508,9 +508,11 @@ export class MenuScene extends Phaser.Scene {
       const def = ENEMIES[id];
       const met = seen.includes(id) || (kills[id] ?? 0) > 0;
       const killed = kills[id] ?? 0;
+      const drops = def.drops.map((d) => RESOURCES[d.id].short.toLowerCase()).filter((v, i, a) => a.indexOf(v) === i);
+      const dropLine = drops.length ? `  Drops ${drops.join(', ')}.` : '';
       rows.push({
         title: met ? def.name : '???',
-        effect: met ? def.teaches : 'Not met yet.',
+        effect: met ? def.teaches + dropLine : 'Not met yet.',
         cost: killed > 0 ? `${killed} killed` : met ? 'Seen' : '',
         icon: met ? { key: ENEMY_SPRITE_KEY[id] } : undefined,
         state: met ? 'affordable' : 'blocked',

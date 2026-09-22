@@ -139,6 +139,11 @@ export class NPCMira {
     return this.sprite.y - 12;
   }
 
+  /** At camp with a job: she is busy, which the walk cycle in place reads as. */
+  setWorking(on: boolean): void {
+    this.sprite.play(`${miraSprite.key}_${on ? 'walk' : 'idle'}`, true);
+  }
+
   inRange(px: number, py: number): boolean {
     return Phaser.Math.Distance.Between(px, py, this.cx, this.cy) < 28;
   }

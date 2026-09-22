@@ -170,6 +170,7 @@ export class WorldScene extends Phaser.Scene {
   private pickups: Pickup[] = [];
   private warmSpots: WarmSpot[] = [];
   private fishHoles: FishHole[] = [];
+  private signposts: Array<{ x: number; y: number }> = [];
   private fishing: Fishing | null = null;
   private decorLights: Array<{ x: number; y: number; radius: number }> = [];
   private iceHazards = new Set<string>();
@@ -205,6 +206,7 @@ export class WorldScene extends Phaser.Scene {
     this.canInteract = false;
     this.warmSpots = [];
     this.fishHoles = [];
+    this.signposts = [];
     this.fishing = null;
     this.decorLights = [];
     this.iceHazards = new Set();
@@ -536,6 +538,7 @@ export class WorldScene extends Phaser.Scene {
 
       if (d.kind === 'oldFire') this.warmSpots.push({ x, y: y - 4, lit: false });
       if (d.kind === 'fishHole') this.fishHoles.push({ x, y: y - 6, readyAt: 0 });
+      if (d.kind === 'signpost') this.signposts.push({ x, y: y - 6 });
       if (d.kind === 'iceCrack') this.iceHazards.add(`${d.tx},${d.ty}`);
     }
   }
@@ -1647,6 +1650,13 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
+    for (const sign of this.signposts) {
+      if (Math.hypot(sign.x - this.player.cx, sign.y - this.player.cy) > 20) continue;
+      this.showPrompt('Read the sign');
+      if (pressed) this.dialogue.show(this.signDirections(sign), 'Signpost');
+      return;
+    }
+
     for (const hole of this.fishHoles) {
       if (Math.hypot(hole.x - this.player.cx, hole.y - this.player.cy) > 22) continue;
       const ready = this.time.now >= hole.readyAt;
@@ -1778,6 +1788,36 @@ export class WorldScene extends Phaser.Scene {
       this.scene.stop('HUD');
       this.scene.start('Summary', payload);
     });
+  }
+
+  /**
+   * What a signpost says: the three nearest other areas and which way they lie.
+   * Found ones by name, the rest by a hint, so a sign is worth reading twice.
+   */
+  private signDirections(sign: { x: number; y: number }): string[] {
+    const here = this.currentArea?.id;
+    const dirName = (dx: number, dy: number) => {
+      const a = Math.atan2(dy, dx);
+      const eighth = Math.round(a / (Math.PI / 4));
+      return ['East', 'South-east', 'South', 'South-west', 'West', 'North-west', 'North', 'North-east'][
+        ((eighth % 8) + 8) % 8
+      ];
+    };
+    const near = AREA_LIST.filter((a) => a.id !== here && a.id !== 'gate' && !(a.hidden && !state.map.discoveredAreas.includes(a.id)))
+      .map((a) => {
+        const cx = ((a.rect.x0 + a.rect.x1) / 2) * TILE_SIZE;
+        const cy = ((a.rect.y0 + a.rect.y1) / 2) * TILE_SIZE;
+        return { a, d: Math.hypot(cx - sign.x, cy - sign.y), dir: dirName(cx - sign.x, cy - sign.y) };
+      })
+      .sort((p, q) => p.d - q.d)
+      .slice(0, 3);
+    const lines = near.map(({ a, dir, d }) => {
+      const found = state.map.discoveredAreas.includes(a.id);
+      const far = d > 40 * TILE_SIZE ? 'a long way' : d > 18 * TILE_SIZE ? 'a walk' : 'close';
+      return found ? `${dir}: ${a.name}, ${far}.` : `${dir}: somewhere not yet found, ${far}.`;
+    });
+    lines.push('Camp: follow the orange dot.');
+    return lines;
   }
 
   /** One plain sentence for the summary: what got you, where, and when. */

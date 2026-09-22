@@ -250,7 +250,14 @@ export class CampScene extends Phaser.Scene {
     this.mira?.destroy();
     this.mira = null;
     if (state.story.miraRescued) {
-      this.mira = new NPCMira(this, 13 * TILE_SIZE + 8, 13 * TILE_SIZE, 'camp');
+      // Where she stands says what she is doing: the treeline for wood, the snares
+      // by the grass for food, the barrels for scrap, the fire when she is coming
+      // out with you or has nothing on.
+      const job = state.story.miraFollows ? null : state.story.miraAssignment;
+      const spot =
+        job === 'wood' ? { tx: 9, ty: 11 } : job === 'food' ? { tx: 23, ty: 16 } : job === 'scrap' ? { tx: 21, ty: 15 } : { tx: 13, ty: 13 };
+      this.mira = new NPCMira(this, spot.tx * TILE_SIZE + 8, spot.ty * TILE_SIZE, 'camp');
+      if (job) this.mira.setWorking(true);
       this.stations.push({
         id: 'mira',
         x: this.mira.cx,
