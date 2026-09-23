@@ -85,6 +85,14 @@ what the nodes give, how fast the cold climbs, how far you can see. Every area h
 own scenery too. Lamps light the road at night, thin ice on the lake gives way if you
 stand on a crack, and old fire pits can be lit with two wood to shed cold mid-trip.
 
+## The map
+
+M opens the valley. Every area you have walked into is drawn to scale with its name
+written on it, the ways through that are still shut are marked in red and the ones you
+have opened in gold, and a key down the side says what each coloured square is: you, the
+camp, today's sighting, a supply drop, the pack you left where you died. Everything you
+have not found yet is a dark box with a question mark in it.
+
 ## What lives where
 
 Frost rats and ice wolves in the forest. Crows that wheel over the road and the tower
